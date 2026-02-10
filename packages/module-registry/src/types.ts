@@ -1,0 +1,74 @@
+import type { NextRequest, NextResponse } from 'next/server';
+import type { ComponentType } from 'react';
+import type { EventHandler, EventPayload } from './event-bus';
+
+// Route handler function signature (Next.js App Router)
+export type RouteHandler = (
+  req: NextRequest,
+  context?: { params: Promise<Record<string, string>> }
+) => Promise<NextResponse> | NextResponse;
+
+// Map of route patterns to HTTP method handlers
+export type ApiHandlerMap = Record<
+  string,
+  Partial<Record<'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH', RouteHandler>>
+>;
+
+// React Admin resource configuration
+export interface ResourceConfig {
+  name: string;
+  list?: ComponentType<any>;
+  edit?: ComponentType<any>;
+  create?: ComponentType<any>;
+  show?: ComponentType<any>;
+  icon?: ComponentType<any>;
+  options?: Record<string, unknown>;
+}
+
+// React Admin custom route
+export interface CustomRouteConfig {
+  path: string;
+  component: ComponentType<any>;
+}
+
+// Sidebar menu item
+export interface MenuItemConfig {
+  label: string;
+  to: string;
+  icon?: ComponentType<any>;
+}
+
+// The core contract every module must implement
+export interface ModuleDefinition {
+  /** Unique module identifier: "maps", "players", "inventory" */
+  name: string;
+
+  /** Other modules this one requires (validated at registration) */
+  dependencies?: string[];
+
+  /** Drizzle table definitions keyed by table name */
+  schema: Record<string, unknown>;
+
+  /** Optional seed function */
+  seed?: (db: any) => Promise<void>;
+
+  /** React Admin CRUD resources */
+  resources: ResourceConfig[];
+
+  /** React Admin custom pages */
+  customRoutes?: CustomRouteConfig[];
+
+  /** Sidebar navigation entries */
+  menuItems?: MenuItemConfig[];
+
+  /** Next.js API route handlers grouped by route pattern */
+  apiHandlers: ApiHandlerMap;
+
+  /** Event bus integration */
+  events?: {
+    /** Events this module emits (for documentation/discovery) */
+    emits?: string[];
+    /** Event listeners: event name → handler */
+    listeners?: Record<string, EventHandler<EventPayload>>;
+  };
+}

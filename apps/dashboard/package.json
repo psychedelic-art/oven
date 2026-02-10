@@ -1,0 +1,39 @@
+{
+  "name": "@oven/dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:push": "drizzle-kit push",
+    "db:seed": "tsx src/lib/seed.ts",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.0",
+    "@oven/module-maps": "workspace:*",
+    "@oven/module-players": "workspace:*",
+    "@oven/module-registry": "workspace:*",
+    "@vercel/blob": "^2.2.0",
+    "drizzle-orm": "^0.38.0",
+    "next": "^15.3.0",
+    "ra-data-simple-rest": "^5.5.0",
+    "react": "^19.0.0",
+    "react-admin": "^5.5.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.0.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "dotenv": "^17.2.4",
+    "drizzle-kit": "^0.30.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^15.3.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
