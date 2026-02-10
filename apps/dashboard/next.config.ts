@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
     '@oven/module-registry',
     '@oven/module-maps',
     '@oven/module-players',
+    '@oven/module-sessions',
+    '@oven/module-player-map-position',
+    '@oven/map-editor',
   ],
 };
 

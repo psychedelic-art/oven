@@ -7,6 +7,8 @@ export default defineConfig({
     '../../packages/module-registry/src/schema.ts',
     '../../packages/module-maps/src/schema.ts',
     '../../packages/module-players/src/schema.ts',
+    '../../packages/module-sessions/src/schema.ts',
+    '../../packages/module-player-map-position/src/schema.ts',
   ],
   out: './drizzle',
   dbCredentials: {

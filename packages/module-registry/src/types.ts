@@ -38,6 +38,32 @@ export interface MenuItemConfig {
   icon?: ComponentType<any>;
 }
 
+/**
+ * Describes a single parameter in an event payload.
+ * Used for documentation, autocomplete, and wiring transform hints.
+ */
+export interface EventParamSchema {
+  /** JS type: 'number' | 'string' | 'boolean' | 'object' | 'array' */
+  type: 'number' | 'string' | 'boolean' | 'object' | 'array';
+  /** Human-readable description shown in UI */
+  description?: string;
+  /** Whether this field is always present */
+  required?: boolean;
+  /** Example value for documentation */
+  example?: unknown;
+}
+
+/**
+ * Describes the full payload contract for a single event.
+ * Keys are the parameter names, values describe the parameter.
+ */
+export type EventPayloadSchema = Record<string, EventParamSchema>;
+
+/**
+ * Map of event name → payload schema for all events a module emits.
+ */
+export type EventSchemaMap = Record<string, EventPayloadSchema>;
+
 // The core contract every module must implement
 export interface ModuleDefinition {
   /** Unique module identifier: "maps", "players", "inventory" */
@@ -70,5 +96,11 @@ export interface ModuleDefinition {
     emits?: string[];
     /** Event listeners: event name → handler */
     listeners?: Record<string, EventHandler<EventPayload>>;
+    /**
+     * Typed parameter schemas for emitted events.
+     * Used by the wiring editor for autocomplete and transform validation.
+     * Key = full event name (e.g. "maps.tile.created"), value = param schema.
+     */
+    schemas?: EventSchemaMap;
   };
 }

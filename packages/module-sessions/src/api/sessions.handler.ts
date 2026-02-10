@@ -13,8 +13,13 @@ export async function GET(request: NextRequest) {
 
   let query = db.select().from(playerSessions).orderBy(orderFn);
 
-  if (params.filter.player_id) {
-    query = query.where(eq(playerSessions.playerId, params.filter.player_id as number));
+  if (params.filter.player_id || params.filter.playerId) {
+    const pid = (params.filter.player_id ?? params.filter.playerId) as number;
+    query = query.where(eq(playerSessions.playerId, pid));
+  }
+  if (params.filter.map_id || params.filter.mapId) {
+    const mid = (params.filter.map_id ?? params.filter.mapId) as number;
+    query = query.where(eq(playerSessions.mapId, mid));
   }
 
   const [data, countResult] = await Promise.all([
@@ -23,4 +28,21 @@ export async function GET(request: NextRequest) {
   ]);
 
   return listResponse(data, 'sessions', params, countResult[0].count);
+}
+
+export async function POST(request: NextRequest) {
+  const db = getDb();
+  const body = await request.json();
+
+  const [result] = await db
+    .insert(playerSessions)
+    .values({
+      playerId: body.playerId,
+      mapId: body.mapId,
+      startTileX: body.startTileX ?? 0,
+      startTileY: body.startTileY ?? 0,
+    })
+    .returning();
+
+  return NextResponse.json(result, { status: 201 });
 }

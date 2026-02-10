@@ -1,14 +1,60 @@
 'use client';
 
-import { Admin, Resource, CustomRoutes, Layout, ListGuesser, EditGuesser, ShowGuesser } from 'react-admin';
+import { Admin, Resource, CustomRoutes, Layout } from 'react-admin';
 import { Route } from 'react-router-dom';
 import { dataProvider } from '@/providers/dataProvider';
 import ModuleManager from './ModuleManager';
+import MapEditorPage from './maps/MapEditorPage';
 import CustomMenu from './CustomMenu';
+
+// Tiles
 import TileList from './tiles/TileList';
 import TileEdit from './tiles/TileEdit';
 import TileCreate from './tiles/TileCreate';
 import TileShow from './tiles/TileShow';
+
+// World Configs
+import WorldConfigList from './world-configs/WorldConfigList';
+import WorldConfigCreate from './world-configs/WorldConfigCreate';
+import WorldConfigEdit from './world-configs/WorldConfigEdit';
+import WorldConfigShow from './world-configs/WorldConfigShow';
+
+// Maps
+import MapList from './maps/MapList';
+import MapCreate from './maps/MapCreate';
+import MapEdit from './maps/MapEdit';
+import MapShow from './maps/MapShow';
+
+// Players
+import PlayerList from './players/PlayerList';
+import PlayerCreate from './players/PlayerCreate';
+import PlayerEdit from './players/PlayerEdit';
+import PlayerShow from './players/PlayerShow';
+
+// Sessions
+import SessionList from './sessions/SessionList';
+import SessionCreate from './sessions/SessionCreate';
+import SessionEdit from './sessions/SessionEdit';
+import SessionShow from './sessions/SessionShow';
+
+// Map Assignments
+import MapAssignmentList from './map-assignments/MapAssignmentList';
+import MapAssignmentCreate from './map-assignments/MapAssignmentCreate';
+import MapAssignmentEdit from './map-assignments/MapAssignmentEdit';
+import MapAssignmentShow from './map-assignments/MapAssignmentShow';
+
+// Player Positions (read-only)
+import PositionList from './player-positions/PositionList';
+import PositionShow from './player-positions/PositionShow';
+
+// Icons
+import GridViewIcon from '@mui/icons-material/GridView';
+import TuneIcon from '@mui/icons-material/Tune';
+import MapIcon from '@mui/icons-material/Map';
+import PeopleIcon from '@mui/icons-material/People';
+import PlayCircleIcon from '@mui/icons-material/PlayCircle';
+import PinDropIcon from '@mui/icons-material/PinDrop';
+import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 
 const CustomLayout = (props: any) => <Layout {...props} menu={CustomMenu} />;
 
@@ -19,6 +65,7 @@ export default function AdminApp() {
       <Resource
         name="tiles"
         options={{ label: 'Tile Definitions' }}
+        icon={GridViewIcon}
         list={TileList}
         edit={TileEdit}
         create={TileCreate}
@@ -27,36 +74,66 @@ export default function AdminApp() {
       <Resource
         name="world-configs"
         options={{ label: 'World Configs' }}
-        list={ListGuesser}
-        edit={EditGuesser}
-        show={ShowGuesser}
+        icon={TuneIcon}
+        list={WorldConfigList}
+        edit={WorldConfigEdit}
+        create={WorldConfigCreate}
+        show={WorldConfigShow}
       />
       <Resource
         name="maps"
         options={{ label: 'Maps' }}
-        list={ListGuesser}
-        edit={EditGuesser}
-        show={ShowGuesser}
+        icon={MapIcon}
+        list={MapList}
+        edit={MapEdit}
+        create={MapCreate}
+        show={MapShow}
       />
 
       {/* Players Module Resources */}
       <Resource
         name="players"
         options={{ label: 'Players' }}
-        list={ListGuesser}
-        edit={EditGuesser}
-        show={ShowGuesser}
+        icon={PeopleIcon}
+        list={PlayerList}
+        edit={PlayerEdit}
+        create={PlayerCreate}
+        show={PlayerShow}
       />
+
+      {/* Sessions Module Resources */}
       <Resource
         name="sessions"
         options={{ label: 'Sessions' }}
-        list={ListGuesser}
-        show={ShowGuesser}
+        icon={PlayCircleIcon}
+        list={SessionList}
+        edit={SessionEdit}
+        create={SessionCreate}
+        show={SessionShow}
+      />
+
+      {/* Player Map Position Module Resources */}
+      <Resource
+        name="map-assignments"
+        options={{ label: 'Map Assignments' }}
+        icon={PinDropIcon}
+        list={MapAssignmentList}
+        edit={MapAssignmentEdit}
+        create={MapAssignmentCreate}
+        show={MapAssignmentShow}
+      />
+      <Resource
+        name="player-positions"
+        options={{ label: 'Player Positions' }}
+        icon={GpsFixedIcon}
+        list={PositionList}
+        show={PositionShow}
       />
 
       {/* Custom Pages */}
       <CustomRoutes>
         <Route path="/modules" element={<ModuleManager />} />
+        <Route path="/maps/:id/editor" element={<MapEditorPage />} />
       </CustomRoutes>
     </Admin>
   );

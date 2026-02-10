@@ -92,6 +92,20 @@ class ModuleRegistry {
     );
   }
 
+  /**
+   * Get all event payload schemas from all registered modules.
+   * Returns a flat map of eventName → payload schema.
+   */
+  getAllEventSchemas(): Record<string, Record<string, { type: string; description?: string; required?: boolean; example?: unknown }>> {
+    const schemas: Record<string, Record<string, { type: string; description?: string; required?: boolean; example?: unknown }>> = {};
+    for (const mod of this.getAll()) {
+      if (mod.events?.schemas) {
+        Object.assign(schemas, mod.events.schemas);
+      }
+    }
+    return schemas;
+  }
+
   async seedAll(db: any): Promise<void> {
     for (const mod of this.getAll()) {
       if (mod.seed) {

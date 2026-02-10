@@ -12,17 +12,25 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.7",
+    "@mui/material": "^7.3.7",
     "@neondatabase/serverless": "^0.10.0",
+    "@oven/map-editor": "workspace:*",
     "@oven/module-maps": "workspace:*",
+    "@oven/module-player-map-position": "workspace:*",
     "@oven/module-players": "workspace:*",
     "@oven/module-registry": "workspace:*",
+    "@oven/module-sessions": "workspace:*",
     "@vercel/blob": "^2.2.0",
     "drizzle-orm": "^0.38.0",
     "next": "^15.3.0",
     "ra-data-simple-rest": "^5.5.0",
     "react": "^19.0.0",
     "react-admin": "^5.5.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.13.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.0.0",

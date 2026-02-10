@@ -10,6 +10,9 @@ export type {
   MenuItemConfig,
   RouteHandler,
   ApiHandlerMap,
+  EventParamSchema,
+  EventPayloadSchema,
+  EventSchemaMap,
 } from './types';
 export type { EventPayload, EventHandler, EventLog } from './event-bus';
 export type { WiringRecord } from './wiring-runtime';

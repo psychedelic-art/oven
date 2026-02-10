@@ -9,6 +9,7 @@ export async function GET() {
     listeners: registry.getAllListenedEvents(),
     registeredEvents: eventBus.getRegisteredEvents(),
     recentLog: eventBus.getLog(20),
+    schemas: registry.getAllEventSchemas(),
   });
 }
 

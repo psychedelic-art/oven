@@ -12,6 +12,7 @@ export async function GET() {
     events: {
       emits: mod.events?.emits ?? [],
       listens: Object.keys(mod.events?.listeners ?? {}),
+      schemas: mod.events?.schemas ?? {},
     },
     tableCount: Object.keys(mod.schema).length,
   }));

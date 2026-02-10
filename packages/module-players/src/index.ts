@@ -1,12 +1,32 @@
-import type { ModuleDefinition } from '@oven/module-registry';
+import type { ModuleDefinition, EventSchemaMap } from '@oven/module-registry';
 import { playersSchema } from './schema';
 import { seedPlayers } from './seed';
 import * as playersHandler from './api/players.handler';
 import * as playersByIdHandler from './api/players-by-id.handler';
-import * as playersPositionsHandler from './api/players-positions.handler';
-import * as sessionsHandler from './api/sessions.handler';
-import * as sessionsByIdHandler from './api/sessions-by-id.handler';
-import * as sessionsActiveHandler from './api/sessions-active.handler';
+
+// NOTE: Sessions moved to @oven/module-sessions
+// NOTE: Positions moved to @oven/module-player-map-position
+
+const eventSchemas: EventSchemaMap = {
+  'players.player.created': {
+    id: { type: 'number', description: 'Player DB ID', required: true, example: 1 },
+    username: { type: 'string', description: 'Unique username', required: true, example: 'hero42' },
+    displayName: { type: 'string', description: 'Display name', required: true, example: 'Hero42' },
+    status: { type: 'string', description: 'Player status', required: true, example: 'active' },
+  },
+  'players.player.updated': {
+    id: { type: 'number', description: 'Player DB ID', required: true },
+    username: { type: 'string', description: 'Unique username', required: true },
+    displayName: { type: 'string', description: 'Display name', required: true },
+    status: { type: 'string', description: 'Player status', required: true },
+    totalPlayTimeSeconds: { type: 'number', description: 'Total play time in seconds', required: true },
+  },
+  'players.player.banned': {
+    id: { type: 'number', description: 'Player DB ID', required: true },
+    username: { type: 'string', description: 'Unique username', required: true },
+    status: { type: 'string', description: 'Always "banned"', required: true, example: 'banned' },
+  },
+};
 
 export const playersModule: ModuleDefinition = {
   name: 'players',
@@ -15,35 +35,26 @@ export const playersModule: ModuleDefinition = {
   seed: seedPlayers,
   resources: [
     { name: 'players', options: { label: 'Players' } },
-    { name: 'sessions', options: { label: 'Sessions' } },
   ],
   menuItems: [
     { label: 'Players', to: '/players' },
-    { label: 'Sessions', to: '/sessions' },
   ],
   events: {
     emits: [
       'players.player.created',
       'players.player.updated',
       'players.player.banned',
-      'players.session.started',
-      'players.session.ended',
-      'players.position.recorded',
     ],
+    schemas: eventSchemas,
     listeners: {
       'maps.config.activated': async (payload) => {
         console.log(`[players] Map config activated:`, payload);
-        // Could auto-update player defaults, reset positions, etc.
       },
     },
   },
   apiHandlers: {
     'players': { GET: playersHandler.GET, POST: playersHandler.POST },
     'players/[id]': { GET: playersByIdHandler.GET, PUT: playersByIdHandler.PUT },
-    'players/[id]/positions': { GET: playersPositionsHandler.GET, POST: playersPositionsHandler.POST },
-    'sessions': { GET: sessionsHandler.GET },
-    'sessions/[id]': { GET: sessionsByIdHandler.GET },
-    'sessions/active': { GET: sessionsActiveHandler.GET },
   },
 };
 

@@ -82,7 +82,8 @@ export const maps = pgTable('maps', {
   worldConfigId: integer('world_config_id').references(() => worldConfigs.id),
   mode: varchar('mode', { length: 20 }).notNull().default('discovery'),
   seed: integer('seed'),
-  boundsMinX: integer('bounds_min_x'),
+  bounds: jsonb('bounds'), // { type: 'rect', minX, minY, maxX, maxY } or { type: 'polygon', points: [[x,y], ...] }
+  boundsMinX: integer('bounds_min_x'), // Computed bounding box (backward compat)
   boundsMinY: integer('bounds_min_y'),
   boundsMaxX: integer('bounds_max_x'),
   boundsMaxY: integer('bounds_max_y'),

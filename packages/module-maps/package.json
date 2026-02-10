@@ -12,7 +12,8 @@
   "dependencies": {
     "@oven/module-registry": "workspace:*",
     "drizzle-orm": "^0.38.0",
-    "@neondatabase/serverless": "^0.10.0"
+    "@neondatabase/serverless": "^0.10.0",
+    "simplex-noise": "^4.0.3"
   },
   "peerDependencies": {
     "next": ">=15.0.0",

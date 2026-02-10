@@ -1,8 +1,20 @@
-# Plan: Build the Tile World System (Phases 1-3 + Movement)
+# Maps Module — Implementation Result
 
-## Context
+## Result Summary
 
-The Oven project is a real-time action RPG on a tile grid. The Unity client at `D:\Games\Learning\Oven\oven-unity\` has URP 2D configured, Input System ready, and a full folder structure scaffolded — but **zero C# files exist yet**. Step 1.1 (folder structure) is complete. This plan implements Steps 1.2 through 3.3 plus basic movement, resulting in a **playable demo where you WASD-walk around an infinite procedurally-generated tile world**.
+The tile world system (Phases 1-3) is **complete and working**. The Unity client has 25+ C# scripts implementing an infinite procedurally-generated tile world with WASD movement, chunk streaming, and a tilemap pooling system. The dashboard has a `module-maps` package with 4 database tables (`tile_definitions`, `world_configs`, `maps`, `map_chunks`), 9 API handlers, and 9 emitted events.
+
+### What Was Built
+- **Unity**: Infinite procedural world with Perlin noise terrain (Water, Dirt, Grass, Stone, Flower, Rock tiles)
+- **Dashboard**: Full CRUD for tiles (with Vercel Blob sprite uploads), world configs, and maps
+- **Server ↔ Unity**: `ServerTileRegistry` fetches tile definitions from API; `SpriteCacheManager` caches sprites to disk
+- **Two modes**: Offline (procedural `RuntimeTileRegistry`) and Online (server-backed `ServerTileRegistry`)
+
+---
+
+## Original Implementation Plan
+
+The Oven project is a real-time action RPG on a tile grid. The Unity client at `D:\Games\Learning\Oven\oven-unity\` has URP 2D configured, Input System ready, and a full folder structure scaffolded. This plan implemented Steps 1.2 through 3.3 plus basic movement, resulting in a **playable demo where you WASD-walk around an infinite procedurally-generated tile world**.
 
 ---
 
@@ -120,15 +132,15 @@ Only one manual step after all code is written:
 ## Verification
 
 After implementation, enter Play Mode and confirm:
-- [ ] 25 chunks render around origin (colored tiles: green grass, brown dirt, blue water, gray stone)
-- [ ] WASD moves the gold player square smoothly
-- [ ] Camera follows the player
-- [ ] Walking into water is blocked (wall-sliding works on diagonals)
-- [ ] Moving to new chunk boundaries triggers chunk streaming (new chunks appear, distant ones disappear)
-- [ ] Walking far in any direction works infinitely — no edge, no errors
-- [ ] DebugHUD shows correct tile/chunk coordinates including negatives
-- [ ] No frame drops during chunk streaming (rate-limited to 2/frame)
-- [ ] Console has no errors or warnings
+- [x] 25 chunks render around origin (colored tiles: green grass, brown dirt, blue water, gray stone)
+- [x] WASD moves the gold player square smoothly
+- [x] Camera follows the player
+- [x] Walking into water is blocked (wall-sliding works on diagonals)
+- [x] Moving to new chunk boundaries triggers chunk streaming (new chunks appear, distant ones disappear)
+- [x] Walking far in any direction works infinitely — no edge, no errors
+- [x] DebugHUD shows correct tile/chunk coordinates including negatives
+- [x] No frame drops during chunk streaming (rate-limited to 2/frame)
+- [x] Console has no errors or warnings
 
 ---
 
