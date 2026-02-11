@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
 import { notFound } from '@oven/module-registry/api-utils';
+import { eventBus } from '@oven/module-registry/event-bus';
 import { playerMapAssignments } from '../schema';
 
 export async function GET(
@@ -43,6 +44,19 @@ export async function PUT(
     })
     .where(eq(playerMapAssignments.id, assignmentId))
     .returning();
+
+  // Emit position.player.left if assignment was deactivated
+  if (body.isActive === false) {
+    await eventBus.emit('position.player.left', {
+      id: result.id,
+      playerId: result.playerId,
+      mapId: result.mapId,
+      isActive: false,
+      leftAt: result.leftAt,
+      currentTileX: result.currentTileX,
+      currentTileY: result.currentTileY,
+    });
+  }
 
   return NextResponse.json(result);
 }

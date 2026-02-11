@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
 import { notFound } from '@oven/module-registry/api-utils';
+import { eventBus } from '@oven/module-registry/event-bus';
 import { playerSessions } from '../schema';
 
 export async function GET(
@@ -44,6 +45,20 @@ export async function PUT(
     })
     .where(eq(playerSessions.id, sessionId))
     .returning();
+
+  // Emit session.ended if endedAt was set (session is being closed)
+  if (body.endedAt) {
+    await eventBus.emit('sessions.session.ended', {
+      id: result.id,
+      playerId: result.playerId,
+      mapId: result.mapId,
+      endTileX: result.endTileX,
+      endTileY: result.endTileY,
+      tilesTraveled: result.tilesTraveled,
+      chunksLoaded: result.chunksLoaded,
+      endedAt: result.endedAt,
+    });
+  }
 
   return NextResponse.json(result);
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sql, asc, desc, eq, and } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
 import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+import { eventBus } from '@oven/module-registry/event-bus';
 import { playerMapAssignments } from '../schema';
 
 export async function GET(request: NextRequest) {
@@ -57,6 +58,16 @@ export async function POST(request: NextRequest) {
       isActive: true,
     })
     .returning();
+
+  await eventBus.emit('position.player.assigned', {
+    id: result.id,
+    playerId: result.playerId,
+    mapId: result.mapId,
+    isActive: result.isActive,
+    spawnTileX: result.spawnTileX,
+    spawnTileY: result.spawnTileY,
+    assignedAt: result.assignedAt,
+  });
 
   return NextResponse.json(result, { status: 201 });
 }

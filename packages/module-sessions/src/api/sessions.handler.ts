@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sql, asc, desc, eq, isNull } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
 import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+import { eventBus } from '@oven/module-registry/event-bus';
 import { playerSessions } from '../schema';
 
 export async function GET(request: NextRequest) {
@@ -43,6 +44,15 @@ export async function POST(request: NextRequest) {
       startTileY: body.startTileY ?? 0,
     })
     .returning();
+
+  await eventBus.emit('sessions.session.started', {
+    id: result.id,
+    playerId: result.playerId,
+    mapId: result.mapId,
+    startTileX: result.startTileX,
+    startTileY: result.startTileY,
+    startedAt: result.startedAt,
+  });
 
   return NextResponse.json(result, { status: 201 });
 }

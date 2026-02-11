@@ -1,0 +1,25 @@
+{
+  "name": "@oven/module-workflows",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts",
+    "./engine": "./src/engine.ts",
+    "./node-registry": "./src/node-registry.ts",
+    "./types": "./src/types.ts",
+    "./api/*": "./src/api/*"
+  },
+  "dependencies": {
+    "@oven/module-registry": "workspace:*",
+    "drizzle-orm": "^0.38.0",
+    "@neondatabase/serverless": "^0.10.0",
+    "xstate": "^5.19.0"
+  },
+  "peerDependencies": {
+    "next": ">=15.0.0",
+    "react": ">=19.0.0"
+  }
+}

@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
     '@oven/module-sessions',
     '@oven/module-player-map-position',
     '@oven/map-editor',
+    '@oven/module-workflows',
+    '@oven/workflow-editor',
   ],
 };
 

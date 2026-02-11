@@ -1,4 +1,4 @@
-import type { ModuleDefinition, EventSchemaMap } from '@oven/module-registry';
+import type { ModuleDefinition, EventSchemaMap, ConfigSchemaEntry } from '@oven/module-registry';
 import { sessionsSchema } from './schema';
 import { seedSessions } from './seed';
 import * as sessionsHandler from './api/sessions.handler';
@@ -27,11 +27,29 @@ const eventSchemas: EventSchemaMap = {
   },
 };
 
+const configSchema: ConfigSchemaEntry[] = [
+  {
+    key: 'SESSION_TTL_SECONDS',
+    type: 'number',
+    description: 'Seconds of inactivity before session auto-expires',
+    defaultValue: 300,
+    instanceScoped: false,
+  },
+  {
+    key: 'SESSION_WARNING_SECONDS',
+    type: 'number',
+    description: 'Seconds of inactivity before showing expiry warning in UI',
+    defaultValue: 240,
+    instanceScoped: false,
+  },
+];
+
 export const sessionsModule: ModuleDefinition = {
   name: 'sessions',
   dependencies: ['maps', 'players'],
   schema: sessionsSchema,
   seed: seedSessions,
+  configSchema,
   resources: [
     { name: 'sessions', options: { label: 'Sessions' } },
   ],

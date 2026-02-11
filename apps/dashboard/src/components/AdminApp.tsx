@@ -5,6 +5,7 @@ import { Route } from 'react-router-dom';
 import { dataProvider } from '@/providers/dataProvider';
 import ModuleManager from './ModuleManager';
 import MapEditorPage from './maps/MapEditorPage';
+import WorkflowEditorPage from './workflows/WorkflowEditorPage';
 import CustomMenu from './CustomMenu';
 
 // Tiles
@@ -47,6 +48,19 @@ import MapAssignmentShow from './map-assignments/MapAssignmentShow';
 import PositionList from './player-positions/PositionList';
 import PositionShow from './player-positions/PositionShow';
 
+// Workflows
+import WorkflowList from './workflows/WorkflowList';
+import WorkflowCreate from './workflows/WorkflowCreate';
+import WorkflowEdit from './workflows/WorkflowEdit';
+import WorkflowShow from './workflows/WorkflowShow';
+import ExecutionList from './workflows/ExecutionList';
+import ExecutionShow from './workflows/ExecutionShow';
+
+// Module Configs
+import ConfigList from './module-configs/ConfigList';
+import ConfigCreate from './module-configs/ConfigCreate';
+import ConfigEdit from './module-configs/ConfigEdit';
+
 // Icons
 import GridViewIcon from '@mui/icons-material/GridView';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -55,6 +69,9 @@ import PeopleIcon from '@mui/icons-material/People';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import PinDropIcon from '@mui/icons-material/PinDrop';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import TimelineIcon from '@mui/icons-material/Timeline';
+import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 
 const CustomLayout = (props: any) => <Layout {...props} menu={CustomMenu} />;
 
@@ -130,10 +147,37 @@ export default function AdminApp() {
         show={PositionShow}
       />
 
+      {/* Workflow Module Resources */}
+      <Resource
+        name="workflows"
+        options={{ label: 'Workflows' }}
+        icon={AccountTreeIcon}
+        list={WorkflowList}
+        edit={WorkflowEdit}
+        create={WorkflowCreate}
+        show={WorkflowShow}
+      />
+      <Resource
+        name="workflow-executions"
+        options={{ label: 'Executions' }}
+        icon={TimelineIcon}
+        list={ExecutionList}
+        show={ExecutionShow}
+      />
+      <Resource
+        name="module-configs"
+        options={{ label: 'Module Configs' }}
+        icon={SettingsSuggestIcon}
+        list={ConfigList}
+        edit={ConfigEdit}
+        create={ConfigCreate}
+      />
+
       {/* Custom Pages */}
       <CustomRoutes>
         <Route path="/modules" element={<ModuleManager />} />
         <Route path="/maps/:id/editor" element={<MapEditorPage />} />
+        <Route path="/workflows/:id/editor" element={<WorkflowEditorPage />} />
       </CustomRoutes>
     </Admin>
   );

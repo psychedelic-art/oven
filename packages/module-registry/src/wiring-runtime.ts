@@ -2,7 +2,7 @@ import { eventBus } from './event-bus';
 import type { EventPayload } from './event-bus';
 import { getDb } from './db';
 import { eventWirings } from './schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, isNotNull } from 'drizzle-orm';
 
 export interface WiringRecord {
   id: number;
@@ -68,9 +68,33 @@ function matchesCondition(
  * if any DB-stored wirings should fire for that event.
  * Target actions are emitted as new events: "{targetModule}.{targetAction}"
  */
+/** Workflow trigger record from the workflows table */
+interface WorkflowTrigger {
+  id: number;
+  triggerEvent: string;
+  triggerCondition: Record<string, unknown> | null;
+  enabled: boolean;
+}
+
+/** Lazily-resolved workflow engine reference to avoid circular imports */
+let _workflowEngine: any = null;
+function getWorkflowEngine(): any {
+  if (!_workflowEngine) {
+    try {
+      // Dynamic import — @oven/module-workflows may not be installed
+      _workflowEngine = require('@oven/module-workflows/engine').workflowEngine;
+    } catch {
+      // module-workflows not available — that's OK, just skip
+      _workflowEngine = null;
+    }
+  }
+  return _workflowEngine;
+}
+
 class WiringRuntime {
   private initialized = false;
   private wiringCache: WiringRecord[] = [];
+  private workflowTriggerCache: WorkflowTrigger[] = [];
   private cacheExpiry = 0;
   private cacheTtlMs = 5000; // re-read wirings every 5s
 
@@ -82,13 +106,15 @@ class WiringRuntime {
     if (this.initialized) return;
     this.initialized = true;
 
-    // Patch eventBus.emit to also check wirings
+    // Patch eventBus.emit to also check wirings + workflow triggers
     const originalEmit = eventBus.emit.bind(eventBus);
     eventBus.emit = async (event: string, payload: EventPayload) => {
       // First, run normal handlers
       await originalEmit(event, payload);
-      // Then, check wirings
+      // Then, check simple wirings
       await this.processWirings(event, payload);
+      // Then, check workflow triggers
+      await this.processWorkflowTriggers(event, payload);
     };
   }
 
@@ -175,6 +201,77 @@ class WiringRuntime {
       } catch (err) {
         console.error(
           `[WiringRuntime] Error executing wiring ${wiring.id}:`,
+          err
+        );
+      }
+    }
+  }
+
+  /**
+   * Load workflow triggers from the workflows table (if module-workflows is installed).
+   */
+  private async loadWorkflowTriggers(): Promise<WorkflowTrigger[]> {
+    const now = Date.now();
+    if (now < this.cacheExpiry && this.workflowTriggerCache.length > 0) {
+      return this.workflowTriggerCache;
+    }
+
+    try {
+      const db = getDb();
+      // Try to query the workflows table — it may not exist yet
+      const rows = await db.execute(
+        `SELECT id, trigger_event, trigger_condition, enabled
+         FROM workflows
+         WHERE enabled = true AND trigger_event IS NOT NULL`
+      );
+      this.workflowTriggerCache = (rows.rows || []).map((r: any) => ({
+        id: r.id,
+        triggerEvent: r.trigger_event,
+        triggerCondition: r.trigger_condition,
+        enabled: r.enabled,
+      }));
+      return this.workflowTriggerCache;
+    } catch {
+      // workflows table doesn't exist yet — return empty
+      this.workflowTriggerCache = [];
+      return [];
+    }
+  }
+
+  /**
+   * Check if any workflows should be triggered by this event.
+   */
+  private async processWorkflowTriggers(
+    event: string,
+    payload: EventPayload
+  ): Promise<void> {
+    const engine = getWorkflowEngine();
+    if (!engine) return; // module-workflows not installed
+
+    const triggers = await this.loadWorkflowTriggers();
+    const matching = triggers.filter((w) => w.triggerEvent === event);
+
+    for (const trigger of matching) {
+      // Check trigger condition
+      if (
+        trigger.triggerCondition &&
+        !matchesCondition(payload, trigger.triggerCondition as Record<string, unknown>)
+      ) {
+        continue;
+      }
+
+      try {
+        const executionId = await engine.executeWorkflow(
+          trigger.id,
+          payload,
+          event
+        );
+        console.log(
+          `[WiringRuntime] Workflow ${trigger.id} triggered by ${event} → execution ${executionId}`
+        );
+      } catch (err) {
+        console.error(
+          `[WiringRuntime] Error triggering workflow ${trigger.id}:`,
           err
         );
       }

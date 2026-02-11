@@ -5,6 +5,7 @@ export { wiringRuntime } from './wiring-runtime';
 export { eventWirings, registrySchema } from './schema';
 export type {
   ModuleDefinition,
+  ConfigSchemaEntry,
   ResourceConfig,
   CustomRouteConfig,
   MenuItemConfig,

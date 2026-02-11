@@ -32,6 +32,16 @@ export default function CustomMenu() {
       <Divider sx={{ my: 1 }} />
       <Box sx={{ px: 2, pb: 0.5 }}>
         <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10 }}>
+          Automation
+        </Typography>
+      </Box>
+      <Menu.ResourceItem name="workflows" />
+      <Menu.ResourceItem name="workflow-executions" />
+      <Menu.ResourceItem name="module-configs" />
+
+      <Divider sx={{ my: 1 }} />
+      <Box sx={{ px: 2, pb: 0.5 }}>
+        <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10 }}>
           System
         </Typography>
       </Box>

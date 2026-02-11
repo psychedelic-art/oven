@@ -228,9 +228,42 @@ function TransformBuilder({
         <Button size="small" startIcon={<AddIcon />} onClick={addEntry}>Add Field</Button>
       </Box>
 
+      {/* Available source params quick-reference */}
+      {sourceParams.length > 0 && (
+        <Box sx={{ mb: 1.5, p: 1, bgcolor: 'grey.50', borderRadius: 1, border: '1px dashed', borderColor: 'divider' }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>
+            Available source params (click to add as transform field):
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {Object.entries(sourceSchema).map(([paramKey, param]) => (
+              <Tooltip key={paramKey} title={`${param.type} — ${param.description || 'no description'}`} arrow>
+                <Chip
+                  label={`$.${paramKey}`}
+                  size="small"
+                  variant="outlined"
+                  onClick={() => {
+                    // Add a new transform entry pre-filled with this param
+                    onChange([...entries, { key: paramKey, value: `$.${paramKey}` }]);
+                  }}
+                  sx={{
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                    cursor: 'pointer',
+                    borderColor: param.type === 'number' ? '#2196f3' : param.type === 'string' ? '#4caf50' : param.type === 'boolean' ? '#ff9800' : '#9e9e9e',
+                    color: param.type === 'number' ? '#2196f3' : param.type === 'string' ? '#4caf50' : param.type === 'boolean' ? '#ff9800' : '#9e9e9e',
+                    '&:hover': { bgcolor: 'action.selected' },
+                  }}
+                />
+              </Tooltip>
+            ))}
+          </Box>
+        </Box>
+      )}
+
       {entries.length === 0 && (
         <Alert severity="info" sx={{ fontSize: 12, py: 0 }}>
-          No transform - source payload is passed through as-is
+          No transform — source payload is passed through as-is.
+          {sourceParams.length > 0 && ' Click a param above to start mapping.'}
         </Alert>
       )}
 
@@ -267,7 +300,7 @@ function TransformBuilder({
                   <Box component="code" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>{option}</Box>
                   {schema && (
                     <Box sx={{ ml: 2, fontSize: 11, color: 'text.secondary' }}>
-                      {schema.type} - {schema.description || ''}
+                      {schema.type} — {schema.description || ''}
                     </Box>
                   )}
                 </Box>
@@ -314,9 +347,41 @@ function ConditionBuilder({
         <Button size="small" startIcon={<AddIcon />} onClick={addEntry}>Add Rule</Button>
       </Box>
 
+      {/* Available keys quick-reference */}
+      {sourceKeys.length > 0 && (
+        <Box sx={{ mb: 1.5, p: 1, bgcolor: 'grey.50', borderRadius: 1, border: '1px dashed', borderColor: 'divider' }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>
+            Available payload keys (click to add condition):
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {Object.entries(sourceSchema).map(([paramKey, param]) => (
+              <Tooltip key={paramKey} title={`${param.type} — ${param.description || 'no description'}${param.example !== undefined ? ` (e.g. ${JSON.stringify(param.example)})` : ''}`} arrow>
+                <Chip
+                  label={paramKey}
+                  size="small"
+                  variant="outlined"
+                  onClick={() => {
+                    onChange([...entries, { key: paramKey, value: param.example !== undefined ? String(param.example) : '' }]);
+                  }}
+                  sx={{
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                    cursor: 'pointer',
+                    borderColor: param.type === 'number' ? '#2196f3' : param.type === 'string' ? '#4caf50' : param.type === 'boolean' ? '#ff9800' : '#9e9e9e',
+                    color: param.type === 'number' ? '#2196f3' : param.type === 'string' ? '#4caf50' : param.type === 'boolean' ? '#ff9800' : '#9e9e9e',
+                    '&:hover': { bgcolor: 'action.selected' },
+                  }}
+                />
+              </Tooltip>
+            ))}
+          </Box>
+        </Box>
+      )}
+
       {entries.length === 0 && (
         <Alert severity="info" sx={{ fontSize: 12, py: 0 }}>
-          No condition - wiring fires on every event
+          No condition — wiring fires on every event.
+          {sourceKeys.length > 0 && ' Click a key above to add a filter.'}
         </Alert>
       )}
 
@@ -339,7 +404,7 @@ function ConditionBuilder({
                   <Box component="code" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>{option}</Box>
                   {schema && (
                     <Box sx={{ ml: 2, fontSize: 11, color: 'text.secondary' }}>
-                      {schema.type} - {schema.description || ''}
+                      {schema.type} — {schema.description || ''}
                     </Box>
                   )}
                 </Box>
@@ -354,7 +419,16 @@ function ConditionBuilder({
             value={entry.value}
             onChange={(e: any) => updateEntry(i, 'value', e.target.value)}
             sx={{ flex: 1 }}
-            placeholder="e.g. active"
+            placeholder={
+              sourceSchema[entry.key]?.example !== undefined
+                ? `e.g. ${JSON.stringify(sourceSchema[entry.key].example)}`
+                : 'e.g. active'
+            }
+            helperText={
+              sourceSchema[entry.key]
+                ? `${sourceSchema[entry.key].type}${sourceSchema[entry.key].description ? ' — ' + sourceSchema[entry.key].description : ''}`
+                : undefined
+            }
           />
           <IconButton size="small" onClick={() => removeEntry(i)} color="error">
             <DeleteIcon fontSize="small" />
@@ -419,6 +493,25 @@ export default function ModuleManager() {
   const allListenerEvents = modules.flatMap((m) =>
     m.events.listens.map((e) => ({ module: m.name, event: e }))
   );
+
+  // Build target actions grouped by module: listens + emits + API routes
+  const targetActionsForModule = useMemo(() => {
+    const map: Record<string, Array<{ action: string; type: 'listens' | 'emits' | 'route'; description?: string }>> = {};
+    for (const mod of modules) {
+      const actions: Array<{ action: string; type: 'listens' | 'emits' | 'route'; description?: string }> = [];
+      for (const e of mod.events.listens) {
+        actions.push({ action: e, type: 'listens', description: 'Built-in listener handler' });
+      }
+      for (const e of mod.events.emits) {
+        actions.push({ action: e, type: 'emits', description: 'Re-emit this event' });
+      }
+      for (const r of mod.apiRoutes) {
+        actions.push({ action: r, type: 'route', description: 'API route handler' });
+      }
+      map[mod.name] = actions;
+    }
+    return map;
+  }, [modules]);
 
   const fireTestEvent = async () => {
     try {
@@ -1099,16 +1192,108 @@ export default function ModuleManager() {
                     ))}
                   </Select>
                 </FormControl>
-                <TextField
-                  label="Target Action"
-                  value={editingWiring.targetAction ?? ''}
-                  onChange={(e: any) => setEditingWiring({ ...editingWiring, targetAction: e.target.value })}
+                <Autocomplete
+                  freeSolo
                   size="small"
+                  options={
+                    editingWiring.targetModule
+                      ? (targetActionsForModule[editingWiring.targetModule] || []).map((a) => a.action)
+                      : []
+                  }
+                  value={editingWiring.targetAction ?? ''}
+                  onInputChange={(_: any, val: string) =>
+                    setEditingWiring({ ...editingWiring, targetAction: val })
+                  }
+                  renderInput={(params: any) => (
+                    <TextField
+                      {...params}
+                      label="Target Action"
+                      placeholder={editingWiring.targetModule ? 'Select or type an action' : 'Select a module first'}
+                      helperText={editingWiring.targetModule ? 'Event or handler on target module' : ''}
+                    />
+                  )}
+                  renderOption={(props: any, option: string) => {
+                    const { key, ...rest } = props;
+                    const actions = editingWiring.targetModule
+                      ? targetActionsForModule[editingWiring.targetModule] || []
+                      : [];
+                    const actionInfo = actions.find((a) => a.action === option);
+                    const typeColor =
+                      actionInfo?.type === 'listens' ? 'info' :
+                      actionInfo?.type === 'emits' ? 'success' : 'default';
+                    const typeLabel =
+                      actionInfo?.type === 'listens' ? 'LISTENER' :
+                      actionInfo?.type === 'emits' ? 'EMITTER' : 'ROUTE';
+                    return (
+                      <Box component="li" key={key} {...rest} sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', gap: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Chip
+                            label={typeLabel}
+                            size="small"
+                            color={typeColor as any}
+                            variant="outlined"
+                            sx={{ fontSize: 9, height: 18, minWidth: 60 }}
+                          />
+                          <Box component="code" sx={{ fontFamily: 'monospace', fontWeight: 600, fontSize: 13 }}>
+                            {option}
+                          </Box>
+                        </Box>
+                        {actionInfo?.description && (
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: 11 }}>
+                            {actionInfo.description}
+                          </Typography>
+                        )}
+                      </Box>
+                    );
+                  }}
+                  groupBy={(option: string) => {
+                    const actions = editingWiring.targetModule
+                      ? targetActionsForModule[editingWiring.targetModule] || []
+                      : [];
+                    const actionInfo = actions.find((a) => a.action === option);
+                    return actionInfo?.type === 'listens' ? 'Listeners (built-in handlers)'
+                      : actionInfo?.type === 'emits' ? 'Emitted Events (re-emit / chain)'
+                      : 'API Routes';
+                  }}
+                  disabled={!editingWiring.targetModule}
                   sx={{ flex: 1.5 }}
-                  placeholder="e.g. player.notified"
-                  helperText="Event emitted on target module"
                 />
               </Stack>
+
+              {/* Show what the target module listens to */}
+              {editingWiring.targetModule && (
+                <Box sx={{ mt: 1.5 }}>
+                  {(() => {
+                    const targetMod = modules.find((m) => m.name === editingWiring.targetModule);
+                    if (!targetMod) return null;
+                    const actions = targetActionsForModule[editingWiring.targetModule] || [];
+                    const listeners = actions.filter((a) => a.type === 'listens');
+                    if (listeners.length === 0) return (
+                      <Typography variant="caption" color="text.secondary" fontStyle="italic">
+                        This module has no built-in listeners. You can type a custom action name.
+                      </Typography>
+                    );
+                    return (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ mr: 0.5 }}>
+                          Suggested:
+                        </Typography>
+                        {listeners.map((l) => (
+                          <Chip
+                            key={l.action}
+                            label={l.action}
+                            size="small"
+                            variant={editingWiring.targetAction === l.action ? 'filled' : 'outlined'}
+                            color="info"
+                            onClick={() => setEditingWiring({ ...editingWiring, targetAction: l.action })}
+                            sx={{ fontSize: 11, cursor: 'pointer' }}
+                          />
+                        ))}
+                      </Box>
+                    );
+                  })()}
+                </Box>
+              )}
             </Paper>
 
             {/* Transform Builder */}

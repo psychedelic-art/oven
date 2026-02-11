@@ -1,4 +1,4 @@
-import type { ModuleDefinition, EventSchemaMap } from '@oven/module-registry';
+import type { ModuleDefinition, EventSchemaMap, ConfigSchemaEntry } from '@oven/module-registry';
 import { mapsSchema } from './schema';
 import { seedMaps } from './seed';
 import * as tilesHandler from './api/tiles.handler';
@@ -70,10 +70,36 @@ const eventSchemas: EventSchemaMap = {
   },
 };
 
+const configSchema: ConfigSchemaEntry[] = [
+  {
+    key: 'START_CELL_POSITION',
+    type: 'object',
+    description: 'Default spawn tile position for new players on a map',
+    defaultValue: { x: 0, y: 0 },
+    instanceScoped: true, // per-map override via scopeId=mapId
+    example: { x: 16, y: 16 },
+  },
+  {
+    key: 'MAX_DISCOVERY_CHUNKS',
+    type: 'number',
+    description: 'Maximum chunks a discovery map can auto-generate',
+    defaultValue: 10000,
+    instanceScoped: true,
+  },
+  {
+    key: 'DEFAULT_SPAWN_RADIUS',
+    type: 'number',
+    description: 'Radius around spawn to pre-load chunks',
+    defaultValue: 2,
+    instanceScoped: false,
+  },
+];
+
 export const mapsModule: ModuleDefinition = {
   name: 'maps',
   schema: mapsSchema,
   seed: seedMaps,
+  configSchema,
   resources: [
     { name: 'tiles', options: { label: 'Tile Definitions' } },
     { name: 'world-configs', options: { label: 'World Configs' } },

@@ -64,6 +64,27 @@ export type EventPayloadSchema = Record<string, EventParamSchema>;
  */
 export type EventSchemaMap = Record<string, EventPayloadSchema>;
 
+/**
+ * Describes a single config entry that a module supports.
+ * Acts as a typed contract for the module's configurable constants.
+ * Values are stored in the moduleConfigs table with 3-tier cascade:
+ *   instance (per mapId/playerId) → module-level → schema default
+ */
+export interface ConfigSchemaEntry {
+  /** Config key identifier, e.g., "START_CELL_POSITION" */
+  key: string;
+  /** JS type of the value */
+  type: 'number' | 'string' | 'boolean' | 'object' | 'array';
+  /** Human-readable description */
+  description: string;
+  /** Default value when no DB row exists (schema-level default) */
+  defaultValue: unknown;
+  /** If true, can be overridden per instance (e.g., per mapId, per playerId) */
+  instanceScoped?: boolean;
+  /** Example value for documentation/UI */
+  example?: unknown;
+}
+
 // The core contract every module must implement
 export interface ModuleDefinition {
   /** Unique module identifier: "maps", "players", "inventory" */
@@ -89,6 +110,9 @@ export interface ModuleDefinition {
 
   /** Next.js API route handlers grouped by route pattern */
   apiHandlers: ApiHandlerMap;
+
+  /** Typed config schema — declares available config keys and their defaults */
+  configSchema?: ConfigSchemaEntry[];
 
   /** Event bus integration */
   events?: {

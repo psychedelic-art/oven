@@ -23,6 +23,8 @@
     "@oven/module-players": "workspace:*",
     "@oven/module-registry": "workspace:*",
     "@oven/module-sessions": "workspace:*",
+    "@oven/module-workflows": "workspace:*",
+    "@oven/workflow-editor": "workspace:*",
     "@vercel/blob": "^2.2.0",
     "drizzle-orm": "^0.38.0",
     "next": "^15.3.0",
