@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { workflows, moduleConfigs } from './schema';
 
 /**
@@ -9,6 +10,17 @@ import { workflows, moduleConfigs } from './schema';
  */
 export async function seedWorkflows(db: any): Promise<void> {
   // ─── Workflow 1: player-spawn ──────────────────────────────────
+  //
+  // Flow: checkActiveSession → evaluateActiveSession
+  //   ├─ has active session → saveOldSessionId → endOldSession → checkLastPosition
+  //   └─ no active session → checkLastPosition
+  //
+  // checkLastPosition (fetch active assignment) → evaluateLastPosition
+  //   ├─ has position data → useLastPosition → setSpawnY → createSession
+  //   └─ no position → resolveSpawnConfig → extractSpawnFromConfig → createSession
+  //
+  // createSession → saveSessionId → createAssignment → saveAssignmentId → done
+  //
   const playerSpawnDefinition = {
     initial: 'checkActiveSession',
     payloadSchema: [
@@ -16,6 +28,7 @@ export async function seedWorkflows(db: any): Promise<void> {
       { name: 'mapId', type: 'number', required: true },
     ],
     states: {
+      // Step 1: Check if player has any active sessions
       checkActiveSession: {
         invoke: {
           src: 'sessions.getActive',
@@ -23,51 +36,67 @@ export async function seedWorkflows(db: any): Promise<void> {
           onDone: 'evaluateActiveSession',
         },
       },
+      // Step 2: Branch — sessions.getActive returns array, spread gives {0: {...}}
       evaluateActiveSession: {
         always: [
           {
-            // sessions.getActive returns array; spread into context gives {0: {...}, 1: {...}}
             guard: { params: { key: '0', operator: 'exists' } },
-            target: 'endExistingSession',
+            target: 'saveOldSessionId',
           },
-          { target: 'resolveSpawnConfig' },
+          { target: 'checkLastPosition' },
         ],
       },
-      endExistingSession: {
+      // Step 3a: Save the old session ID before ending it
+      saveOldSessionId: {
         invoke: {
-          src: 'core.sql',
-          input: {
-            query:
-              "UPDATE player_sessions SET ended_at = NOW() WHERE player_id = $1 AND ended_at IS NULL",
-            params: ['$.playerId'],
-          },
-          onDone: 'resolveSpawnConfig',
+          src: 'core.setVariable',
+          input: { name: 'oldSessionId', value: '$.0.id' },
+          onDone: 'endOldSession',
         },
       },
-      resolveSpawnConfig: {
+      // Step 3b: End old session via API (PUT sessions/[id] with endedAt: "now")
+      endOldSession: {
+        invoke: {
+          src: 'sessions.update',
+          input: { id: '$.oldSessionId', endedAt: 'now' },
+          onDone: 'checkLastPosition',
+        },
+      },
+      // Step 4: Fetch active assignment to get last known position
+      // positions.assignments.getActive returns single object or null
+      checkLastPosition: {
+        invoke: {
+          src: 'positions.assignments.getActive',
+          input: { playerId: '$.playerId' },
+          onDone: 'evaluateLastPosition',
+        },
+      },
+      // Step 5: Branch — single object spread gives {currentTileX: N, ...} or {result: null}
+      evaluateLastPosition: {
         always: [
           {
-            // assignments.getActive returns array; check if first element has position data
-            guard: { params: { key: '0.currentTileX', operator: 'exists' } },
+            guard: { params: { key: 'currentTileX', operator: 'exists' } },
             target: 'useLastPosition',
           },
           { target: 'resolveSpawnConfig' },
         ],
       },
+      // Step 6a: Use last known position from assignment
       useLastPosition: {
         invoke: {
           src: 'core.setVariable',
-          input: { name: 'spawnX', value: '$.0.currentTileX' },
+          input: { name: 'spawnX', value: '$.currentTileX' },
           onDone: 'setSpawnY',
         },
       },
       setSpawnY: {
         invoke: {
           src: 'core.setVariable',
-          input: { name: 'spawnY', value: '$.0.currentTileY' },
+          input: { name: 'spawnY', value: '$.currentTileY' },
           onDone: 'createSession',
         },
       },
+      // Step 6b: No last position — resolve from module config
       resolveSpawnConfig: {
         invoke: {
           src: 'core.resolveConfig',
@@ -91,6 +120,7 @@ export async function seedWorkflows(db: any): Promise<void> {
           onDone: 'createSession',
         },
       },
+      // Step 7: Create new session
       createSession: {
         invoke: {
           src: 'sessions.create',
@@ -110,6 +140,7 @@ export async function seedWorkflows(db: any): Promise<void> {
           onDone: 'createAssignment',
         },
       },
+      // Step 8: Create map assignment
       createAssignment: {
         invoke: {
           src: 'positions.assignments.create',
@@ -191,6 +222,8 @@ export async function seedWorkflows(db: any): Promise<void> {
   };
 
   // ─── Workflow 3: session-resume ────────────────────────────────
+  // sessions.getActive returns array; spread gives {0: {...}, 1: {...}}
+  // positions.assignments.getActive returns single object or null
   const sessionResumeDefinition = {
     initial: 'checkActiveSession',
     payloadSchema: [
@@ -207,7 +240,8 @@ export async function seedWorkflows(db: any): Promise<void> {
       checkHasSession: {
         always: [
           {
-            guard: { params: { key: 'data.length', operator: '>', value: 0 } },
+            // Array spread: check if first element exists
+            guard: { params: { key: '0', operator: 'exists' } },
             target: 'extractSession',
           },
           { target: 'noActiveSession' },
@@ -218,8 +252,8 @@ export async function seedWorkflows(db: any): Promise<void> {
           src: 'core.transform',
           input: {
             mapping: {
-              sessionId: '$.data.0.id',
-              mapId: '$.data.0.mapId',
+              sessionId: '$.0.id',
+              mapId: '$.0.mapId',
               hasSession: true,
             },
           },
@@ -244,7 +278,7 @@ export async function seedWorkflows(db: any): Promise<void> {
     },
   };
 
-  // Insert workflow definitions
+  // ─── Insert workflow definitions (upsert to update existing) ──
   const workflowSeeds = [
     {
       name: 'Player Spawn',
@@ -276,7 +310,13 @@ export async function seedWorkflows(db: any): Promise<void> {
     await db
       .insert(workflows)
       .values(wf)
-      .onConflictDoNothing({ target: workflows.slug });
+      .onConflictDoUpdate({
+        target: workflows.slug,
+        set: {
+          definition: sql`excluded.definition`,
+          description: sql`excluded.description`,
+        },
+      });
   }
 
   // ─── Seed default module config values ─────────────────────────
@@ -331,10 +371,21 @@ export async function seedWorkflows(db: any): Promise<void> {
     await db
       .insert(moduleConfigs)
       .values(cfg)
-      .onConflictDoNothing();
+      .onConflictDoUpdate({
+        target: [
+          moduleConfigs.moduleName,
+          moduleConfigs.scope,
+          moduleConfigs.scopeId,
+          moduleConfigs.key,
+        ],
+        set: {
+          value: sql`excluded.value`,
+          description: sql`excluded.description`,
+        },
+      });
   }
 
   console.log(
-    '[module-workflows] Seeded 3 workflow definitions + 5 module config defaults'
+    '[module-workflows] Seeded 3 workflow definitions + 6 module config defaults'
   );
 }

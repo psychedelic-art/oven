@@ -1,75 +1,52 @@
 # Workflow Engine
 
 > Multi-step workflow orchestration for the Oven game server, with visual editing and per-node execution tracking.
+> Last Updated: 2026-02-11
 
 ## Overview
 
-The workflow system extends the existing event/wiring system with **multi-step orchestration**:
-
-```
-Simple Wirings (existing):  Event → Single Action
-Workflows (new):            Event → State Machine → Multiple Steps with Branching
-```
-
-Both systems coexist. Simple wirings handle 1:1 triggers. Workflows handle complex conditional logic.
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────┐
-│                  Dashboard App                  │
-│  ┌─────────────┐  ┌──────────────────────────┐  │
-│  │ModuleManager│  │  Visual Workflow Editor   │  │
-│  │(events/     │  │  (@oven/workflow-editor)  │  │
-│  │ wirings)    │  │  ReactFlow canvas         │  │
-│  └─────────────┘  └──────────────────────────┘  │
-├─────────────────────────────────────────────────┤
-│           @oven/module-workflows                │
-│  Schema (4 tables) + XState Engine + Node       │
-│  Registry (35+ API endpoints as nodes) + APIs   │
-├─────────────────────────────────────────────────┤
-│           @oven/module-registry                 │
-│  EventBus + WiringRuntime (now with workflow    │
-│  trigger support) + Module Registry             │
-└─────────────────────────────────────────────────┘
-```
+The workflow system extends the event/wiring system with multi-step orchestration:
+- **Wirings**: Simple 1:1 event → action mappings (EventBus)
+- **Workflows**: State machine-based orchestration with branching, guards, and context accumulation
 
 ## Packages
 
 | Package | Purpose |
 |---------|---------|
-| `@oven/module-workflows` | DB schema, XState engine, node registry, CRUD APIs, React Admin components |
-| `@oven/workflow-editor` | ReactFlow visual editor, custom nodes, palette, inspector, converters |
+| `@oven/module-workflows` | Schema, engine, node registry, API handlers, seed |
+| `@oven/module-workflow-compiler` | Definition → TypeScript compiler (Handlebars templates) |
 
-## Concepts
-
-- **Workflow**: A reusable state machine definition stored as JSON. Can be triggered by events or executed manually.
-- **Node**: A single step in a workflow (API call, condition check, data transform, event emit, delay).
-- **Execution**: One run of a workflow, tracking overall status and per-node progress.
-- **Config**: Module-level and per-instance settings that workflows can reference at runtime.
-
-## Database Tables
+## Tables (5)
 
 | Table | Purpose |
 |-------|---------|
-| `workflows` | Workflow definitions (XState JSON, trigger event, version) |
-| `workflow_executions` | Per-run tracking (status, context, snapshot) |
-| `node_executions` | Per-node tracking (input, output, duration, errors) |
-| `module_configs` | Configurable module settings with 3-tier resolution |
+| `workflows` | Definition storage (XState JSON), slug, version, triggerEvent |
+| `workflow_executions` | Execution history with status, context, timing |
+| `node_executions` | Per-node tracking (input, output, duration, error) |
+| `module_configs` | 3-tier config cascade (moduleName, scope, scopeId, key, value) |
+| `workflow_versions` | Version history with full definition snapshots |
 
 ## Quick Start
 
-1. Push DB schema: `pnpm --filter @oven/dashboard db:push`
-2. Start dev: `pnpm --filter @oven/dashboard dev`
-3. Navigate to `/#/workflows` to create a workflow
-4. Click "Visual Editor" to open the drag-and-drop editor
-5. Drag nodes from the palette, connect them, save
-6. Click "Execute" to run the workflow
-7. View execution at `/#/workflow-executions/:id/show`
+```bash
+pnpm db:push        # Apply schema
+pnpm db:seed         # Seed 3 workflows + configs
+pnpm --filter dashboard dev  # Start dashboard
+```
 
-## See Also
+Navigate to `/#/workflows` in the dashboard to view and manage workflows.
 
-- [Engine Details](./engine.md) — XState integration, node types, persistence
-- [Visual Editor](./editor.md) — ReactFlow editor, custom nodes, converters
-- [API Reference](./api.md) — All workflow and config endpoints
-- [Examples](./examples.md) — Sample workflows for common scenarios
+## Seeded Workflows
+
+| Workflow | Slug | Purpose |
+|----------|------|---------|
+| Player Spawn | `player-spawn` | End old session → check last position → spawn at config or last pos → create session + assignment |
+| Session End | `session-end` | Update session endedAt → update assignment position → emit event |
+| Session Resume | `session-resume` | Check active session → extract context → get assignment |
+
+## Documentation
+
+- [Engine](engine.md) — Execution model, node types, transform language
+- [API](api.md) — REST endpoints for workflows, executions, configs
+- [Examples](examples.md) — Real workflow definitions with walkthrough
+- [Editor](editor.md) — Visual builder documentation (planned)

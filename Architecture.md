@@ -1,701 +1,547 @@
-# 🏗️ OVEN — Real-Time Action RPG on Tile Grid
-## Complete Architectural Blueprint
+# OVEN — Real-Time Action RPG on Tile Grid
+## Architectural Blueprint
 
-> **Project**: Oven  
-> **Engine**: Unity 2D URP (Client) + Node.js (Game Server) + Next.js (REST API)  
-> **Database**: Neon Postgres  
-> **Monorepo**: Turbo + pnpm + Vite  
-> **Last Updated**: 2026-02-09
+> **Project**: Oven
+> **Engine**: Unity 2D URP (Client) + Next.js 15 (REST API + Dashboard)
+> **Database**: Neon Postgres (Drizzle ORM)
+> **Monorepo**: Turbo + pnpm
+> **Last Updated**: 2026-02-11
 
 ---
 
 ## Table of Contents
 
 1. [High-Level Architecture](#1-high-level-architecture)
-2. [The Server Game Loop](#2-the-server-game-loop)
-3. [Entity Component System (ECS)](#3-entity-component-system)
-4. [Tile System Architecture](#4-tile-system-architecture)
-5. [Chunk-Based Infinite World](#5-chunk-based-infinite-world)
-6. [Spatial Partitioning](#6-spatial-partitioning)
-7. [Networking Protocol](#7-networking-protocol)
-8. [Real-Time Combat System](#8-real-time-combat-system)
-9. [Pathfinding](#9-pathfinding)
-10. [Database Schema](#10-database-schema)
-11. [Monorepo Structure](#11-monorepo-structure)
-12. [REST API vs WebSocket Split](#12-rest-api-vs-websocket-split)
-13. [Instance Management & Scaling](#13-instance-management--scaling)
-14. [Anti-Cheat & Server Authority](#14-anti-cheat--server-authority)
-15. [End-to-End Data Flows](#15-end-to-end-data-flows)
-16. [Performance Optimization](#16-performance-optimization)
-17. [References & Resources](#17-references--resources)
+2. [What's Implemented vs Planned](#2-whats-implemented-vs-planned)
+3. [Monorepo Structure](#3-monorepo-structure)
+4. [Module System](#4-module-system)
+5. [Tile System Architecture](#5-tile-system-architecture)
+6. [Chunk-Based World](#6-chunk-based-world)
+7. [Workflow Engine](#7-workflow-engine)
+8. [Unity Client Architecture](#8-unity-client-architecture)
+9. [Database Schema](#9-database-schema)
+10. [Event System](#10-event-system)
+11. [Map Editor](#11-map-editor)
+12. [Future: Real-Time Server](#12-future-real-time-server)
+13. [References & Resources](#13-references--resources)
 
 ---
 
 ## 1. High-Level Architecture
 
+The current architecture uses a **REST-first** approach: the Unity client communicates with the Next.js dashboard API for all operations. Real-time features (WebSocket game server) are planned for later phases.
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        UNITY CLIENT                             │
 │  ┌──────────┐ ┌──────────────┐ ┌────────────┐ ┌─────────────┐  │
-│  │ Tile/Chunk│ │ Client-Side  │ │  Renderer  │ │  Input      │  │
-│  │ Streaming │ │ Prediction   │ │ (Tilemap)  │ │  Manager    │  │
+│  │ Tile/Chunk│ │ Module       │ │  Renderer  │ │  Input      │  │
+│  │ Streaming │ │ Manager      │ │ (Tilemap)  │ │  (New Input)│  │
 │  └─────┬────┘ └──────┬───────┘ └─────┬──────┘ └──────┬──────┘  │
 │        │             │               │                │         │
 │  ┌─────┴─────────────┴───────────────┴────────────────┴──────┐  │
-│  │                  NETWORK LAYER (WebSocket)                 │  │
+│  │               HTTP REST (ApiClient + coroutines)           │  │
 │  └────────────────────────┬──────────────────────────────────┘  │
 └───────────────────────────┼─────────────────────────────────────┘
                             │
-              ┌─────────────┼──────────────┐
-              │ WebSocket   │   REST/HTTP  │
-              ▼             │              ▼
-┌─────────────────────┐     │    ┌──────────────────────┐
-│   NODE.JS GAME      │     │    │   NEXT.JS REST API   │
-│   SERVER            │     │    │                      │
-│ ┌─────────────────┐ │     │    │ • Authentication     │
-│ │ Fixed-Timestep  │ │     │    │ • Character CRUD     │
-│ │ Game Loop       │ │     │    │ • Inventory Mgmt     │
-│ │ (20-30 Hz)      │ │     │    │ • Matchmaking Queue  │
-│ ├─────────────────┤ │     │    │ • Social Features    │
-│ │ ECS (bitECS)    │ │     │    │ • Leaderboards       │
-│ │ • Movement Sys  │ │     │    └──────────┬───────────┘
-│ │ • Combat Sys    │ │     │               │
-│ │ • Spell Sys     │ │     │               │
-│ │ • AI Sys        │ │     │               │
-│ ├─────────────────┤ │     │               │
-│ │ Spatial Hash    │ │     │               │
-│ │ Interest Mgmt   │ │     │               │
-│ ├─────────────────┤ │     │               │
-│ │ Chunk Manager   │ │     │               │
-│ │ Instance Router │ │     │               │
-│ └────────┬────────┘ │     │               │
-└──────────┼──────────┘     │               │
-           │                │               │
-           ▼                │               ▼
-    ┌─────────────┐         │        ┌─────────────┐
-    │    REDIS    │         │        │ NEON        │
-    │ • Sessions  │◄────────┘        │ POSTGRES    │
-    │ • Chunk L2  │                  │ • Accounts  │
-    │ • Pub/Sub   │                  │ • Characters│
-    │ • Matchmake │                  │ • Chunks    │
-    └─────────────┘                  │ • Items     │
-                                     └─────────────┘
+                            ▼
+              ┌──────────────────────────┐
+              │   NEXT.JS 15 DASHBOARD   │
+              │                          │
+              │ ┌──────────────────────┐ │
+              │ │  React Admin 5 UI    │ │
+              │ │  (MUI + CRUD views)  │ │
+              │ ├──────────────────────┤ │
+              │ │  REST API (/api/*)   │ │
+              │ │  60 routes, 6 modules│ │
+              │ ├──────────────────────┤ │
+              │ │  Workflow Engine     │ │
+              │ │  (state machines)    │ │
+              │ ├──────────────────────┤ │
+              │ │  EventBus + Wirings  │ │
+              │ │  (cross-module)      │ │
+              │ └──────────┬───────────┘ │
+              └────────────┼─────────────┘
+                           │
+                           ▼
+                    ┌─────────────┐
+                    │ NEON        │
+                    │ POSTGRES    │
+                    │ 15 tables   │
+                    │ (Drizzle)   │
+                    └─────────────┘
 ```
-
-> **Ref**: [Colyseus — Multiplayer Framework for Node.js](https://github.com/colyseus/colyseus)  
-> Room-based instance management, state synchronization, and WebSocket handling.
 
 ---
 
-## 2. The Server Game Loop
+## 2. What's Implemented vs Planned
 
-The entire game simulation runs inside a **fixed-timestep game loop** on the Node.js server at **20–30 Hz** (33–50ms per tick).
+### Implemented (Current)
 
-### Tick Phases (executed in strict order every tick):
+| Layer | Status | Details |
+|-------|--------|---------|
+| **Dashboard** | Complete | Next.js 15 + React Admin 5 + Drizzle + Neon Postgres |
+| **Module System** | Complete | 8 packages, event bus, wiring runtime, 3-tier config |
+| **Maps** | Complete | Tiles, world configs, maps, chunks, simplex noise generation |
+| **Players** | Complete | Player CRUD, status tracking |
+| **Sessions** | Complete | Session lifecycle, workflow-driven spawn/end/resume |
+| **Position** | Complete | Map assignments, 1Hz tracking, visited chunks |
+| **Workflows** | Complete | Engine, execution, versioning, compiler, 3 seeded workflows |
+| **Map Editor** | Complete | R3F canvas, paint/erase/pan, chunk save, generate |
+| **Unity Client** | ~90% | 7 modules, chunk streaming, WASD, IMGUI HUD, workflow integration |
 
-```
-TICK START
-  │
-  ├─ 1. Receive & Queue Inputs (from WebSocket buffer)
-  ├─ 2. Validate & Process Inputs (rules check)
-  ├─ 3. Execute Movement System (pathfinding, collision)
-  ├─ 4. Execute Ability/Combat Systems (damage, healing, projectiles)
-  ├─ 5. Tick Status Effects (DoTs, buffs, debuffs)
-  ├─ 6. Tick Cooldowns & Resources (mana regen, CD reduction)
-  ├─ 7. Process AI (behavior trees, aggro)
-  ├─ 8. Update Spatial Index (re-hash moved entities)
-  ├─ 9. Broadcast State (delta-compressed, interest-managed)
-  │
-TICK END
-```
+### Planned (Future Phases)
 
-### Timer Implementation
-
-Standard `setInterval` has ~16ms jitter. Use a hybrid approach: `setTimeout` to sleep until ~25ms before tick, then `setImmediate` spin-loop with `process.hrtime.bigint()` for sub-ms accuracy. Use an accumulator pattern to ensure deterministic simulation.
-
-> **Ref**: [Glenn Fiedler — "Fix Your Timestep!"](https://gafferongames.com/post/fix_your_timestep/)  
-> The definitive article on fixed-timestep game loops. Accumulator pattern prevents "spiral of death" and ensures deterministic simulation regardless of timer jitter.
-
-> **Ref**: [Overwatch GDC Talk — "Gameplay Architecture and Netcode"](https://www.youtube.com/watch?v=W3aieHjyNvw)  
-> Blizzard reported ~40% server tick improvement after refactoring to ECS. Describes deterministic simulation and prediction/reconciliation.
+| Feature | Status | Notes |
+|---------|--------|-------|
+| WebSocket Game Server | Not started | Node.js + bitECS for real-time simulation |
+| ECS Components | Not started | Movement, Combat, Spells, AI systems |
+| Client-Side Prediction | Not started | Depends on WebSocket server |
+| Combat System | Not started | Abilities, AoE, damage formulas |
+| Authentication | Not started | JWT + session management |
+| Vercel Deployment | Not started | Dashboard production deploy |
 
 ---
 
-## 3. Entity Component System
-
-### Why bitECS for Node.js
-
-bitECS stores all component data in TypedArrays (Float32Array, Int32Array) using Structure-of-Arrays (SoA) layout. Data lives **outside V8's managed heap**, eliminating garbage collection pressure — the single biggest threat to real-time Node.js servers.
-
-### Core Components (TypedArray-backed):
-
-| Component | Fields | Type |
-|-----------|--------|------|
-| Position | tileX, tileY | i32, i32 |
-| Movement | speed, destTileX, destTileY, progress, isMoving | f32, i32, i32, f32, u8 |
-| Health | current, max, regenPerTick | f32, f32, f32 |
-| Mana | current, max, regenPerTick | f32, f32, f32 |
-| Combat | attackPower, defense, attackSpeed, attackRange, critChance | f32, f32, f32, u8, f32 |
-| SpellSlots | slot1Id..slot6Id, cd1Remaining..cd6Remaining | u16[], u16[] |
-| StatusFlags | activeFlags (bitmask) | u64 |
-| Faction | factionId | u8 |
-| NetworkSync | lastSyncTick, dirtyMask | u32, u32 |
-
-### System Execution Order:
-
-```
-InputSystem → AISystem → MovementSystem → CooldownSystem → 
-SpellCastSystem → ProjectileSystem → CombatResolutionSystem → 
-StatusEffectSystem → DeathSystem → RegenerationSystem → 
-SpatialIndexSystem → NetworkSyncSystem
-```
-
-> **Ref**: [bitECS](https://github.com/NateTheGreatt/bitECS)  
-> Fastest JavaScript ECS. SoA layout with TypedArrays, zero GC allocations.
-
-> **Ref**: [ECS Architecture Tutorial](https://generalistprogrammer.com/tutorials/entity-component-system-complete-ecs-architecture-tutorial)  
-> Comprehensive guide to data-oriented ECS design.
-
----
-
-## 4. Tile System Architecture
-
-### Design Principles
-
-The tile system is **completely agnostic and pluggable**. All tile logic is accessed through interfaces, allowing any game to swap rendering, data sources, or tile behaviors without modifying core logic.
-
-### Tile Data Model
-
-```
-ITileData
-├── TileId: ushort (0-65535 tile types)
-├── Flags: byte (walkable, swimmable, elevated, transparent, damaging)
-├── Elevation: byte (0-15 height levels)
-├── Metadata: byte (biome, variant, rotation)
-```
-
-Each tile is **4 bytes** in memory. A 32×32 chunk = 4,096 bytes per layer.
-
-### Layer System
-
-```
-Layer 0: GROUND      — Base terrain (grass, stone, water, sand)
-Layer 1: DECORATION  — Props, flowers, rocks (purely visual)
-Layer 2: COLLISION   — Walls, obstacles, trigger zones
-Layer 3: METADATA    — Spawn points, zone transitions, interaction markers
-```
-
-### Interface Architecture (Unity Client)
-
-```
-ITileDataProvider          — Resolves tile data from any source (server, file, procedural)
-IChunkProvider             — Loads/unloads chunk data (server stream, local cache, editor)
-IChunkRenderer             — Renders chunks visually (Unity Tilemap, custom mesh, sprite)
-IChunkLifecycleHandler     — Hooks for chunk load/unload events
-ITileInteractionHandler    — Game-specific tile interaction logic
-IWorldCoordConverter       — Converts between tile coords, chunk coords, world positions
-```
-
-### Coordinate System
-
-```
-World Position (float):  Pixel/unit space for Unity rendering
-  ↕ IWorldCoordConverter
-Tile Position (int):     Discrete grid coordinate (tileX, tileY)
-  ↕ Simple division
-Chunk Position (int):    Which chunk contains this tile (chunkX, chunkY)
-  ↕ Simple modulo
-Local Tile Index (int):  Position within the chunk (0-1023 for 32×32)
-```
-
-**Formulas:**
-- `chunkX = floor(tileX / CHUNK_SIZE)`
-- `chunkY = floor(tileY / CHUNK_SIZE)`
-- `localX = tileX - (chunkX * CHUNK_SIZE)` (handles negatives correctly with floor)
-- `localY = tileY - (chunkY * CHUNK_SIZE)`
-- `localIndex = localY * CHUNK_SIZE + localX`
-
-> **Ref**: [Red Blob Games — Grids and Coordinates](https://www.redblobgames.com/grids/)  
-> The definitive resource for grid coordinate systems, hex grids, and tile math.
-
-> **Ref**: [Unity — "Best Way To Handle Millions Of Tiles"](https://discussions.unity.com/t/best-way-to-handle-millions-of-tiles/826950)  
-> Community solutions for large tilemap performance including chunked tilemaps and pooling.
-
----
-
-## 5. Chunk-Based Infinite World
-
-### Chunk Specifications
-
-| Property | Value | Rationale |
-|----------|-------|-----------|
-| Chunk Size | 32×32 tiles | 1024 tiles per layer, fits cache lines |
-| Layers | 4 | Ground, Decoration, Collision, Metadata |
-| Raw Size | ~8 KB (4 layers × 2 bytes × 1024) | — |
-| Compressed | ~2-4 KB (zlib) | Single WebSocket message |
-| Load Radius | 5×5 chunks (25 total) | Inner 3×3 visible, outer ring buffer |
-| View Distance | ~160 tiles (5 × 32) | Covers any reasonable camera zoom |
-
-### Three-Tier Caching Pipeline
-
-```
-Player moves → crosses chunk boundary
-  │
-  ├─ Calculate required chunks (5×5 around player)
-  ├─ Diff against currently loaded chunks
-  ├─ Request missing chunks:
-  │     │
-  │     ├─ L1: In-Process LRU Cache (Node.js memory)
-  │     │   Hit: <1ms → serve immediately
-  │     │
-  │     ├─ L2: Redis Cache (shared across servers)
-  │     │   Hit: <5ms → serve, populate L1
-  │     │
-  │     └─ L3: Neon Postgres (source of truth)
-  │         Hit: 5-50ms → serve, populate L2 + L1
-  │
-  ├─ Send chunks to client via WebSocket (zlib compressed)
-  ├─ Client decompresses, caches locally
-  ├─ Client renders via pooled Tilemap GameObjects
-  └─ Unload chunks beyond load radius
-```
-
-### Predictive Loading
-
-Bias chunk loading toward the player's **movement direction**. If moving right, prioritize loading the rightmost column of the 5×5 grid before the leftmost.
-
-### Unity Client Chunk Rendering
-
-```
-ChunkPool (reusable Tilemap GameObjects)
-  │
-  ├─ OnChunkLoad:
-  │   ├─ Dequeue Tilemap from pool
-  │   ├─ Position at chunk world coords
-  │   ├─ SetTilesBlock() for batch tile assignment
-  │   └─ Enable renderer
-  │
-  └─ OnChunkUnload:
-      ├─ Clear tilemap data
-      ├─ Disable renderer
-      └─ Return to pool
-```
-
-**CRITICAL**: Never use individual `SetTile()` — `SetTilesBlock()` is orders of magnitude faster for chunk-sized updates.
-
-> **Ref**: [Minecraft Wiki — Chunk Format](https://minecraft.wiki/w/Chunk)  
-> Gold standard for chunk-based world streaming. Describes format, load distance, tick scheduling.
-
-> **Ref**: [Ark Times — "Server Chunk Loading: How Games Handle Vast Worlds"](https://001.arktimes.com/server-chunk-loading-how-games-handle-vast-worlds/)  
-> Chunk loading patterns from Minecraft, Valheim, No Man's Sky.
-
----
-
-## 6. Spatial Partitioning
-
-### Fixed-Grid Spatial Hash
-
-The tile grid IS the spatial partition. Cells of **8×8 or 16×16 tiles** (matching max spell range). Each cell stores a list of entity IDs.
-
-```
-Query: "Find all entities near player at tile (50, 30)"
-  ├─ Compute cell: (50/16, 30/16) = (3, 1)
-  ├─ Check cell (3,1) + 8 neighbors = 9 cells
-  ├─ 9 cells × ~10 entities/cell = ~90 comparisons
-  └─ Filter by actual distance if needed
-```
-
-### Interest Management (AOI)
-
-Each player's Area of Interest = their spatial hash cell + 8 neighbors. Server **only sends entity updates to players whose AOI contains that entity**. Entities outside AOI are invisible — no position, no state, nothing.
-
-> **Ref**: [Game Programming Patterns — "Spatial Partition"](https://gameprogrammingpatterns.com/spatial-partition.html)  
-> Clear explanation of spatial hashing and grid-based partitioning.
-
-> **Ref**: ["Area of Interest Management in MMOGs"](https://link.springer.com/10.1007/978-3-319-08234-9_239-1) (Springer)  
-> Academic overview of AOI algorithms for massively multiplayer games.
-
----
-
-## 7. Networking Protocol
-
-### Binary Protocol Structure
-
-```
-┌─────────┬──────────┬──────────────────┐
-│ Type(1B)│Length(2B) │ Payload (var)    │
-└─────────┴──────────┴──────────────────┘
-
-High-frequency (binary):
-  0x01 MOVE_INPUT        — tileX(i16), tileY(i16), seq(u32)
-  0x02 CAST_SPELL        — spellId(u16), targetX(i16), targetY(i16), seq(u32)
-  0x03 ATTACK            — targetEntityId(u32), seq(u32)
-  0x10 STATE_SNAPSHOT    — tick(u32), entityCount(u16), [entityDeltas...]
-  0x11 ENTITY_DELTA      — entityId(u32), componentMask(u16), [changed fields...]
-  0x12 CHUNK_DATA        — chunkX(i32), chunkY(i32), compressedData(bytes)
-
-Low-frequency (MessagePack):
-  0x80 CHAT_MESSAGE
-  0x81 INVENTORY_UPDATE
-  0x82 SPELL_RESULT
-  0x83 MATCH_EVENT
-```
-
-### Bandwidth Estimates
-
-| Direction | Data | Rate |
-|-----------|------|------|
-| Client → Server | Movement + abilities | ~1-2 KB/s |
-| Server → Client | Entity deltas (20 entities @ 20Hz) | ~5-10 KB/s |
-| Server → Client | Chunk streaming during movement | ~2-5 KB/s burst |
-| **Total per player** | | **~8-17 KB/s** |
-
-### Client-Side Prediction & Server Reconciliation
-
-```
-CLIENT:                                 SERVER:
-1. Player presses "move right"
-2. Predict: move to tile (6,3)
-3. Store input {seq:47, dir:right}
-4. Send input to server ──────────►     5. Validate move
-                                        6. Apply if valid
-7. Receive server state ◄──────────     7. Send state + lastSeq:47
-8. Discard inputs ≤ 47
-9. Re-apply inputs > 47
-10. Match → no correction
-    Differ → smooth interpolate to server pos
-```
-
-> **Ref**: [Gabriel Gambetta — "Client-Side Prediction and Server Reconciliation"](https://www.gabrielgambetta.com/client-side-prediction-server-reconciliation.html)  
-> Step-by-step walkthrough with interactive demos.
-
-> **Ref**: [Gaffer On Games — "Reading and Writing Packets"](https://gafferongames.com/post/reading_and_writing_packets/)  
-> Best practices for binary game protocol serialization.
-
-> **Ref**: [SnapNet — "Snapshot Interpolation"](https://snapnet.dev/blog/netcode-architectures-part-3-snapshot-interpolation/)  
-> Snapshot interpolation for smooth remote entity rendering.
-
-> **Ref**: [Doppnet — "Game Networking Message Serialisation"](https://www.doppnet.com/game-networking-message-serialisation.html)  
-> JSON vs binary vs FlatBuffers comparison. JSON is 7-10× larger.
-
----
-
-## 8. Real-Time Combat System
-
-### Ability Types
-
-| Type | Server Processing | Client Prediction |
-|------|-------------------|-------------------|
-| Instant | Immediate AoE calc, damage resolve | Show animation + CD, wait for damage |
-| Projectile | Spawn entity, advance per tick, collisions | Show VFX, interpolate position |
-| Channeled | Track channel state, periodic effects, interrupts | Show channel animation, cancel on reject |
-| Melee | Check adjacent tiles, apply damage | Show attack animation |
-| Ranged Physical | DDA raycast for LOS, range check | Show projectile arc |
-
-### AoE Patterns (tile offsets relative to target)
-
-```
-Single: [(0,0)]
-Cross:  [(0,0),(1,0),(-1,0),(0,1),(0,-1)]
-3×3:    [all (dx,dy) where |dx|≤1 and |dy|≤1]
-Line:   [(0,1),(0,2),(0,3)] rotated by facing
-Cone:   expanding fan pattern
-Ring:   all tiles at exactly distance R
-```
-
-### Damage Formula
-
-```
-rawDamage = skillBasePower × (attackerATK × 100 / (100 + targetDEF))
-elementalMod = 0.5 | 1.0 | 1.5 | 2.0
-critMod = if crit: 1.5 + critBonus; else: 1.0
-variance = random(0.9, 1.1)
-buffMod = product of active multipliers
-finalDamage = max(1, floor(rawDamage × elementalMod × critMod × variance × buffMod))
-```
-
-### Status Effects
-
-| Effect | Movement | Abilities | Combat |
-|--------|----------|-----------|--------|
-| Stun | ✗ Blocked | ✗ Blocked | — |
-| Root | ✗ Blocked | ✓ Allowed | — |
-| Silence | ✓ Allowed | ✗ Blocked | — |
-| Slow | ½ Speed | ✓ Allowed | — |
-| Poison/Burn | ✓ | ✓ | Periodic damage |
-| Knockback | Forced 1-3 tiles | Interrupts channel | — |
-
-> **Ref**: [Unreal Engine — Gameplay Ability System](https://dev.epicgames.com/documentation/en-us/unreal-engine/understanding-the-unreal-engine-gameplay-ability-system)  
-> Industry-standard ability system: tag-based interactions, attribute sets, gameplay effects.
-
-> **Ref**: [RPG Wiki — Damage Formula](https://rpg.fandom.com/wiki/Damage_Formula)  
-> ATK×100/(100+DEF) provides balanced scaling with diminishing returns.
-
-> **Ref**: [ModDB — "Designing a Multiplayer Spell System"](https://www.moddb.com/tutorials/designing-a-multiplayer-spell-system)  
-> Practical guide to networked spell systems with prediction and validation.
-
----
-
-## 9. Pathfinding
-
-### Real-Time Pathfinding Strategy
-
-| Scenario | Algorithm | Cost |
-|----------|-----------|------|
-| Short path (<20 tiles) | A* with binary heap | <0.1ms |
-| Long path (>40 tiles) | Hierarchical A* (HPA*) | <1ms |
-| Many entities, same target | Flow Fields (Dijkstra) | O(N) once, O(1)/entity |
-| WASD movement | Direct validation (no pathfinding) | O(1) |
-
-### Time-Slicing
-
-Process max **200 A* nodes per tick**. If incomplete, resume next tick. Caps pathfinding CPU to ~2ms/tick.
-
-### Worker Thread Offloading
-
-CPU-intensive pathfinding on 2-4 `worker_threads`. Position data in `SharedArrayBuffer` for zero-copy reads.
-
-> **Ref**: [Red Blob Games — "Grid Pathfinding Optimizations"](https://www.redblobgames.com/pathfinding/grids/algorithms.html)  
-> A*, JPS, and grid pathfinding with interactive demos.
-
-> **Ref**: ["How to RTS: Basic Flow Fields"](https://howtorts.github.io/2014/01/04/basic-flow-fields.html)  
-> Flow field pathfinding for multiple entities converging on one target.
-
-> **Ref**: [Game Developer — "Pathing & Movement on a 3D Grid"](https://www.gamedeveloper.com/design/pathing-movement-on-a-3d-grid)  
-> Advanced grid pathfinding with elevation.
-
----
-
-## 10. Database Schema (Neon Postgres)
-
-### Critical Rule
-
-**Never read from the database inside the game loop.** Load at session start, hold in memory, write back on events or every 30-60s.
-
-### Core Tables
-
-```
-accounts           — id, email, username, password_hash, status, premium_currency
-characters         — id, account_id, name, class_id, level, xp, stats(JSONB), zone_id, pos_x, pos_y
-classes            — id, name, base_stats(JSONB), spell_tree(JSONB)
-item_definitions   — id, name, type, rarity, slot_type, base_stats(JSONB), stackable
-item_instances     — id, definition_id, character_id, properties(JSONB), quantity, equipped, bag_slot
-spell_definitions  — id, name, type, damage_type, base_power, mana_cost, cooldown, aoe_pattern(JSONB)
-character_spells   — character_id, spell_id, slot_index, spell_level
-map_chunks         — chunk_x, chunk_y, layer_data(BYTEA), version, updated_at
-matches            — id, type, map_id, started_at, ended_at, result(JSONB)
-match_participants — match_id, character_id, team, stats(JSONB), mmr_before, mmr_after
-character_ratings  — character_id, pvp_mmr, wins, losses, season_id
-guilds             — id, name, tag, leader_id, description
-guild_members      — guild_id, character_id, rank, joined_at
-marketplace        — id, seller_id, item_instance_id, price, listed_at, expires_at, status
-transaction_log    — id, type, character_id, item_id, gold_change, details(JSONB), created_at
-```
-
-### Chunk Storage: BYTEA Blobs
-
-Each chunk = all 4 layers packed into a single BYTEA column (~2-4 KB compressed). Vastly more efficient than per-tile rows.
-
-> **Ref**: [Neon — JSONB Data Types](https://neon.com/docs/data-types/json)  
-> JSONB for flexible game data that evolves during development.
-
-> **Ref**: [Neon — Connection Pooling](https://neon.com/docs/connect/connection-pooling)  
-> Built-in PgBouncer for game server connection management.
-
-> **Ref**: [Postgres TOAST + JSONB](https://medium.com/@josef.machytka/how-postgresql-stores-jsonb-data-in-toast-tables-8fded495b308)  
-> How Postgres handles large JSONB values transparently.
-
-> **Ref**: [Materialized Views for Fast Queries](https://smartpostgres.com/posts/using-materialized-views-to-make-queries-run-faster/)  
-> Leaderboard queries via periodic materialized view refresh.
-
----
-
-## 11. Monorepo Structure
+## 3. Monorepo Structure
 
 ```
 oven/
 ├── apps/
-│   ├── game-server/          # Node.js WebSocket server
-│   │   ├── src/
-│   │   │   ├── loop/         # Fixed-timestep game loop
-│   │   │   ├── systems/      # ECS systems
-│   │   │   ├── instances/    # Instance/room management
-│   │   │   ├── network/      # WebSocket handling, protocol
-│   │   │   └── chunks/       # Chunk loading, caching
-│   │   └── package.json
-│   ├── api/                  # Next.js REST API
-│   │   ├── src/app/api/
-│   │   └── package.json
-│   └── web/                  # Vite admin panel + website
-│       └── package.json
+│   └── dashboard/                  # Next.js 15 + React Admin 5
+│       ├── src/app/
+│       │   ├── page.tsx            # Root → dynamic import AdminApp (ssr:false)
+│       │   ├── [[...slug]]/page.tsx # Catch-all for React Admin hash routing
+│       │   └── api/                # 36 route files (thin re-exports from packages)
+│       ├── src/components/         # Custom RA views (tiles, maps, players, etc.)
+│       ├── src/lib/
+│       │   ├── modules.ts          # Module registration & initialization
+│       │   └── db.ts               # Drizzle + Neon connection
+│       └── drizzle.config.ts       # Schema composition from all modules
+│
 ├── packages/
-│   ├── shared-types/         # TypeScript interfaces
-│   ├── game-logic/           # Combat formulas, movement validation
-│   ├── protocol/             # Binary message definitions
-│   ├── constants/            # Tick rate, tile size, chunk size
-│   ├── database/             # Drizzle ORM schema, migrations
-│   ├── typescript-config/
-│   └── eslint-config/
-├── unity-client/             # Unity project (this project)
+│   ├── module-registry/            # Core: types, DB, event bus, API utils, wiring runtime
+│   ├── module-maps/                # Tiles, world configs, maps, chunks, Perlin generation
+│   ├── module-players/             # Player records, status tracking
+│   ├── module-sessions/            # Session lifecycle, start/end/active
+│   ├── module-player-map-position/ # Assignments, positions, visited chunks
+│   ├── module-workflows/           # Engine, execution, configs, versioning, node registry
+│   ├── module-workflow-compiler/   # Definition → TypeScript compiler (Handlebars templates)
+│   └── map-editor/                 # React Three Fiber visual tile editor
+│
+├── oven-unity/                     # Unity project (symlinked to C:/Users/HardM/Oven/)
 │   └── Assets/Scripts/
-│       ├── Core/             # Agnostic systems (Tiles, Chunks, Spatial)
-│       ├── Infrastructure/   # DI, Events, Pooling
-│       └── Game/             # Game-specific (Combat, Movement)
+│       ├── Core/                   # Agnostic: Tiles, Chunks, Rendering, Networking, World
+│       ├── Infrastructure/         # DI (ServiceLocator), Modules, Pooling (TilemapPool)
+│       ├── Game/                   # Movement (PlayerMovement, CameraFollow)
+│       └── Modules/                # Maps, Players, Sessions, Tiles, UI (GameHUD, UIModule)
+│
+├── docs/                           # Architecture, routes, module docs
 ├── pnpm-workspace.yaml
 ├── turbo.json
 └── package.json
 ```
 
-> **Ref**: [Turborepo — Internal Packages](https://turbo.build/repo/docs/guides/tools/typescript#internal-packages)  
-> Shared packages export raw TypeScript, consuming apps transpile.
-
 ---
 
-## 12. REST API vs WebSocket Split
+## 4. Module System
 
-### REST API (Next.js) — Non-Realtime
+Each package exports a `ModuleDefinition` conforming to `@oven/module-registry` types. Modules register schema, API handlers, events, React Admin resources, and config schemas.
 
-Auth, character CRUD, inventory, matchmaking queue, social features, game data endpoints.
-
-### WebSocket (Game Server) — Realtime
-
-Movement, entity state, chunk streaming, combat, chat, trading, loot.
-
-### Auth Handoff
+### Module Dependency Graph
 
 ```
-1. Unity → POST /auth/login → REST validates → JWT + refresh token
-2. Unity opens WebSocket → sends JWT as first message
-3. Game server validates JWT → loads character → places in world
-4. WebSocket connection IS the session
-5. Client refreshes JWT via REST; sends to game server only on reconnect
+                    map-editor (standalone React lib)
+                         │
+module-workflow-compiler ─┤
+                         │
+               module-workflows
+                    │
+    ┌───────────────┼───────────────┐
+    │               │               │
+module-maps    module-players   module-sessions
+    │               │               │
+    └───────────────┼───────────────┘
+                    │
+        module-player-map-position
+                    │
+              module-registry (core)
 ```
 
----
+### Package Composition Pattern
 
-## 13. Instance Management & Scaling
+- Modules export raw TypeScript (`"main": "./src/index.ts"`) — no build step
+- Dashboard app composes all schemas in `drizzle.config.ts`
+- API routes are thin re-export files: `export { GET, POST } from '@oven/module-maps/api/tiles.handler'`
+- Cross-module FKs use plain `integer()` columns (no Drizzle references across packages)
+- Events connect modules loosely via EventBus + wirings
 
-| Type | Persistence | Capacity | Lifecycle |
-|------|-------------|----------|-----------|
-| Open world zones | Persistent | 50-200 players | Always running |
-| Hub/town areas | Persistent | 100-500 players | Always on, duplicated |
-| PvP arenas | Temporary | 2-10 players | Match start → destroy |
-| PvE dungeons | Temporary | 4-8 players | Party enters → destroy |
+### Config System (3-Tier Cascade)
 
-**Scaling**: Stateful routing via matchmaker, Redis for cross-server coordination, Nginx `ip_hash` for sticky WebSocket sessions.
-
-> **Ref**: [Redis Game Server Architecture](https://dev.to/dowerdev/building-a-real-time-multiplayer-game-server-with-socketio-and-redis-architecture-and-583m)  
-> Scaling Node.js game servers with Redis Pub/Sub.
-
----
-
-## 14. Anti-Cheat & Server Authority
-
-**The client is an untrusted input device.**
-
-| Action | Server Checks |
-|--------|---------------|
-| Movement | Adjacent? Walkable? Speed ≤ max×1.1? Not stunned? |
-| Spell | Exists? Owned? Off CD? GCD? Mana? Range? LOS? Not silenced? |
-| Damage | **NEVER trust client.** Server calculates all. |
-| Rate | Cap inputs ~30/s. Movement ~10/s. Abilities via GCD. |
-
----
-
-## 15. End-to-End Data Flows
-
-### Login → Gameplay
 ```
-Unity → POST /auth/login → JWT + character list
-     → POST /characters/:id/select → session token + WS URL
-     → Open WebSocket, send JWT
-     → Server validates → loads character → places in world
-     → Sends: 25 chunks (~50KB) + nearby entities
-     → Unity renders → in-game
-```
-
-### Combat
-```
-Client → {cast_spell, spellId:7, target:(5,3), seq:147}
-Client shows animation (prediction)
-Server validates → calculates damage → broadcasts result
-All AOI clients show damage + VFX
-Target dies → loot + XP → async DB write
+Resolution order for moduleConfigs:
+  1. Instance override  (scope="instance", scopeId=specificId)
+  2. Module default     (scope="module", scopeId=null)
+  3. Schema default     (defined in ModuleDefinition.configSchema)
 ```
 
 ---
 
-## 16. Performance Optimization
+## 5. Tile System Architecture
 
-### Node.js Server
-- bitECS TypedArrays → zero GC for hot data
-- `--max-semi-space-size=64` → GC CPU from ~40% to ~7%
-- Worker threads for pathfinding + AI (SharedArrayBuffer)
-- Binary protocol → 7-10× smaller than JSON
-- Delta compression → only changed fields
-- Interest management → only nearby data
-- Object pools → pre-allocate everything in hot path
+### Tile Data Model
 
-### Unity Client
-- Tilemap pooling → reuse, never Instantiate/Destroy per chunk
-- `SetTilesBlock()` → batch assignment, never individual `SetTile()`
-- Chunk coroutines → max 1-2 chunk loads/frame
-- Local chunk cache → Dictionary + LRU eviction
-- Interpolation buffer → 2-snapshot buffer for remote entities
-- Object pooling for VFX, projectiles, damage numbers
+```
+TileDefinition (server):
+├── tileId: smallint (1-65535, unique)
+├── name: string
+├── colorHex: string (#RRGGBBAA)
+├── flags: smallint (bitmask)
+├── category: string (terrain, decoration, obstacle)
+├── spritePath: string (Vercel Blob URL, optional)
+└── description: string
+
+TileFlags (Unity enum, byte):
+├── Walkable     = 0x01
+├── Swimmable    = 0x02
+├── Elevated     = 0x04
+├── Transparent  = 0x08
+├── Damaging     = 0x10
+└── Interactable = 0x20
+```
+
+Current tiles: Grass (1, Walkable), Dirt (1, Walkable), Water (2, Swimmable), Stone (5, Walkable+Elevated), Flower (1, Walkable), Rock (0, obstacle)
+
+### Layer System
+
+```
+Layer 0: GROUND      — Base terrain (grass, stone, water, sand)
+Layer 1: DECORATION  — Props, flowers, rocks
+Layer 2: COLLISION   — Walls, obstacles, trigger zones
+Layer 3: METADATA    — Spawn points, zone transitions
+```
+
+Each tile = 2 bytes (tileId as Uint16). A 32x32 chunk = 2,048 bytes per layer.
+
+### Interface Architecture (Unity Client)
+
+```
+ITileRegistry          — Maps tileId → TileBase for rendering
+ITileFlagLookup        — Maps tileId → TileFlags for walkability
+IChunkProvider         — Loads/unloads ChunkData (ServerChunkProvider for online)
+IWorldCoordConverter   — Converts tile ↔ chunk ↔ world coordinates
+```
 
 ---
 
-## 17. References & Resources
+## 6. Chunk-Based World
 
-### Architecture & Game Loops
+### Chunk Specifications
+
+| Property | Value |
+|----------|-------|
+| Chunk Size | 32x32 tiles |
+| Layers | 4 |
+| Raw Size | ~8 KB (4 layers x 2 bytes x 1024 tiles) |
+| Encoding | base64 Uint16Array (layerData column) |
+| Load Radius | 5x5 chunks (radius 2) = 25 chunks |
+
+### Two Map Modes
+
+| Mode | Behavior |
+|------|----------|
+| **discovery** | Infinite. Auto-generates chunks via simplex noise on GET if missing |
+| **prebuilt** | Bounded. Returns 404 for missing chunks. Editable in map editor |
+
+### Chunk Loading Pipeline (Unity)
+
+```
+ChunkManager.ForceLoadAroundPlayer()
+  │
+  ├─ Calculate 5x5 required chunks (RadialChunkLoadingStrategy)
+  ├─ Diff against loaded chunks
+  ├─ Request missing via ServerChunkProvider.LoadChunk(coord)
+  │     │
+  │     ├─ Return empty ChunkData placeholder (synchronous)
+  │     ├─ Start async coroutine → GET /api/maps/:id/chunks?chunkX=&chunkY=
+  │     ├─ Decode base64 layerData → ChunkData with TileFlags
+  │     ├─ Update cache: _cache[coord] = chunkData
+  │     └─ Fire OnChunkLoaded → MapsModule increments counter, re-renders
+  │
+  └─ Unload chunks beyond load radius
+```
+
+### Server-Side Generation (Discovery Mode)
+
+When a GET request arrives for a chunk that doesn't exist in a discovery map:
+1. Load world config (noise scale, biome thresholds, seed)
+2. Generate 32x32 tile grid using simplex-noise
+3. Map noise values to tileIds via biome thresholds
+4. Encode as base64 Uint16Array
+5. Save to DB and return
+
+---
+
+## 7. Workflow Engine
+
+State machine-based orchestration engine for multi-step game operations.
+
+### Architecture
+
+```
+Workflow Definition (XState JSON)
+  → WorkflowEngine.execute(definition, params)
+    → Iterate states sequentially
+    → Per state: resolve inputs via $.path expressions
+    → Execute invoke task (API call, transform, condition, etc.)
+    → Merge output into context
+    → Evaluate guards for transition
+    → Track in workflow_executions + node_executions
+  → Return final context
+```
+
+### Node Types
+
+**Core (builtin)**:
+- `core.setVariable` — Set value on context
+- `core.transform` — Map values via $.path expressions
+- `core.resolveConfig` — 3-tier config cascade lookup
+- `core.emit` — Fire event on EventBus
+- `core.sql` — Raw SQL execution
+- `core.log` — Debug logging
+- `core.delay` — Wait N milliseconds
+
+**Dynamic (from module APIs)**:
+- `sessions.getActive` — GET /api/sessions/active
+- `sessions.create` — POST /api/sessions
+- `sessions.update` — PUT /api/sessions/[id]
+- `positions.assignments.getActive` — GET /api/map-assignments/active
+- `positions.assignments.create` — POST /api/map-assignments
+- `positions.assignments.update` — PUT /api/map-assignments/[id]
+- *(all module API endpoints auto-registered)*
+
+### Transform Language
+
+```
+$.playerId          → context.playerId
+$.0.id              → context["0"].id (array spread: first element)
+$.checkActive_output → output of "checkActive" node
+```
+
+API array responses spread as `{0: item, 1: item, length: N}` in context. Single objects spread normally.
+
+### Seeded Workflows
+
+| Workflow | Slug | Trigger | Purpose |
+|----------|------|---------|---------|
+| Player Spawn | `player-spawn` | Manual (from Unity) | End old session → check last position → spawn at last pos or config default → create session + assignment |
+| Session End | `session-end` | Manual (from Unity) | Update session endedAt → update assignment position → emit event |
+| Session Resume | `session-resume` | Manual (from Unity) | Check active session → extract context → get assignment |
+
+---
+
+## 8. Unity Client Architecture
+
+### Module Manager
+
+7 modules initialized in dependency order: `core → networking → tiles → players → sessions → maps → ui`
+
+```
+ModuleManager
+  ├─ CoreModule          — WorldCoordConverter, TilemapPool registration
+  ├─ NetworkingModule    — Server URL configuration
+  ├─ TilesModule         — Fetch tile definitions, create ServerTileRegistry + TileFlagLookup
+  ├─ PlayersModule       — Fetch player data (hardcoded playerId=1 for now)
+  ├─ SessionsModule      — Workflow execution (spawn, end, resume) via polling
+  ├─ MapsModule          — Map listing, world creation/destruction, chunk management
+  └─ UIModule            — State machine game flow, IMGUI rendering
+```
+
+### Game Flow (UIModule State Machine)
+
+```
+Initializing → LoadingPlayer → CheckingResume
+  │                                    │
+  │                    ┌───────────────┤
+  │                    ▼               ▼
+  │              Resume Session   Map Selection
+  │                    │               │
+  │                    ▼               ▼
+  │              LoadingWorld      Spawning (workflow)
+  │                    │               │
+  │                    ▼               ▼
+  │              Playing ◄──────── LoadingWorld
+  │                    │
+  │                    ▼ (ESC or TTL)
+  │              EndingSession (workflow)
+  │                    │
+  └────────────────────┘ (loop to MapSelection)
+```
+
+### Key Components
+
+| Script | Purpose |
+|--------|---------|
+| `UIModule.cs` | Game flow coroutine, state transitions |
+| `GameHUD.cs` | IMGUI rendering for all states (MonoBehaviour) |
+| `MapsModule.cs` | World lifecycle, chunk loading, position tracking |
+| `SessionsModule.cs` | Workflow execution with polling, spawn/end/resume |
+| `PlayerMovement.cs` | WASD + arrow keys via New Input System, walkability checks |
+| `ServerChunkProvider.cs` | Async chunk fetching, base64 decode, cache management |
+| `PositionReporter.cs` | 1Hz position reporting to server |
+| `ChunkVisitTracker.cs` | Fog-of-war chunk tracking |
+| `SessionHeartbeat.cs` | Idle detection, session expiry TTL |
+| `DebugHUD.cs` | Developer overlay (position, chunks, FPS) |
+
+### Workflow Integration
+
+Unity communicates with the workflow engine via REST:
+1. `POST /api/workflows/:id/execute` with `{ params: { playerId, mapId, ... } }`
+2. Poll `GET /api/workflow-executions/:id` every 2s until `status == "completed"`
+3. Extract result from `execution.context` (spawnX, spawnY, sessionId, assignmentId)
+
+---
+
+## 9. Database Schema
+
+### Tables by Module
+
+**module-maps** (4 tables):
+- `tile_definitions` — tileId, name, colorHex, flags, category, spritePath
+- `world_configs` — noise parameters, biome thresholds, player/camera settings
+- `maps` — name, mode (discovery/prebuilt), status, bounds, worldConfigId
+- `map_chunks` — mapId, chunkX, chunkY, layerData (base64), version
+
+**module-players** (1 table):
+- `players` — username, displayName, status, totalPlayTimeSeconds, lastSeenAt
+
+**module-sessions** (1 table):
+- `player_sessions` — playerId, mapId, startedAt, endedAt, start/end tile, stats
+
+**module-player-map-position** (3 tables):
+- `player_map_assignments` — playerId, mapId, isActive, spawn/current tile
+- `player_positions` — high-frequency tracking (playerId, sessionId, tile/chunk/world coords)
+- `player_visited_chunks` — fog of war (playerId, mapId, chunkX, chunkY, visitCount)
+
+**module-workflows** (5 tables):
+- `workflows` — name, slug, definition (JSONB), triggerEvent, version
+- `workflow_executions` — status, context (JSONB), currentState, timing
+- `node_executions` — per-node tracking (input, output, duration)
+- `module_configs` — 3-tier config cascade (moduleName, scope, scopeId, key, value)
+- `workflow_versions` — version history with full definition snapshots
+
+**module-registry** (1 table):
+- `event_wirings` — source event → target module action
+
+**Total: 15 tables**
+
+---
+
+## 10. Event System
+
+### EventBus
+
+Centralized pub/sub with in-memory log. Modules emit events; wirings and listeners react.
+
+### All Events
+
+| Module | Event | Payload |
+|--------|-------|---------|
+| maps | `maps.tile.created` | id, tileId, name, colorHex, flags, category |
+| maps | `maps.tile.updated` | id, tileId, name, colorHex, flags, category |
+| maps | `maps.tile.deleted` | id, name |
+| maps | `maps.config.created` | id, name, isActive, mapMode |
+| maps | `maps.config.updated` | id, name, isActive, mapMode |
+| maps | `maps.config.activated` | id, name, isActive, previousActiveId |
+| maps | `maps.map.created` | id, name, mode, status, worldConfigId, seed |
+| maps | `maps.map.deleted` | id, name |
+| maps | `maps.map.generated` | id, name, status, totalChunks |
+| players | `players.player.created` | id, username, displayName, status |
+| players | `players.player.updated` | id, username, displayName, status |
+| players | `players.player.banned` | id, username, status |
+| sessions | `sessions.session.started` | id, playerId, mapId, startedAt, startTileX/Y |
+| sessions | `sessions.session.ended` | id, playerId, mapId, endedAt, endTileX/Y, stats |
+| position | `position.player.assigned` | playerId, mapId, spawnTileX/Y |
+| position | `position.player.left` | playerId, mapId, currentTileX/Y |
+| position | `position.player.moved` | playerId, sessionId, mapId, tile/chunk/world coords |
+| position | `position.chunk.visited` | playerId, mapId, chunkX/Y, visitCount |
+| workflows | `workflows.workflow.created/updated/deleted` | id, name, slug |
+| workflows | `workflows.execution.started/completed/failed` | executionId, context/error |
+| workflows | `workflows.node.started/completed/failed` | executionId, nodeId, output/error |
+
+---
+
+## 11. Map Editor
+
+React Three Fiber-based visual editor for tile maps, embedded in the dashboard at `/#/maps/:id/editor`.
+
+### Components
+
+```
+MapEditor (orchestrator)
+  ├─ TileMapCanvas     — Orthographic R3F canvas, camera controls
+  ├─ TilePalette       — Tile selector from server definitions
+  ├─ EditorToolbar     — Tool buttons (paint, erase, pan)
+  ├─ ChunkMesh         — Per-chunk mesh with DataTexture (GPU rendering)
+  ├─ PaintLayer        — Mouse interaction → tile placement
+  └─ CursorHighlight   — Hover indicator
+
+useMapEditor hook      — State management (chunks, selection, zoom, dirty tracking)
+```
+
+### Chunk Encoding
+
+- Server stores `layerData` as base64-encoded Uint16Array
+- Editor decodes to `Uint16Array(1024)` for in-memory editing
+- Dirty chunks tracked and saved on explicit save action
+- "Generate Discovery Chunks" button for Perlin noise filling
+
+---
+
+## 12. Future: Real-Time Server
+
+The original architecture document planned for a Node.js WebSocket game server with bitECS. This remains the long-term goal:
+
+- **Fixed-timestep game loop** (20-30 Hz) with ECS systems
+- **Client-side prediction** with server reconciliation
+- **Binary protocol** for movement, combat, abilities
+- **Spatial hashing** for interest management (AOI)
+- **Redis** for cross-server coordination, chunk caching
+- **Combat system**: abilities, AoE patterns, status effects, damage formulas
+
+See the original design notes in commit history for detailed specifications.
+
+---
+
+## 13. References & Resources
+
+### Architecture & Patterns
 | Resource | URL |
 |----------|-----|
 | Fix Your Timestep! | https://gafferongames.com/post/fix_your_timestep/ |
-| Overwatch GDC Netcode | https://www.youtube.com/watch?v=W3aieHjyNvw |
 | Colyseus Framework | https://github.com/colyseus/colyseus |
 | bitECS | https://github.com/NateTheGreatt/bitECS |
-| ECS Tutorial | https://generalistprogrammer.com/tutorials/entity-component-system-complete-ecs-architecture-tutorial |
-
-### Networking
-| Resource | URL |
-|----------|-----|
-| Client-Side Prediction (Gambetta) | https://www.gabrielgambetta.com/client-side-prediction-server-reconciliation.html |
-| Reading/Writing Packets (Gaffer) | https://gafferongames.com/post/reading_and_writing_packets/ |
-| Snapshot Interpolation (SnapNet) | https://snapnet.dev/blog/netcode-architectures-part-3-snapshot-interpolation/ |
-| Message Serialisation (Doppnet) | https://www.doppnet.com/game-networking-message-serialisation.html |
-| Netcode (Wikipedia) | https://en.wikipedia.org/wiki/Netcode |
+| Turborepo Internal Packages | https://turbo.build/repo/docs/guides/tools/typescript#internal-packages |
 
 ### Tile Systems & Worlds
 | Resource | URL |
 |----------|-----|
 | Grids and Coordinates (Red Blob) | https://www.redblobgames.com/grids/ |
-| Grid Pathfinding (Red Blob) | https://www.redblobgames.com/pathfinding/grids/algorithms.html |
 | Minecraft Chunk Format | https://minecraft.wiki/w/Chunk |
 | Millions of Tiles (Unity) | https://discussions.unity.com/t/best-way-to-handle-millions-of-tiles/826950 |
-| Spatial Partition Pattern | https://gameprogrammingpatterns.com/spatial-partition.html |
-| Flow Fields for RTS | https://howtorts.github.io/2014/01/04/basic-flow-fields.html |
-| 3D Grid Pathing (Gamedeveloper) | https://www.gamedeveloper.com/design/pathing-movement-on-a-3d-grid |
 
-### Combat & Game Design
+### Networking (Future)
 | Resource | URL |
 |----------|-----|
-| Unreal GAS | https://dev.epicgames.com/documentation/en-us/unreal-engine/understanding-the-unreal-engine-gameplay-ability-system |
-| RPG Damage Formulas | https://rpg.fandom.com/wiki/Damage_Formula |
-| Multiplayer Spell System | https://www.moddb.com/tutorials/designing-a-multiplayer-spell-system |
+| Client-Side Prediction (Gambetta) | https://www.gabrielgambetta.com/client-side-prediction-server-reconciliation.html |
+| Snapshot Interpolation (SnapNet) | https://snapnet.dev/blog/netcode-architectures-part-3-snapshot-interpolation/ |
 
-### Database & Infrastructure
+### Database
 | Resource | URL |
 |----------|-----|
-| Neon JSONB Types | https://neon.com/docs/data-types/json |
-| Neon Connection Pooling | https://neon.com/docs/connect/connection-pooling |
-| Postgres TOAST + JSONB | https://medium.com/@josef.machytka/how-postgresql-stores-jsonb-data-in-toast-tables-8fded495b308 |
-| Materialized Views | https://smartpostgres.com/posts/using-materialized-views-to-make-queries-run-faster/ |
-| AOI in MMOGs (Springer) | https://link.springer.com/10.1007/978-3-319-08234-9_239-1 |
-| Turborepo Internal Packages | https://turbo.build/repo/docs/guides/tools/typescript#internal-packages |
-| Redis Game Servers | https://dev.to/dowerdev/building-a-real-time-multiplayer-game-server-with-socketio-and-redis-architecture-and-583m |
-| Server Chunk Loading | https://001.arktimes.com/server-chunk-loading-how-games-handle-vast-worlds/ |
+| Neon Postgres Docs | https://neon.com/docs |
+| Drizzle ORM | https://orm.drizzle.team |
 
 ---
 
-*This document is the single source of truth for Oven's architecture. Update it as decisions evolve.*
+*This document reflects the actual implementation as of 2026-02-11. Update it as the project evolves.*

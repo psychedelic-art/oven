@@ -1,158 +1,164 @@
-# Maps Module — Implementation Result
+# Maps System — Implementation Reference
 
-## Result Summary
-
-The tile world system (Phases 1-3) is **complete and working**. The Unity client has 25+ C# scripts implementing an infinite procedurally-generated tile world with WASD movement, chunk streaming, and a tilemap pooling system. The dashboard has a `module-maps` package with 4 database tables (`tile_definitions`, `world_configs`, `maps`, `map_chunks`), 9 API handlers, and 9 emitted events.
-
-### What Was Built
-- **Unity**: Infinite procedural world with Perlin noise terrain (Water, Dirt, Grass, Stone, Flower, Rock tiles)
-- **Dashboard**: Full CRUD for tiles (with Vercel Blob sprite uploads), world configs, and maps
-- **Server ↔ Unity**: `ServerTileRegistry` fetches tile definitions from API; `SpriteCacheManager` caches sprites to disk
-- **Two modes**: Offline (procedural `RuntimeTileRegistry`) and Online (server-backed `ServerTileRegistry`)
+> Tile world system: tiles, chunks, maps, generation, and Unity client integration.
+> Last Updated: 2026-02-11
 
 ---
 
-## Original Implementation Plan
+## Overview
 
-The Oven project is a real-time action RPG on a tile grid. The Unity client at `D:\Games\Learning\Oven\oven-unity\` has URP 2D configured, Input System ready, and a full folder structure scaffolded. This plan implemented Steps 1.2 through 3.3 plus basic movement, resulting in a **playable demo where you WASD-walk around an infinite procedurally-generated tile world**.
-
----
-
-## Files to Create (24 files, in order)
-
-### Step 1: Data Structures (6 files)
-
-| # | File | Type | Purpose |
-|---|------|------|---------|
-| 1 | `Assets/Scripts/Core/Tiles/Data/WorldConstants.cs` | static class | `CHUNK_SIZE=32`, `LAYER_COUNT=4`, `TILES_PER_CHUNK=1024` |
-| 2 | `Assets/Scripts/Core/Tiles/Data/TileLayer.cs` | enum : byte | Ground=0, Decoration=1, Collision=2, Metadata=3 |
-| 3 | `Assets/Scripts/Core/Tiles/Data/TileFlags.cs` | [Flags] enum : byte | Walkable, Swimmable, Elevated, Transparent, Damaging, Interactable |
-| 4 | `Assets/Scripts/Core/Tiles/Data/TileData.cs` | struct (4 bytes) | `TileId(ushort)` + `Flags(TileFlags)` + `Metadata(byte)`. Uses `[StructLayout(Explicit, Size=4)]`. Has `HasFlag()`, `static Empty` |
-| 5 | `Assets/Scripts/Core/Tiles/Data/TileCoord.cs` | readonly struct | `(int x, int y)` with equality, hash, operators, `ToString()` |
-| 6 | `Assets/Scripts/Core/Chunks/Data/ChunkCoord.cs` | readonly struct | Same pattern as TileCoord |
-
-### Step 2: Coordinate Converter (2 files)
-
-| # | File | Type | Purpose |
-|---|------|------|---------|
-| 7 | `Assets/Scripts/Core/World/Interfaces/IWorldCoordConverter.cs` | interface | `WorldToTile`, `TileToWorld`, `TileToChunk`, `ChunkToTileOrigin`, `TileToLocal`, `TileToLocalIndex` |
-| 8 | `Assets/Scripts/Core/World/WorldCoordConverter.cs` | class | Implementation. **Critical**: uses `Mathf.FloorToInt` for negative-safe floor division. Tile = 1 Unity unit. `TileToWorld` returns tile center (+0.5, +0.5) |
-
-### Step 3: Chunk Data (1 file)
-
-| # | File | Type | Purpose |
-|---|------|------|---------|
-| 9 | `Assets/Scripts/Core/Chunks/Data/ChunkData.cs` | class | Holds `TileData[4][1024]` (4 layers x 32x32). `GetTile(layer, x, y)`, `SetTile(layer, x, y, data)`, `GetLayerData(layer)` for batch rendering |
-
-### Step 4: Infrastructure (1 file)
-
-| # | File | Type | Purpose |
-|---|------|------|---------|
-| 10 | `Assets/Scripts/Infrastructure/DI/ServiceLocator.cs` | static class | `Register<T>()`, `Get<T>()`, `TryGet<T>()`, `Clear()`. Simple Dictionary-based, no framework needed |
-
-### Step 5: Chunk Provider (2 files)
-
-| # | File | Type | Purpose |
-|---|------|------|---------|
-| 11 | `Assets/Scripts/Core/Chunks/Interfaces/IChunkProvider.cs` | interface | `LoadChunk(coord)`, `UnloadChunk(coord)`, `IsChunkLoaded(coord)`, events |
-| 12 | `Assets/Scripts/Core/Chunks/Services/ProceduralChunkProvider.cs` | class | Perlin noise terrain: Water(<0.30), Dirt(0.30-0.45), Grass(0.45-0.75), Stone(>0.75). Noise sampled at `tileX * 0.05f + 1000f` offset. Dictionary cache. Also exposes `IsTileWalkable(TileCoord)` |
-
-**Tile IDs**: 0=Empty, 1=Grass, 2=Dirt, 3=Water, 4=Stone
-
-### Step 6: Loading Strategy (2 files)
-
-| # | File | Type | Purpose |
-|---|------|------|---------|
-| 13 | `Assets/Scripts/Core/Chunks/Interfaces/IChunkLoadingStrategy.cs` | interface | `GetRequiredChunks(playerChunk)` returns 5x5 HashSet, `PrioritizeLoading(toLoad, moveDir, playerChunk)` sorts by distance + movement direction bias |
-| 14 | `Assets/Scripts/Core/Chunks/Services/RadialChunkLoadingStrategy.cs` | class | LoadRadius=2 (5x5=25 chunks). Priority: closer chunks first, movement-aligned chunks biased higher |
-
-### Step 7: Tile Rendering (3 files)
-
-| # | File | Type | Purpose |
-|---|------|------|---------|
-| 15 | `Assets/Scripts/Core/Rendering/Interfaces/ITileRegistry.cs` | interface | `GetTileBase(ushort tileId)`, `HasTile(ushort)` |
-| 16 | `Assets/Scripts/Core/Rendering/TileFactory.cs` | static class | `CreateSolidTile(Color)` — generates 1x1 Texture2D + Sprite + Tile at runtime. No asset files needed |
-| 17 | `Assets/Scripts/Core/Rendering/RuntimeTileRegistry.cs` | class | Creates tiles via TileFactory: Grass=#4CAF50, Dirt=#8B6914, Water=#2196F3, Stone=#9E9E9E |
-
-### Step 8: Tilemap Pool (1 file)
-
-| # | File | Type | Purpose |
-|---|------|------|---------|
-| 18 | `Assets/Scripts/Infrastructure/Pooling/TilemapPool.cs` | MonoBehaviour | Pre-creates 30 Grid GameObjects, each with 4 child Tilemaps (one per layer). `Acquire()` / `Release()` with auto-expand. Grid cell size = (1,1,0) |
-
-### Step 9: Chunk Renderer (2 files)
-
-| # | File | Type | Purpose |
-|---|------|------|---------|
-| 19 | `Assets/Scripts/Core/Rendering/Interfaces/IChunkRenderer.cs` | interface | `RenderChunk(coord, data)`, `UnrenderChunk(coord)` |
-| 20 | `Assets/Scripts/Core/Rendering/TilemapChunkRenderer.cs` | class | Acquires Grid from pool, positions at `(chunkX*32, chunkY*32, 0)`, maps TileData→TileBase via ITileRegistry, calls `SetTilesBlock()` for batch assignment (never individual SetTile). Tracks active chunks in Dictionary |
-
-### Step 10: Chunk Manager (1 file)
-
-| # | File | Type | Purpose |
-|---|------|------|---------|
-| 21 | `Assets/Scripts/Core/Chunks/Services/ChunkManager.cs` | MonoBehaviour | **The orchestrator**. Tracks player position, detects chunk boundary crossings, diffs required vs loaded chunks, unloads old chunks immediately, enqueues new chunks with priority ordering, rate-limits to 2 loads/frame. `ForceLoadAroundPlayer()` for initial burst. Exposes `IsTileWalkable(TileCoord)` |
-
-### Step 11: Player & Camera (2 files)
-
-| # | File | Type | Purpose |
-|---|------|------|---------|
-| 22 | `Assets/Scripts/Game/Movement/PlayerMovement.cs` | MonoBehaviour | WASD input via Input System. Smooth movement at 5 tiles/sec. Walkability check against Ground layer flags. Wall-sliding (try x-only / y-only on diagonal block) |
-| 23 | `Assets/Scripts/Game/Movement/CameraFollow.cs` | MonoBehaviour | `LateUpdate` smooth follow with offset (0,0,-10). Attached to Main Camera |
-
-### Step 12: Bootstrap + Debug (2 files)
-
-| # | File | Type | Purpose |
-|---|------|------|---------|
-| 24 | `Assets/Scripts/Infrastructure/GameBootstrap.cs` | MonoBehaviour | `Awake()`: creates all services, registers in ServiceLocator, creates Player (gold 1x1 sprite, sortingOrder=100), attaches PlayerMovement + CameraFollow, calls `ChunkManager.ForceLoadAroundPlayer()` |
-| 25 | `Assets/Scripts/Infrastructure/DebugHUD.cs` | MonoBehaviour | `OnGUI()`: player position, tile/chunk coords, loaded chunk count, FPS |
+The maps system spans the full stack:
+- **Server**: Tile definitions, world configs, maps, chunks stored in Neon Postgres
+- **Generation**: Simplex noise terrain generation (server-side)
+- **Editor**: React Three Fiber visual editor for painting tiles
+- **Unity Client**: Async chunk streaming, tilemap rendering, WASD movement
 
 ---
 
-## Key Technical Decisions
+## Server Components (`@oven/module-maps`)
 
-1. **Runtime tile creation** via `TileFactory` — no manual asset creation needed for the prototype
-2. **Each chunk gets its own Grid** from the pool — local coords (0,0)→(31,31), positioned at world `(chunkX*32, chunkY*32)`
-3. **Negative coordinate handling**: `Mathf.FloorToInt((float)tileX / CHUNK_SIZE)` everywhere — C# integer division truncates toward zero which is wrong for negatives
-4. **Synchronous chunk loading** for procedural provider (Perlin noise is instant). Interface supports async extension later for network provider
-5. **No .asmdef files** initially — add later for compilation isolation
-6. **No prefabs or scene assets** — GameBootstrap creates everything at runtime
+### Tables
+
+**tile_definitions** — 6 seeded tiles
+| tileId | Name | Flags | Category |
+|--------|------|-------|----------|
+| 1 | Grass | Walkable (1) | terrain |
+| 2 | Dirt | Walkable (1) | terrain |
+| 3 | Water | Swimmable (2) | terrain |
+| 4 | Stone | Walkable+Elevated (5) | terrain |
+| 5 | Flower | Walkable (1) | decoration |
+| 6 | Rock | None (0) | obstacle |
+
+Sprites: Grass has a Vercel Blob sprite. Others use `colorHex` fallback.
+
+**world_configs** — Chunk system parameters, terrain noise, biome thresholds (JSONB), player/camera settings.
+
+**maps** — name, mode (discovery/prebuilt), status (draft/generating/ready/archived), bounds (JSONB), seed, worldConfigId FK.
+
+**map_chunks** — mapId + (chunkX, chunkY) unique. `layerData` is base64-encoded Uint16Array (1024 entries = 32x32 tiles).
+
+### Generation (Discovery Mode)
+
+When `GET /api/maps/:id/chunks?chunkX=0&chunkY=0` is called and the chunk doesn't exist:
+
+1. Look up the map's worldConfig (noise scale, biome thresholds, seed)
+2. For each of the 32x32 tiles, compute simplex noise value
+3. Map noise value to tileId via biome thresholds:
+   - `< -0.2` → Water (3)
+   - `< 0.0` → Dirt (2)
+   - `< 0.5` → Grass (1)
+   - `< 0.7` → Stone (4)
+   - otherwise → Flower (5)
+4. Encode as Uint16Array → base64 → save to DB → return
+
+### API (10 handlers)
+
+See [routes.md](../routes.md) for full reference. Key endpoints:
+- `GET /api/maps/:id/chunks?chunkX=&chunkY=` — auto-generates for discovery maps
+- `POST /api/maps/:id/chunks` — upsert with `onConflictDoUpdate` (map editor saves)
+- `POST /api/maps/:id/generate` — bulk generation
 
 ---
 
-## Scene Setup
+## Map Editor (`@oven/map-editor`)
 
-Only one manual step after all code is written:
-1. Open `Assets/Scenes/SampleScene.unity`
-2. Create empty GameObject "GameBootstrap" → attach `GameBootstrap` and `DebugHUD` components
-3. Camera already exists (orthographic, size=5 ≈ 10 tiles visible vertically)
+React Three Fiber package embedded at `/#/maps/:id/editor`.
+
+### Architecture
+
+```
+MapEditor
+  ├─ EditorToolbar        — Paint / Erase / Pan tool selection
+  ├─ TilePalette          — Tile list fetched from /api/tiles
+  ├─ TileMapCanvas        — R3F Canvas (orthographic camera)
+  │   ├─ ChunkMesh[]      — DataTexture per chunk (GPU rendering)
+  │   ├─ PaintLayer       — Raycasting for paint/erase interaction
+  │   ├─ CursorHighlight  — Hover indicator mesh
+  │   └─ ChunkGrid        — Debug grid lines
+  └─ useMapEditor hook    — State: chunks, selectedTile, tool, zoom, dirty set
+```
+
+### Chunk Encoding
+
+```typescript
+decodeTileData(base64: string): Uint16Array  // layerData → in-memory array
+encodeTileData(tiles: Uint16Array): string    // in-memory array → base64 for save
+chunkKey(x: number, y: number): string        // "x,y" coordinate key
+```
+
+### Tools
+- **Paint**: Click/drag to place selected tile on ground layer
+- **Erase**: Click/drag to clear tile (set tileId = 0)
+- **Pan**: Middle-click or hold tool to drag camera
+- **Fill**: Planned (not yet implemented)
+- **Undo/Redo**: Planned
 
 ---
 
-## Verification
+## Unity Client
 
-After implementation, enter Play Mode and confirm:
-- [x] 25 chunks render around origin (colored tiles: green grass, brown dirt, blue water, gray stone)
-- [x] WASD moves the gold player square smoothly
-- [x] Camera follows the player
-- [x] Walking into water is blocked (wall-sliding works on diagonals)
-- [x] Moving to new chunk boundaries triggers chunk streaming (new chunks appear, distant ones disappear)
-- [x] Walking far in any direction works infinitely — no edge, no errors
-- [x] DebugHUD shows correct tile/chunk coordinates including negatives
-- [x] No frame drops during chunk streaming (rate-limited to 2/frame)
-- [x] Console has no errors or warnings
+### Module: MapsModule
+
+Manages the full map lifecycle on the client side.
+
+**Initialization**: Fetches `GET /api/maps` → stores `AvailableMaps[]`
+
+**StartWorld(mapId, spawnX, spawnY, sessionId, assignmentId)**:
+1. Creates `ServerChunkProvider` (async chunk fetching)
+2. Creates `ChunkManager` with `RadialChunkLoadingStrategy(radius=2)` → 5x5 grid
+3. Creates `TilemapChunkRenderer` (pooled Unity Tilemaps)
+4. Subscribes to `OnChunkLoaded` → increments counter, re-renders chunk
+5. Creates Player GameObject with sprite, PlayerMovement, PositionReporter
+6. Sets up camera follow
+7. Calls `ForceLoadAroundPlayer()` → triggers async chunk loading
+
+**WaitForInitialChunks(minChunks)**: Coroutine yields until N async chunks arrive (15s timeout).
+
+**DestroyWorld()**: Cleans up all GameObjects, clears chunk cache.
+
+### Module: ServerChunkProvider
+
+Implements `IChunkProvider`. On `LoadChunk(coord)`:
+1. Returns empty `ChunkData` placeholder immediately (synchronous)
+2. Starts coroutine to `GET /api/maps/:id/chunks?chunkX=&chunkY=`
+3. On response: decodes base64 → builds `ChunkData` with `TileFlags` from `TileFlagLookup`
+4. Updates cache and fires `OnChunkLoaded` event
+
+### Key Files (~40 C# scripts total)
+
+| Path | Purpose |
+|------|---------|
+| `Core/Tiles/Data/` | TileData, TileCoord, ChunkCoord, TileFlags, WorldConstants |
+| `Core/Chunks/Data/` | ChunkData (4-layer tile storage) |
+| `Core/Chunks/Services/` | ChunkManager, RadialChunkLoadingStrategy |
+| `Core/Rendering/` | TilemapChunkRenderer, TilemapPool, ServerTileRegistry, TileFactory |
+| `Core/Networking/` | ApiClient, JsonHelper, DTO classes |
+| `Core/World/` | WorldCoordConverter |
+| `Game/Movement/` | PlayerMovement (New Input System), CameraFollow |
+| `Modules/Maps/` | MapsModule, ServerChunkProvider, PositionReporter, ChunkVisitTracker |
+| `Modules/Tiles/` | TilesModule, TileFlagLookup |
+| `Modules/UI/` | UIModule (state machine), GameHUD (IMGUI) |
+| `Modules/Sessions/` | SessionsModule, SessionHeartbeat, SessionData DTOs |
+| `Modules/Players/` | PlayersModule |
+| `Infrastructure/` | ServiceLocator, ModuleManager, ModuleContext, CoroutineRunner |
 
 ---
 
-## ProgressTracker Updates
+## Coordinate System
 
-After completion, mark these as done:
-- Step 1.2 (Tile Data Structures) ✅
-- Step 1.3 (Coordinate System & Converter) ✅
-- Step 1.4 (Chunk Data Structures) ✅
-- Step 2.1 (Chunk Provider Interface) ✅
-- Step 2.2 (Chunk Loading Strategy) ✅
-- Step 2.3 (Chunk Manager) ✅
-- Step 3.1 (Tilemap Pool) ✅
-- Step 3.2 (Chunk Renderer) ✅
-- Step 3.3 (Integration) ✅
+```
+World Position (float)  →  Unity pixel/unit space
+       ↕ IWorldCoordConverter
+Tile Position (int)     →  Discrete grid (tileX, tileY)
+       ↕ floor division
+Chunk Position (int)    →  Which chunk (chunkX, chunkY)
+       ↕ modulo
+Local Tile Index (int)  →  Position within chunk (0-1023)
+```
+
+**Constants**: `CHUNK_SIZE = 32`, `LAYER_COUNT = 4`, `TILES_PER_CHUNK = 1024`
+
+**Formulas**:
+- `chunkX = FloorToInt(tileX / 32)`
+- `localX = ((tileX % 32) + 32) % 32` (handles negatives)
+- `tileIndex = localY * 32 + localX`

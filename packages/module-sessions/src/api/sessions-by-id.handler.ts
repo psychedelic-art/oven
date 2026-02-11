@@ -40,8 +40,10 @@ export async function PUT(
     .update(playerSessions)
     .set({
       ...body,
-      // If endedAt is being set, this ends the session
-      ...(body.endedAt ? { endedAt: new Date(body.endedAt) } : {}),
+      // If endedAt is being set, this ends the session. "now" → current time.
+      ...(body.endedAt
+        ? { endedAt: body.endedAt === 'now' ? new Date() : new Date(body.endedAt) }
+        : {}),
     })
     .where(eq(playerSessions.id, sessionId))
     .returning();

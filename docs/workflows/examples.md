@@ -1,116 +1,144 @@
 # Workflow Examples
 
-## Example 1: Player Onboarding
+> Real workflow definitions from the Oven project with detailed walkthrough.
+> Last Updated: 2026-02-11
 
-When a player connects, this workflow creates a session, checks for an existing map assignment, creates one if needed, and records the initial position.
+---
 
-**Trigger**: `players.player.created`
+## Example 1: Player Spawn (`player-spawn`)
+
+**Trigger**: Manual (from Unity client on map selection)
+**Input**: `{ playerId, mapId }`
+**Output**: `{ spawnX, spawnY, sessionId, assignmentId }`
+
+### Flow
 
 ```
-[Trigger] → [Create Session] → [Check Active Assignment]
-                                   ├── (exists) → [Record Position] → [End]
-                                   └── (not exists) → [Create Assignment] → [Record Position] → [End]
+checkActiveSession (sessions.getActive)
+  → evaluateActiveSession (always block)
+    → [has session] saveOldSessionId (core.setVariable) → endOldSession (sessions.update)
+    → [no session] (fall through)
+  → checkLastPosition (positions.assignments.getActive)
+    → evaluateLastPosition (always block)
+      → [has currentTileX] useLastPosition (core.setVariable) → setSpawnY (core.setVariable)
+      → [no position] resolveSpawnConfig (core.resolveConfig) → extractSpawnFromConfig (core.transform)
+    → createSession (sessions.create)
+      → saveSessionId (core.setVariable)
+        → createAssignment (positions.assignments.create)
+          → saveAssignmentId (core.setVariable)
+            → done
 ```
 
-### Definition
+### Key Details
+
+- `checkActiveSession`: GET /api/sessions/active?playerId=X → returns **array**
+- Guard: `{ key: "0", operator: "exists" }` checks if array has elements
+- `endOldSession`: PUT /api/sessions/[id] with `endedAt: "now"` (server converts to Date)
+- `checkLastPosition`: GET /api/map-assignments/active?playerId=X → returns **single object** or null
+- Guard: `{ key: "currentTileX", operator: "exists" }` checks saved position
+- Config fallback: reads `START_CELL_POSITION` config → `{x: 16, y: 16}`
+- `core.setVariable` used to explicitly set `spawnX`, `spawnY`, `sessionId`, `assignmentId` on context
+
+### Gotchas
+
+1. `sessions.getActive` returns array → spread as `{0: item, length: N}` → use `$.0.id`
+2. `positions.assignments.getActive` returns single object → spread normally → use `$.currentTileX`
+3. `endedAt: "now"` is a special value handled by the sessions PUT handler
+4. Seed uses `onConflictDoUpdate` to ensure definition changes apply on re-seed
+
+---
+
+## Example 2: Session End (`session-end`)
+
+**Trigger**: Manual (from Unity client on ESC or TTL expiry)
+**Input**: `{ playerId, sessionId, assignmentId, endTileX, endTileY, tilesTraveled, chunksLoaded }`
+**Output**: Session and assignment updated
+
+### Flow
+
+```
+updateSession (sessions.update)
+  → updateAssignment (positions.assignments.update)
+    → emitSessionEnded (core.emit)
+      → done
+```
+
+### Key Details
+
+- `updateSession`: PUT /api/sessions/[sessionId] with `endedAt: "now"`, endTileX/Y, stats
+- `updateAssignment`: PUT /api/map-assignments/[assignmentId] with `currentTileX/Y`
+- `emitSessionEnded`: Fires `sessions.session.ended` event for other modules to react
+
+---
+
+## Example 3: Session Resume (`session-resume`)
+
+**Trigger**: Manual (from Unity client on startup check)
+**Input**: `{ playerId }`
+**Output**: `{ hasSession, sessionId, mapId, spawnX, spawnY, assignmentId }` or `{ hasSession: false }`
+
+### Flow
+
+```
+checkActiveSession (sessions.getActive)
+  → evaluateSession (always block)
+    → [has session] extractSessionData (core.transform) → getAssignment (positions.assignments.getActive) → done
+    → [no session] setNoSession (core.setVariable) → done
+```
+
+### Key Details
+
+- Guard: `{ key: "0", operator: "exists" }` — checks if active session array has elements
+- `extractSessionData`: Maps `$.0.id` → `sessionId`, `$.0.mapId` → `mapId`, etc.
+- `getAssignment`: Fetches active assignment to get spawn position for resuming
+- `setNoSession`: Sets `hasSession: false` on context — Unity checks this to skip resume
+
+---
+
+## Workflow Definition Format
+
+All workflows use XState-inspired JSON with this structure:
 
 ```json
 {
-  "id": "player-onboarding",
-  "initial": "trigger",
+  "id": "workflow-name",
+  "initial": "firstStateName",
   "states": {
-    "trigger": {
-      "always": { "target": "createSession" }
-    },
-    "createSession": {
+    "firstStateName": {
       "invoke": {
-        "src": "sessions.create",
-        "input": { "playerId": "$.id", "mapId": 1 },
-        "onDone": { "target": "checkAssignment" },
-        "onError": { "target": "failed" }
-      }
-    },
-    "checkAssignment": {
-      "invoke": {
-        "src": "positions.assignments.getActive",
-        "input": { "playerId": "$.id" },
-        "onDone": { "target": "branchOnAssignment" }
-      }
-    },
-    "branchOnAssignment": {
+        "type": "node.type",
+        "input": {
+          "params": { "key": "$.path" },
+          "body": { "field": "$.value" },
+          "pathParams": { "id": "$.entityId" }
+        },
+        "outputKey": "optionalOutputName"
+      },
       "always": [
         {
-          "target": "recordPosition",
-          "guard": {
-            "type": "condition",
-            "params": { "key": "data", "operator": "exists" }
-          }
+          "target": "nextState",
+          "guard": { "key": "someKey", "operator": "exists" }
         },
-        { "target": "createAssignment" }
+        { "target": "defaultState" }
       ]
     },
-    "createAssignment": {
-      "invoke": {
-        "src": "positions.assignments.create",
-        "input": { "playerId": "$.id", "mapId": 1 },
-        "onDone": { "target": "recordPosition" }
-      }
-    },
-    "recordPosition": {
-      "invoke": {
-        "src": "positions.record",
-        "input": {
-          "playerId": "$.id",
-          "sessionId": "$.createSession_output.id",
-          "mapId": 1,
-          "tileX": 0, "tileY": 0,
-          "chunkX": 0, "chunkY": 0,
-          "worldX": 0, "worldY": 0
-        },
-        "onDone": { "target": "done" }
-      }
-    },
-    "done": { "type": "final" },
-    "failed": { "type": "final" }
+    "done": { "type": "final" }
   }
 }
 ```
 
----
+### Invoke Input Fields
 
-## Example 2: Map Generation Pipeline
+- `params`: Query parameters for GET requests (e.g., `?playerId=1`)
+- `body`: Request body for POST/PUT requests
+- `pathParams`: URL path parameters (e.g., `/sessions/[id]`)
 
-When a map is created, auto-activate a world config and generate initial chunks.
+### Guard Types
 
-**Trigger**: `maps.map.created`
+- `always`: Array of guarded transitions. First match wins. Last entry without guard = default.
+- Each guard: `{ key, operator, value? }` evaluated against current context.
 
-```
-[Trigger] → [Get Active Config] → [Generate Chunks] → [Update Map Status] → [Emit Ready] → [End]
-```
+### Special Values
 
----
-
-## Example 3: Session Cleanup on Player Ban
-
-When a player is banned, end all active sessions and deactivate map assignments.
-
-**Trigger**: `players.player.banned`
-
-```
-[Trigger] → [Get Active Sessions] → [End Each Session] → [Deactivate Assignment] → [Log] → [End]
-```
-
----
-
-## Creating Workflows via the Editor
-
-1. Go to `/#/workflows/create` and enter a name
-2. Click "Visual Editor" on the workflow edit page
-3. Drag a **Trigger** node from the palette
-4. Drag **API Call** nodes for each step
-5. Connect them with edges (drag from output handle to input handle)
-6. For branching: add a **Condition** node, connect true/false outputs to different paths
-7. End with an **End** node
-8. Click **Save** to convert the graph to XState JSON
-9. Set a **Trigger Event** on the workflow edit page for auto-start
-10. Click **Execute** to test manually
+- `"now"` in `endedAt` body field → server converts to `new Date()`
+- `$.path` expressions in any input value → resolved from context at runtime
