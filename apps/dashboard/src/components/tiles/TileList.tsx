@@ -8,6 +8,8 @@ import {
   FunctionField,
   TextInput,
   SelectInput,
+  ReferenceInput,
+  AutocompleteInput,
 } from 'react-admin';
 import { Box, Chip } from '@mui/material';
 
@@ -32,6 +34,9 @@ const tileFilters = [
     ]}
     alwaysOn
   />,
+  <ReferenceInput key="tileset" source="tilesetId" reference="tilesets" alwaysOn>
+    <AutocompleteInput optionText="name" label="Tileset" />
+  </ReferenceInput>,
 ];
 
 export default function TileList() {

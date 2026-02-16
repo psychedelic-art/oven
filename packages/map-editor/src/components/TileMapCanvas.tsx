@@ -1,34 +1,76 @@
 'use client';
 
-import { useMemo } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { useEffect, useMemo } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
 import { MapControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { ChunkMesh } from './ChunkMesh';
 import { ChunkBoundaries } from './ChunkGrid';
 import { PaintLayer } from './PaintLayer';
 import { CursorHighlight } from './CursorHighlight';
-import type { ChunkData, TileDef, EditorTool } from '../types';
+import { StampPreview } from './StampPreview';
+import { BoundsOverlay } from './BoundsOverlay';
+import { useSpriteLoader } from '../hooks/useSpriteLoader';
+import type { ChunkData, TileDef, TilesetDef, EditorTool, MapBounds, StampPattern } from '../types';
+
+/**
+ * Ensures the orthographic camera is oriented straight down (no perspective tilt).
+ * Resets up vector and rotation on mount to prevent any accidental rotation.
+ */
+function CameraSetup() {
+  const { camera } = useThree();
+  useEffect(() => {
+    camera.up.set(0, 1, 0);
+    camera.rotation.set(0, 0, 0);
+    camera.updateProjectionMatrix();
+  }, [camera]);
+  return null;
+}
 
 interface TileMapCanvasProps {
   chunks: Map<string, ChunkData>;
   tiles: TileDef[];
+  tilesets?: TilesetDef[];
   chunkSize: number;
   tool: EditorTool;
   onPaint: (worldX: number, worldY: number) => void;
   onEnsureChunk: (cx: number, cy: number) => void;
+  onStampPaint?: (worldX: number, worldY: number) => void;
+  onStrokeStart?: () => void;
+  onStrokeEnd?: (type: string) => void;
+  onCursorMove?: (worldX: number, worldY: number) => void;
+  onPickTile?: (worldX: number, worldY: number) => void;
+  onInspectTile?: (worldX: number, worldY: number) => void;
+  bounds?: MapBounds | null;
+  boundsVisible?: boolean;
+  onBoundsChange?: (bounds: MapBounds) => void;
+  activeStamp?: StampPattern | null;
   style?: React.CSSProperties;
 }
 
 function Scene({
   chunks,
   tiles,
+  tilesets,
   chunkSize,
   tool,
   onPaint,
   onEnsureChunk,
+  onStampPaint,
+  onStrokeStart,
+  onStrokeEnd,
+  onCursorMove,
+  onPickTile,
+  onInspectTile,
+  bounds,
+  boundsVisible,
+  onBoundsChange,
+  activeStamp,
 }: Omit<TileMapCanvasProps, 'style'>) {
-  // Build tile color lookup once
+  // Load spritesheet images for tile rendering
+  const spriteCache = useSpriteLoader(tilesets ?? [], tiles);
+
+  // Build tile color lookup (fallback for tiles without sprites)
   const tileColorMap = useMemo(() => {
     const map = new Map<number, THREE.Color>();
     for (const t of tiles) {
@@ -41,35 +83,61 @@ function Scene({
     return map;
   }, [tiles]);
 
-  // Visible chunk coordinates
-  const visibleChunks = useMemo(() => {
-    return Array.from(chunks.values()).map(
-      (c) => [c.chunkX, c.chunkY] as [number, number]
-    );
+  // Visible chunk coordinates — filter out completely empty chunks
+  const { renderedChunks, allChunkCoords } = useMemo(() => {
+    const rendered: [string, ChunkData][] = [];
+    const coords: [number, number][] = [];
+    for (const [key, chunk] of chunks.entries()) {
+      coords.push([chunk.chunkX, chunk.chunkY]);
+      // Skip rendering empty chunks (all tiles === 0)
+      if (!chunk.tiles.every(t => t === 0)) {
+        rendered.push([key, chunk]);
+      }
+    }
+    return { renderedChunks: rendered, allChunkCoords: coords };
   }, [chunks]);
 
   const isPanTool = tool === 'pan';
 
   return (
     <>
-      {/* Chunk tiles */}
-      {Array.from(chunks.entries()).map(([key, chunk]) => (
+      {/* Camera setup — lock orientation */}
+      <CameraSetup />
+
+      {/* Chunk tiles (skip empty chunks) */}
+      {renderedChunks.map(([key, chunk]) => (
         <ChunkMesh
           key={key}
           chunk={chunk}
           chunkSize={chunkSize}
-          tiles={tiles}
           tileColorMap={tileColorMap}
+          spriteCache={spriteCache}
         />
       ))}
 
       {/* Chunk boundaries */}
-      <ChunkBoundaries chunkSize={chunkSize} visibleChunks={visibleChunks} />
+      <ChunkBoundaries chunkSize={chunkSize} visibleChunks={allChunkCoords} />
+
+      {/* Bounds overlay */}
+      {bounds && onBoundsChange && (
+        <BoundsOverlay
+          bounds={bounds}
+          visible={boundsVisible ?? true}
+          chunkSize={chunkSize}
+          onBoundsChange={onBoundsChange}
+        />
+      )}
 
       {/* Paint interaction layer */}
       <PaintLayer
         onPaint={onPaint}
         onEnsureChunk={onEnsureChunk}
+        onStampPaint={onStampPaint}
+        onStrokeStart={onStrokeStart}
+        onStrokeEnd={onStrokeEnd}
+        onCursorMove={onCursorMove}
+        onPickTile={onPickTile}
+        onInspectTile={onInspectTile}
         tool={tool}
         chunkSize={chunkSize}
       />
@@ -77,15 +145,29 @@ function Scene({
       {/* Cursor highlight */}
       <CursorHighlight tool={tool} />
 
-      {/* Camera controls — pan/zoom with mouse */}
+      {/* Stamp preview */}
+      <StampPreview
+        tool={tool}
+        activeStamp={activeStamp ?? null}
+        tileColorMap={tileColorMap}
+        spriteCache={spriteCache}
+      />
+
+      {/* Camera controls — pan/zoom with mouse, no rotation */}
       <MapControls
         enableRotate={false}
         enableDamping
         dampingFactor={0.15}
+        target={[16, 16, 0]}
+        screenSpacePanning
         mouseButtons={{
           LEFT: isPanTool ? THREE.MOUSE.PAN : undefined as any,
           MIDDLE: THREE.MOUSE.PAN,
           RIGHT: THREE.MOUSE.PAN,
+        }}
+        touches={{
+          ONE: THREE.TOUCH.PAN,
+          TWO: THREE.TOUCH.DOLLY_PAN,
         }}
         minZoom={0.1}
         maxZoom={20}
@@ -101,10 +183,21 @@ function Scene({
 export function TileMapCanvas({
   chunks,
   tiles,
+  tilesets,
   chunkSize,
   tool,
   onPaint,
   onEnsureChunk,
+  onStampPaint,
+  onStrokeStart,
+  onStrokeEnd,
+  onCursorMove,
+  onPickTile,
+  onInspectTile,
+  bounds,
+  boundsVisible,
+  onBoundsChange,
+  activeStamp,
   style,
 }: TileMapCanvasProps) {
   return (
@@ -127,10 +220,21 @@ export function TileMapCanvas({
       <Scene
         chunks={chunks}
         tiles={tiles}
+        tilesets={tilesets}
         chunkSize={chunkSize}
         tool={tool}
         onPaint={onPaint}
         onEnsureChunk={onEnsureChunk}
+        onStampPaint={onStampPaint}
+        onStrokeStart={onStrokeStart}
+        onStrokeEnd={onStrokeEnd}
+        onCursorMove={onCursorMove}
+        onPickTile={onPickTile}
+        onInspectTile={onInspectTile}
+        bounds={bounds}
+        boundsVisible={boundsVisible}
+        onBoundsChange={onBoundsChange}
+        activeStamp={activeStamp}
       />
     </Canvas>
   );

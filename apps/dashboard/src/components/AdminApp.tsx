@@ -14,6 +14,12 @@ import TileEdit from './tiles/TileEdit';
 import TileCreate from './tiles/TileCreate';
 import TileShow from './tiles/TileShow';
 
+// Tilesets
+import TilesetList from './tilesets/TilesetList';
+import TilesetCreate from './tilesets/TilesetCreate';
+import TilesetEdit from './tilesets/TilesetEdit';
+import TilesetShow from './tilesets/TilesetShow';
+
 // World Configs
 import WorldConfigList from './world-configs/WorldConfigList';
 import WorldConfigCreate from './world-configs/WorldConfigCreate';
@@ -72,6 +78,7 @@ import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
 
 const CustomLayout = (props: any) => <Layout {...props} menu={CustomMenu} />;
 
@@ -87,6 +94,15 @@ export default function AdminApp() {
         edit={TileEdit}
         create={TileCreate}
         show={TileShow}
+      />
+      <Resource
+        name="tilesets"
+        options={{ label: 'Tilesets' }}
+        icon={ViewModuleIcon}
+        list={TilesetList}
+        edit={TilesetEdit}
+        create={TilesetCreate}
+        show={TilesetShow}
       />
       <Resource
         name="world-configs"

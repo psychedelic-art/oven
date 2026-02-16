@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq, sql, asc, desc, ilike } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
 import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+import { withHandler } from '@oven/module-registry/api-errors';
 import { tileDefinitions } from '../schema';
 
 export async function GET(request: NextRequest) {
@@ -20,6 +21,9 @@ export async function GET(request: NextRequest) {
   if (params.filter.q) {
     query = query.where(ilike(tileDefinitions.name, `%${params.filter.q}%`));
   }
+  if (params.filter.tilesetId) {
+    query = query.where(eq(tileDefinitions.tilesetId, parseInt(params.filter.tilesetId as string, 10)));
+  }
 
   const [data, countResult] = await Promise.all([
     query.limit(params.limit).offset(params.offset),
@@ -29,9 +33,9 @@ export async function GET(request: NextRequest) {
   return listResponse(data, 'tiles', params, countResult[0].count);
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withHandler(async (request: NextRequest) => {
   const db = getDb();
   const body = await request.json();
   const [result] = await db.insert(tileDefinitions).values(body).returning();
   return NextResponse.json(result, { status: 201 });
-}
+});

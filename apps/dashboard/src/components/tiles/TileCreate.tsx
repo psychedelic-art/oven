@@ -6,6 +6,8 @@ import {
   TextInput,
   NumberInput,
   SelectInput,
+  ReferenceInput,
+  AutocompleteInput,
 } from 'react-admin';
 
 export default function TileCreate() {
@@ -35,6 +37,13 @@ export default function TileCreate() {
           defaultValue={1}
           helperText="1=Walkable, 2=Swimmable, 4=Elevated, 8=Transparent, 16=Damaging, 32=Interactable"
         />
+        <ReferenceInput source="tilesetId" reference="tilesets">
+          <AutocompleteInput
+            optionText="name"
+            label="Tileset"
+            helperText="Optional — assign this tile to a tileset for folder grouping"
+          />
+        </ReferenceInput>
         <TextInput source="description" multiline rows={3} fullWidth />
       </SimpleForm>
     </Create>

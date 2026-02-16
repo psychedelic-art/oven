@@ -143,3 +143,42 @@ export async function POST(
 
   return NextResponse.json(result, { status: 201 });
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const db = getDb();
+  const { id } = await params;
+  const mapId = parseInt(id, 10);
+  const body = await request.json();
+  const { chunkX, chunkY } = body;
+
+  if (chunkX == null || chunkY == null) {
+    return NextResponse.json({ error: 'chunkX and chunkY are required' }, { status: 400 });
+  }
+
+  // Delete the chunk
+  await db
+    .delete(mapChunks)
+    .where(
+      and(
+        eq(mapChunks.mapId, mapId),
+        eq(mapChunks.chunkX, chunkX),
+        eq(mapChunks.chunkY, chunkY)
+      )
+    );
+
+  // Update total chunks count
+  const [countResult] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(mapChunks)
+    .where(eq(mapChunks.mapId, mapId));
+
+  await db
+    .update(maps)
+    .set({ totalChunks: countResult.count, updatedAt: new Date() })
+    .where(eq(maps.id, mapId));
+
+  return NextResponse.json({ ok: true });
+}

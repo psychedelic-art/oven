@@ -15,6 +15,7 @@ export default function CustomMenu() {
         </Typography>
       </Box>
       <Menu.ResourceItem name="tiles" />
+      <Menu.ResourceItem name="tilesets" />
       <Menu.ResourceItem name="world-configs" />
       <Menu.ResourceItem name="maps" />
 

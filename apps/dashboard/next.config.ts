@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
     '@oven/module-workflows',
     '@oven/workflow-editor',
   ],
+  serverExternalPackages: ['sharp'],
 };
 
 export default nextConfig;

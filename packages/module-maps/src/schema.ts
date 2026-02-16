@@ -13,6 +13,21 @@ import {
   index,
 } from 'drizzle-orm/pg-core';
 
+// ─── tilesets ─────────────────────────────────────────────────────
+// Groups of tiles from a single spritesheet image
+export const tilesets = pgTable('tilesets', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 128 }).notNull().unique(),
+  imagePath: varchar('image_path', { length: 512 }),
+  tileWidth: integer('tile_width').notNull().default(16),
+  tileHeight: integer('tile_height').notNull().default(16),
+  columns: integer('columns'),
+  rows: integer('rows'),
+  description: text('description'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // ─── tile_definitions ────────────────────────────────────────────
 // Maps to Unity's ITileRegistry: each row defines a tile type
 export const tileDefinitions = pgTable('tile_definitions', {
@@ -23,6 +38,9 @@ export const tileDefinitions = pgTable('tile_definitions', {
   flags: smallint('flags').notNull().default(0), // Bitmask: Walkable=1, Swimmable=2, etc.
   category: varchar('category', { length: 32 }).notNull().default('terrain'),
   spritePath: varchar('sprite_path', { length: 256 }),
+  tilesetId: integer('tileset_id').references(() => tilesets.id, { onDelete: 'set null' }),
+  spriteX: integer('sprite_x'),  // column index in spritesheet (0-based)
+  spriteY: integer('sprite_y'),  // row index in spritesheet (0-based)
   description: text('description'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -116,6 +134,7 @@ export const mapChunks = pgTable(
 
 // Export all schemas as a flat object for registry composition
 export const mapsSchema = {
+  tilesets,
   tileDefinitions,
   worldConfigs,
   maps,

@@ -10,6 +10,9 @@ import * as mapsHandler from './api/maps.handler';
 import * as mapsByIdHandler from './api/maps-by-id.handler';
 import * as mapsChunksHandler from './api/maps-chunks.handler';
 import * as mapsGenerateHandler from './api/maps-generate.handler';
+import * as tilesetsHandler from './api/tilesets.handler';
+import * as tilesetsByIdHandler from './api/tilesets-by-id.handler';
+import * as tilesetsSliceHandler from './api/tilesets-slice.handler';
 
 const eventSchemas: EventSchemaMap = {
   'maps.tile.created': {
@@ -102,11 +105,13 @@ export const mapsModule: ModuleDefinition = {
   configSchema,
   resources: [
     { name: 'tiles', options: { label: 'Tile Definitions' } },
+    { name: 'tilesets', options: { label: 'Tilesets' } },
     { name: 'world-configs', options: { label: 'World Configs' } },
     { name: 'maps', options: { label: 'Maps' } },
   ],
   menuItems: [
     { label: 'Tiles', to: '/tiles' },
+    { label: 'Tilesets', to: '/tilesets' },
     { label: 'World Configs', to: '/world-configs' },
     { label: 'Maps', to: '/maps' },
   ],
@@ -134,6 +139,9 @@ export const mapsModule: ModuleDefinition = {
     'maps/[id]': { GET: mapsByIdHandler.GET, PUT: mapsByIdHandler.PUT, DELETE: mapsByIdHandler.DELETE },
     'maps/[id]/chunks': { GET: mapsChunksHandler.GET, POST: mapsChunksHandler.POST },
     'maps/[id]/generate': { POST: mapsGenerateHandler.POST },
+    'tilesets': { GET: tilesetsHandler.GET, POST: tilesetsHandler.POST },
+    'tilesets/[id]': { GET: tilesetsByIdHandler.GET, PUT: tilesetsByIdHandler.PUT, DELETE: tilesetsByIdHandler.DELETE },
+    'tilesets/[id]/slice': { POST: tilesetsSliceHandler.POST },
   },
 };
 

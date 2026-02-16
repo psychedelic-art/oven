@@ -17,3 +17,5 @@ export type {
 } from './types';
 export type { EventPayload, EventHandler, EventLog } from './event-bus';
 export type { WiringRecord } from './wiring-runtime';
+export { errorMatchers, withHandler } from './api-errors';
+export type { ErrorMatcher, ErrorMatchResult } from './api-errors';
