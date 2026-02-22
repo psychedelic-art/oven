@@ -106,6 +106,20 @@ class ModuleRegistry {
     return schemas;
   }
 
+  /**
+   * Get all API endpoints from all registered modules.
+   * Scans each module's apiHandlers to discover routes and methods.
+   */
+  getAllApiEndpoints(): Array<{ module: string; route: string; methods: string[] }> {
+    return this.getAll().flatMap((m) =>
+      Object.entries(m.apiHandlers).map(([route, handlers]) => ({
+        module: m.name,
+        route,
+        methods: Object.keys(handlers),
+      }))
+    );
+  }
+
   async seedAll(db: any): Promise<void> {
     for (const mod of this.getAll()) {
       if (mod.seed) {

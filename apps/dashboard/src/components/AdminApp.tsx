@@ -6,7 +6,33 @@ import { dataProvider } from '@/providers/dataProvider';
 import ModuleManager from './ModuleManager';
 import MapEditorPage from './maps/MapEditorPage';
 import WorkflowEditorPage from './workflows/WorkflowEditorPage';
+import RlsEditorPage from './rls-policies/RlsEditorPage';
 import CustomMenu from './CustomMenu';
+
+// Roles
+import RoleList from './roles/RoleList';
+import RoleCreate from './roles/RoleCreate';
+import RoleEdit from './roles/RoleEdit';
+import RoleShow from './roles/RoleShow';
+
+// Permissions
+import PermissionList from './permissions/PermissionList';
+import PermissionCreate from './permissions/PermissionCreate';
+import PermissionEdit from './permissions/PermissionEdit';
+
+// Hierarchy Nodes
+import HierarchyList from './hierarchy-nodes/HierarchyList';
+import HierarchyCreate from './hierarchy-nodes/HierarchyCreate';
+import HierarchyEdit from './hierarchy-nodes/HierarchyEdit';
+
+// RLS Policies
+import RlsPolicyList from './rls-policies/RlsPolicyList';
+import RlsPolicyCreate from './rls-policies/RlsPolicyCreate';
+import RlsPolicyEdit from './rls-policies/RlsPolicyEdit';
+import RlsPolicyShow from './rls-policies/RlsPolicyShow';
+
+// API Permissions
+import ApiPermissionList from './api-permissions/ApiPermissionList';
 
 // Tiles
 import TileList from './tiles/TileList';
@@ -79,6 +105,11 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import ShieldIcon from '@mui/icons-material/Shield';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
+import SecurityIcon from '@mui/icons-material/Security';
+import ApiIcon from '@mui/icons-material/Api';
 
 const CustomLayout = (props: any) => <Layout {...props} menu={CustomMenu} />;
 
@@ -189,11 +220,52 @@ export default function AdminApp() {
         create={ConfigCreate}
       />
 
+      {/* Roles Module Resources */}
+      <Resource
+        name="roles"
+        options={{ label: 'Roles' }}
+        icon={ShieldIcon}
+        list={RoleList}
+        edit={RoleEdit}
+        create={RoleCreate}
+        show={RoleShow}
+      />
+      <Resource
+        name="permissions"
+        options={{ label: 'Permissions' }}
+        icon={VpnKeyIcon}
+        list={PermissionList}
+        edit={PermissionEdit}
+        create={PermissionCreate}
+      />
+      <Resource
+        name="hierarchy-nodes"
+        options={{ label: 'Hierarchy' }}
+        icon={AccountTreeOutlinedIcon}
+        list={HierarchyList}
+        edit={HierarchyEdit}
+        create={HierarchyCreate}
+      />
+      <Resource
+        name="rls-policies"
+        options={{ label: 'RLS Policies' }}
+        icon={SecurityIcon}
+        list={RlsPolicyList}
+        edit={RlsPolicyEdit}
+        create={RlsPolicyCreate}
+        show={RlsPolicyShow}
+      />
+      <Resource
+        name="role-permissions"
+      />
+
       {/* Custom Pages */}
       <CustomRoutes>
         <Route path="/modules" element={<ModuleManager />} />
         <Route path="/maps/:id/editor" element={<MapEditorPage />} />
         <Route path="/workflows/:id/editor" element={<WorkflowEditorPage />} />
+        <Route path="/rls-policies/:id/editor" element={<RlsEditorPage />} />
+        <Route path="/api-permissions" element={<ApiPermissionList />} />
       </CustomRoutes>
     </Admin>
   );

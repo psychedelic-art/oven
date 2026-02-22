@@ -2,6 +2,7 @@
 
 import { Menu } from 'react-admin';
 import SettingsIcon from '@mui/icons-material/Settings';
+import ApiIcon from '@mui/icons-material/Api';
 import { Typography, Divider, Box } from '@mui/material';
 
 export default function CustomMenu() {
@@ -39,6 +40,22 @@ export default function CustomMenu() {
       <Menu.ResourceItem name="workflows" />
       <Menu.ResourceItem name="workflow-executions" />
       <Menu.ResourceItem name="module-configs" />
+
+      <Divider sx={{ my: 1 }} />
+      <Box sx={{ px: 2, pb: 0.5 }}>
+        <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10 }}>
+          Access Control
+        </Typography>
+      </Box>
+      <Menu.ResourceItem name="roles" />
+      <Menu.ResourceItem name="permissions" />
+      <Menu.ResourceItem name="hierarchy-nodes" />
+      <Menu.ResourceItem name="rls-policies" />
+      <Menu.Item
+        to="/api-permissions"
+        primaryText="API Permissions"
+        leftIcon={<ApiIcon />}
+      />
 
       <Divider sx={{ my: 1 }} />
       <Box sx={{ px: 2, pb: 0.5 }}>
