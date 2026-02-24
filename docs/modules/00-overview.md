@@ -27,7 +27,8 @@ Every module in this specification follows the same core principles that govern 
 ```
                             ┌─────────────────────┐
                             │      module-chat     │
-                            │ (conversational UI)  │
+                            │ (conversational UI,  │
+                            │  @ai-sdk/react hooks)│
                             └──────────┬──────────┘
                                        │ delegates reasoning to
                             ┌──────────▼──────────┐
@@ -64,6 +65,19 @@ Every module in this specification follows the same core principles that govern 
                             ┌───────▼────────┐
                             │  module-roles  │  (existing — permissions for all)
                             └────────────────┘
+
+          ┌──────────────────────────────────────────────────────────┐
+          │                       module-ai                          │
+          │  (provider-agnostic AI services layer — Vercel AI SDK)   │
+          │                                                          │
+          │  Providers: OpenAI, Anthropic, Google, Mistral, Groq…    │
+          │  Tools: generateText, embed, generateImage, TTS, RAG…    │
+          │  Vector DBs: pgvector, Pinecone, Qdrant, ChromaDB…       │
+          │  React: @ai-sdk/react (useChat, useObject, useCompletion)│
+          │                                                          │
+          │  Used by: chat, agent-core, workflow-agents, forms,      │
+          │           dashboards, scoring-engine, and all modules     │
+          └──────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -85,6 +99,7 @@ Each module has its own detailed specification:
 | 9 | Dashboards | `module-dashboards` + `dashboard-editor` | [09-dashboards.md](./09-dashboards.md) |
 | 10 | Agent Core | `module-agent-core` | [10-agent-core.md](./10-agent-core.md) |
 | 11 | Workflow Agents | `module-workflow-agents` | [11-workflow-agents.md](./11-workflow-agents.md) |
+| 12 | AI Services | `module-ai` | [12-ai.md](./12-ai.md) |
 
 ---
 
@@ -115,6 +130,7 @@ All new modules should emit lifecycle events following the existing `{module}.{e
 - `agents.agent.created`, `agents.execution.completed`, `agents.tool.invoked`
 - `agents-workflow.execution.started`, `agents-workflow.execution.paused`, `agents-workflow.mcp.generated`
 - `dashboards.dashboard.created`, `dashboards.view.saved`
+- `ai.provider.created`, `ai.tool.invoked`, `ai.vectorStore.created`, `ai.usage.budgetWarning`
 
 ### Versioning Pattern
 

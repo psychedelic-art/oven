@@ -2,7 +2,7 @@
 
 > **Package**: `packages/module-workflow-agents/`
 > **Name**: `@oven/module-workflow-agents`
-> **Dependencies**: `module-registry`, `module-workflows`, `module-agent-core`
+> **Dependencies**: `module-registry`, `module-workflows`, `module-agent-core`, `module-ai`
 > **Status**: Planned
 
 ---
@@ -49,12 +49,17 @@ These new node types are registered in the existing workflow Node Registry under
 **`agent.llm`** — Language Model Invocation
 - Sends the current conversation state (messages array) to a configured LLM
 - Reads LLM configuration from the agent definition or from node-level overrides
+- **Resolves the actual model through `module-ai`'s provider registry** — the node configuration references a model alias or `providerId:modelId` string, and Module AI resolves it to the concrete AI SDK provider instance at runtime
+- Uses the AI SDK's `generateText()` or `streamText()` (via `module-ai`) under the hood, inheriting middleware (usage tracking, rate limiting, guardrails)
 - Outputs either a text response or a set of tool call requests
 - Supports streaming: tokens are emitted as they arrive, while the full response is recorded on completion
+- Supports the AI SDK's `prepareStep` pattern for per-step model switching and tool filtering
+- Supports `stopWhen` conditions from the AI SDK (`stepCountIs`, `hasToolCall`, custom predicates) in addition to the workflow's `maxToolIterations` safety limit
 
 **`agent.toolExecutor`** — Tool Call Executor
 - Receives tool call requests from the LLM node
-- Resolves each tool to its target module API endpoint via the Tool Wrapper (from `module-agent-core`)
+- Resolves each tool to its target: **module API endpoints** via the Tool Wrapper (from `module-agent-core`) or **AI service tools** via `module-ai`'s tool catalog (e.g., `ai.generateImage`, `ai.embed`, `ai.rag.retrieve`)
+- AI tools are defined with Zod `inputSchema`/`outputSchema` following the AI SDK `tool()` pattern — the executor validates inputs against these schemas before invocation
 - Executes tool calls in parallel or sequentially (configurable)
 - Records each tool invocation and its result
 - Outputs tool results back to the conversation state
@@ -66,11 +71,28 @@ These new node types are registered in the existing workflow Node Registry under
 
 **`agent.memory.read`** — Long-Term Memory Retrieval
 - Queries the agent's memory store for relevant context based on the current conversation
+- **Uses `module-ai`'s embedding and vector store tools** (`ai.embed` + `ai.vectorStore.query`) to perform semantic retrieval from the configured vector database
 - Returns matching memory entries that are injected into the conversation state as additional context
 
 **`agent.memory.write`** — Long-Term Memory Storage
 - Extracts key information from the current conversation turn and persists it to the agent's memory store
+- **Uses `module-ai`'s embedding tools** (`ai.embed` + `ai.vectorStore.upsert`) to vectorize and store memories for later semantic retrieval
 - Enables the agent to recall facts, preferences, and prior interactions across sessions
+
+**`agent.rag`** — Retrieval-Augmented Generation Step
+- A composite node that combines retrieval and generation in one step
+- **Uses `module-ai`'s RAG tools** (`ai.rag.retrieve` or `ai.rag.ask`) to search a configured vector store, retrieve relevant context, and optionally generate an answer in one pass
+- Configurable: vector store slug, retrieval top-K, reranking, and filter criteria
+- Output is injected into the conversation state as context for subsequent LLM nodes
+
+**`agent.imageGen`** — Image Generation Step
+- Generates images using `module-ai`'s `ai.generateImage` tool
+- Configurable: model (DALL-E 3, Imagen, Flux, SDXL), size, aspect ratio, style, quality
+- Output is stored as a URL or base64 reference in the workflow context
+
+**`agent.embed`** — Embedding Step
+- Embeds text content using `module-ai`'s `ai.embed` or `ai.embedMany` tools
+- Used for preprocessing content before vector store ingestion, or for computing similarity in conditional branches
 
 **`agent.humanReview`** — Human-in-the-Loop Checkpoint
 - Pauses the workflow execution and emits an interrupt event
@@ -350,10 +372,11 @@ MCP Servers
 |--------|-------------|
 | **module-workflows** | Inherits the execution engine model, node registry, context accumulation, and `$.path` expression resolution. Agent-specific nodes are registered alongside existing core and API nodes. |
 | **module-agent-core** | Provides agent definitions, Tool Wrapper for module endpoint discovery, session/message management, and the invoke mechanism used by `agent.subagent` nodes. |
+| **module-ai** | Provides all AI service tools that agent workflows consume: LLM generation (via provider registry), embeddings, image/video generation, vector store operations, and RAG. The `agent.llm` node resolves models through Module AI's provider registry. The `agent.memory.*` nodes use Module AI's embedding and vector store tools. The `agent.rag`, `agent.imageGen`, and `agent.embed` nodes are thin wrappers around Module AI tools. All AI calls inherit Module AI's middleware (usage tracking, rate limits, guardrails). |
 | **module-registry** | Discovers all module API endpoints for tool binding. Reads module metadata for enriched tool descriptions. |
 | **module-roles** | Enforces permissions on tool invocations. Human-in-the-loop decisions can be routed based on user roles. |
 | **module-chat** | Chat can invoke agent workflows as its reasoning backend. A Chat session can be backed by an agent workflow for complex multi-step interactions. |
-| **All other modules** | Any module's API endpoints are available as tools within agent workflows through the inherited Tool Wrapper. |
+| **All other modules** | Any module's API endpoints are available as tools within agent workflows through the inherited Tool Wrapper. Module AI's tools (`ai.*`) are available alongside module API tools. |
 
 ---
 

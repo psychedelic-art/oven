@@ -2,7 +2,7 @@
 
 > **Package**: `packages/module-chat/`
 > **Name**: `@oven/module-chat`
-> **Dependencies**: `module-registry`, `module-agent-core`
+> **Dependencies**: `module-registry`, `module-agent-core`, `module-ai`
 > **Status**: Planned
 
 ---
@@ -193,6 +193,26 @@ When a user sends a message:
   - Streaming response display
 - **Chat Sidebar** — Collapsible chat panel accessible from any page in the dashboard. Provides the same conversational capability in a compact form factor.
 
+### AI SDK React Integration
+
+The Chat frontend is built on `@ai-sdk/react` hooks, powered by `module-ai`'s server-side streaming endpoints:
+
+- **`useChat`** from `@ai-sdk/react` — The primary hook for the chat interface. Manages the full conversation lifecycle:
+  - Transport: `DefaultChatTransport({ api: '/api/ai/stream', headers: authHeaders })` — connects to Module AI's streaming endpoint
+  - Message format: `UIMessage` with `parts` array (text, tool-invocation, reasoning, source-url, file)
+  - Status tracking: `submitted` → `streaming` → `ready` — drives the typing indicator and input locking
+  - Tool call rendering: `tool-invocation` parts include `toolName`, `input`, `output`, and `state` for rendering action cards
+  - Streaming throttle: `experimental_throttle` prevents excessive re-renders during fast token streams
+  - Multi-modal input: user messages include `file` parts for images and documents
+  - `stop()` function for aborting in-progress generations
+  - `regenerate()` function for retrying the last assistant response
+
+- **`useObject`** from `@ai-sdk/react` — Used for structured AI responses (e.g., when the agent returns a data card, table, or form suggestion). Streams a deeply-partial typed object validated against a Zod schema.
+
+- **`useCompletion`** from `@ai-sdk/react` — Used for the search/command bar and inline suggestions within the chat interface.
+
+All hooks connect to Module AI's endpoints, which handle provider resolution, middleware (usage tracking, rate limiting), and permission enforcement. The Chat module never calls LLM providers directly.
+
 ### Menu Section
 ```
 ──── Chat ────
@@ -239,6 +259,7 @@ Modules that don't declare a `chat` block are still discoverable through their `
 |--------|-------------|
 | **module-agent-core** | Delegates all reasoning to a configured agent. Uses the agent invoke endpoint to send messages and receive responses. Agents provide the Tool Wrapper, LLM reasoning, and multimodal support. |
 | **module-workflow-agents** | Complex backing agents use workflow graphs for multi-step reasoning. Chat is unaware of this — it simply invokes the agent and receives a response. |
+| **module-ai** | Chat's frontend uses `@ai-sdk/react` hooks (`useChat`, `useObject`, `useCompletion`) connected to Module AI's streaming endpoints. All LLM calls, tool executions, and AI features go through Module AI's provider registry and middleware stack. |
 | **module-registry** | Discovery source for module capabilities. The backing agent reads `registry.getAll()` and `chat` blocks to understand what tools are available. Chat itself reads the registry for the `/api/chat/capabilities` endpoint. |
 | **module-roles** | All tool invocations respect the user's permissions. The backing agent never bypasses RLS or role restrictions. |
 | **All other modules** | Interacts via the agent's Tool Wrapper and declared `actionSchemas` — fully loosely coupled. |

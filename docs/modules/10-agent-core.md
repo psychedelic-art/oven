@@ -2,7 +2,7 @@
 
 > **Package**: `packages/module-agent-core/`
 > **Name**: `@oven/module-agent-core`
-> **Dependencies**: `module-registry`, `module-roles`
+> **Dependencies**: `module-registry`, `module-roles`, `module-ai`
 > **Status**: Planned
 
 ---
@@ -302,8 +302,9 @@ This means that when a new module is registered with API endpoints, agents autom
 | **module-registry** | Discovers all modules and their API endpoints for the Tool Wrapper. Reads `chat` blocks for enriched tool descriptions. |
 | **module-roles** | Validates that the invoking user has permission to call each tool the agent attempts to use. Agents never bypass RLS or role restrictions. |
 | **module-workflow-agents** | When an agent has a `workflowAgentId`, execution is delegated to the workflow-agent engine for multi-step graph-based reasoning. |
+| **module-ai** | Provides the AI services layer. Agent invocations resolve LLM models through Module AI's provider registry. All LLM calls, embeddings, image generation, and other AI capabilities are accessed through Module AI's tool catalog and middleware stack (usage tracking, rate limiting, guardrails). The Tool Wrapper discovers `ai.*` tools from Module AI alongside module API tools. |
 | **module-chat** | Chat can discover and invoke agents through their registry declarations. An agent can serve as the reasoning backend for a Chat session. |
-| **All other modules** | Any module's API endpoints are automatically available as agent tools through the Tool Wrapper. |
+| **All other modules** | Any module's API endpoints are automatically available as agent tools through the Tool Wrapper. Module AI's tools (`ai.*`) are also available. |
 
 ---
 
