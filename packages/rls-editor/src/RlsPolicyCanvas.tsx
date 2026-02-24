@@ -31,6 +31,7 @@ import { NodeInspector } from './panels/NodeInspector';
 import { SqlPreview } from './panels/SqlPreview';
 import { VersionHistory } from './panels/VersionHistory';
 import { definitionToSqlPreview } from './utils/definition-to-sql';
+import type { RlsPolicyDefinition } from '@oven/module-roles/types';
 
 const nodeTypes = {
   table: TableNode,
@@ -41,10 +42,7 @@ const nodeTypes = {
   subquery: SubqueryNode,
 };
 
-export interface RlsPolicyDefinition {
-  nodes: Array<{ id: string; type: string; position: { x: number; y: number }; data: Record<string, unknown> }>;
-  edges: Array<{ id: string; source: string; target: string; sourceHandle?: string; targetHandle?: string }>;
-}
+export type { RlsPolicyDefinition };
 
 export interface RlsPolicyCanvasProps {
   policyId: number;
