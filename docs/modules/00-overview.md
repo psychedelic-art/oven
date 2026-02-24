@@ -1,6 +1,6 @@
 # OVEN — Future Modules Architecture
 
-> **Last Updated**: 2026-02-22
+> **Last Updated**: 2026-02-24
 > **Status**: Specification (pre-implementation)
 > **Base Architecture**: Next.js 15 + React Admin 5 + Drizzle ORM + Neon Postgres + Turbo + pnpm
 
@@ -27,8 +27,22 @@ Every module in this specification follows the same core principles that govern 
 ```
                             ┌─────────────────────┐
                             │      module-chat     │
-                            │  (AI agent layer)    │
+                            │ (conversational UI)  │
                             └──────────┬──────────┘
+                                       │ delegates reasoning to
+                            ┌──────────▼──────────┐
+                            │  module-agent-core   │
+                            │  (agent management,  │
+                            │   CRUD, tool wrapper, │
+                            │   multimodal invoke)  │
+                            └──────────┬──────────┘
+                                       │ orchestrates via
+                         ┌─────────────▼─────────────┐
+                         │  module-workflow-agents    │
+                         │  (graph-based reasoning,   │
+                         │   LLM nodes, tool loops,   │
+                         │   MCP auto-generation)     │
+                         └─────────────┬─────────────┘
                                        │ discovers & acts on all modules
           ┌────────────────────────────┼────────────────────────────┐
           │                            │                            │
@@ -69,6 +83,8 @@ Each module has its own detailed specification:
 | 7 | Analytics Forms | `module-analytics-forms` + `analytics-editor` | [07-analytics-forms.md](./07-analytics-forms.md) |
 | 8 | Chat | `module-chat` | [08-chat.md](./08-chat.md) |
 | 9 | Dashboards | `module-dashboards` + `dashboard-editor` | [09-dashboards.md](./09-dashboards.md) |
+| 10 | Agent Core | `module-agent-core` | [10-agent-core.md](./10-agent-core.md) |
+| 11 | Workflow Agents | `module-workflow-agents` | [11-workflow-agents.md](./11-workflow-agents.md) |
 
 ---
 
@@ -81,9 +97,10 @@ These modules will require the following extensions to the existing core:
 The `ModuleDefinition` interface in `module-registry/src/types.ts` needs new optional fields so that modules can self-describe for Chat discovery and cross-module composition:
 
 - **`description`** — Human-readable summary of what the module does
-- **`capabilities`** — Structured list of actions the module can perform (for Chat's planner)
+- **`capabilities`** — Structured list of actions the module can perform (for agent tool selection)
 - **`contentTypes`** — What types of content this module can produce (for Flows integration)
 - **`componentLibrary`** — Registered components that other modules (Forms, Analytics) can reuse
+- **`chat`** — Self-description block for agent discovery: `{ description, capabilities, actionSchemas }`. Used by `module-agent-core`'s Tool Wrapper and `module-chat`'s backing agent to understand what a module can do and how to interact with it. See [10-agent-core.md](./10-agent-core.md) for details.
 
 ### EventBus Patterns
 
@@ -94,7 +111,9 @@ All new modules should emit lifecycle events following the existing `{module}.{e
 - `questions.question.created`, `questions.question.updated`
 - `exams.attempt.started`, `exams.attempt.completed`
 - `scoring.score.calculated`, `scoring.rubric.applied`
-- `chat.action.executed`, `chat.session.started`
+- `chat.action.executed`, `chat.session.created`
+- `agents.agent.created`, `agents.execution.completed`, `agents.tool.invoked`
+- `agents-workflow.execution.started`, `agents-workflow.execution.paused`, `agents-workflow.mcp.generated`
 - `dashboards.dashboard.created`, `dashboards.view.saved`
 
 ### Versioning Pattern
