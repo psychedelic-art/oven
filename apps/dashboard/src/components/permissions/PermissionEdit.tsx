@@ -6,12 +6,23 @@ import {
   TextInput,
   SelectInput,
 } from 'react-admin';
+import { useDiscovery } from '@/hooks/useDiscovery';
 
 export default function PermissionEdit() {
+  const { resources, loading } = useDiscovery();
+
+  const resourceChoices = resources.map((r) => ({ id: r, name: r }));
+
   return (
     <Edit>
       <SimpleForm>
-        <TextInput source="resource" fullWidth isRequired />
+        <SelectInput
+          source="resource"
+          choices={resourceChoices}
+          isRequired
+          fullWidth
+          isLoading={loading}
+        />
         <SelectInput
           source="action"
           isRequired

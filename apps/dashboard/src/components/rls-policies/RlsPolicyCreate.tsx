@@ -7,15 +7,28 @@ import {
   SelectInput,
   ReferenceInput,
 } from 'react-admin';
+import { useDiscovery } from '@/hooks/useDiscovery';
 
 export default function RlsPolicyCreate() {
+  const { tables, loading } = useDiscovery();
+
+  const tableChoices = tables.map((t) => ({ id: t, name: t }));
+
   return (
     <Create>
       <SimpleForm>
         <TextInput source="name" fullWidth isRequired helperText="Policy display name" />
         <TextInput source="slug" fullWidth isRequired helperText="Unique identifier (used in PG policy name)" />
         <TextInput source="description" fullWidth multiline rows={2} />
-        <TextInput source="targetTable" label="Target Table" fullWidth isRequired helperText="Table this policy applies to (e.g., players)" />
+        <SelectInput
+          source="targetTable"
+          label="Target Table"
+          choices={tableChoices}
+          isRequired
+          fullWidth
+          isLoading={loading}
+          helperText="Table this policy applies to"
+        />
         <SelectInput
           source="command"
           isRequired

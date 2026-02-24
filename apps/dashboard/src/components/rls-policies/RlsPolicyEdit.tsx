@@ -8,15 +8,27 @@ import {
   ReferenceInput,
   BooleanInput,
 } from 'react-admin';
+import { useDiscovery } from '@/hooks/useDiscovery';
 
 export default function RlsPolicyEdit() {
+  const { tables, loading } = useDiscovery();
+
+  const tableChoices = tables.map((t) => ({ id: t, name: t }));
+
   return (
     <Edit>
       <SimpleForm>
         <TextInput source="name" fullWidth isRequired />
         <TextInput source="slug" fullWidth isRequired />
         <TextInput source="description" fullWidth multiline rows={2} />
-        <TextInput source="targetTable" label="Target Table" fullWidth isRequired />
+        <SelectInput
+          source="targetTable"
+          label="Target Table"
+          choices={tableChoices}
+          isRequired
+          fullWidth
+          isLoading={loading}
+        />
         <SelectInput
           source="command"
           isRequired

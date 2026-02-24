@@ -6,12 +6,24 @@ import {
   TextInput,
   SelectInput,
 } from 'react-admin';
+import { useDiscovery } from '@/hooks/useDiscovery';
 
 export default function PermissionCreate() {
+  const { resources, loading } = useDiscovery();
+
+  const resourceChoices = resources.map((r) => ({ id: r, name: r }));
+
   return (
     <Create>
       <SimpleForm>
-        <TextInput source="resource" fullWidth isRequired helperText="Resource name (e.g., players)" />
+        <SelectInput
+          source="resource"
+          choices={resourceChoices}
+          isRequired
+          fullWidth
+          isLoading={loading}
+          helperText="Resource from registered modules"
+        />
         <SelectInput
           source="action"
           isRequired
