@@ -47,12 +47,18 @@ importers:
       '@oven/module-registry':
         specifier: workspace:*
         version: link:../../packages/module-registry
+      '@oven/module-roles':
+        specifier: workspace:*
+        version: link:../../packages/module-roles
       '@oven/module-sessions':
         specifier: workspace:*
         version: link:../../packages/module-sessions
       '@oven/module-workflows':
         specifier: workspace:*
         version: link:../../packages/module-workflows
+      '@oven/rls-editor':
+        specifier: workspace:*
+        version: link:../../packages/rls-editor
       '@oven/workflow-editor':
         specifier: workspace:*
         version: link:../../packages/workflow-editor
@@ -218,6 +224,24 @@ importers:
         specifier: ^0.38.0
         version: 0.38.4(@neondatabase/serverless@0.10.4)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
 
+  packages/module-roles:
+    dependencies:
+      '@neondatabase/serverless':
+        specifier: ^0.10.0
+        version: 0.10.4
+      '@oven/module-registry':
+        specifier: workspace:*
+        version: link:../module-registry
+      drizzle-orm:
+        specifier: ^0.38.0
+        version: 0.38.4(@neondatabase/serverless@0.10.4)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+      next:
+        specifier: '>=15.0.0'
+        version: 15.5.12(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react:
+        specifier: '>=19.0.0'
+        version: 19.2.4
+
   packages/module-sessions:
     dependencies:
       '@neondatabase/serverless':
@@ -265,6 +289,27 @@ importers:
       xstate:
         specifier: ^5.19.0
         version: 5.26.0
+
+  packages/rls-editor:
+    dependencies:
+      '@mui/icons-material':
+        specifier: '>=7.0.0'
+        version: 7.3.7(@mui/material@7.3.7(@emotion/react@11.14.0(@types/react@19.2.13)(react@19.2.4))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.13)(react@19.2.4))(@types/react@19.2.13)(react@19.2.4))(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@types/react@19.2.13)(react@19.2.4)
+      '@mui/material':
+        specifier: '>=7.0.0'
+        version: 7.3.7(@emotion/react@11.14.0(@types/react@19.2.13)(react@19.2.4))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.13)(react@19.2.4))(@types/react@19.2.13)(react@19.2.4))(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@oven/module-roles':
+        specifier: workspace:*
+        version: link:../module-roles
+      '@xyflow/react':
+        specifier: ^12.6.0
+        version: 12.10.0(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react:
+        specifier: '>=19.0.0'
+        version: 19.2.4
+      react-dom:
+        specifier: '>=19.0.0'
+        version: 19.2.4(react@19.2.4)
 
   packages/workflow-editor:
     dependencies:

@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
     '@oven/map-editor',
     '@oven/module-workflows',
     '@oven/workflow-editor',
+    '@oven/module-roles',
+    '@oven/rls-editor',
   ],
   serverExternalPackages: ['sharp'],
 };

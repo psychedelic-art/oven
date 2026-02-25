@@ -4,6 +4,7 @@ import { playersModule } from '@oven/module-players';
 import { sessionsModule } from '@oven/module-sessions';
 import { playerMapPositionModule } from '@oven/module-player-map-position';
 import { workflowsModule } from '@oven/module-workflows';
+import { rolesModule } from '@oven/module-roles';
 
 // Register modules in dependency order
 registry.register(mapsModule);                    // No deps
@@ -11,3 +12,4 @@ registry.register(playersModule);                 // Depends on: maps
 registry.register(sessionsModule);                // Depends on: maps, players
 registry.register(playerMapPositionModule);       // Depends on: maps, players, sessions
 registry.register(workflowsModule);              // No deps
+registry.register(rolesModule);                  // No deps (scans others for API discovery)
