@@ -223,6 +223,27 @@ POST /api/knowledge-base/[tenantSlug]/search
   - Results list with confidence scores, match type badges, category labels
   - Useful for validating FAQ coverage before going live
 
+- **Bulk Actions** (`/knowledge-base/bulk-actions`) — Bulk import/export/re-embed:
+  - Import CSV or JSON (question, answer, category, keywords columns)
+  - Export all entries as CSV/JSON
+  - "Re-embed All" button for bulk re-embedding after model change
+
+### Files to Create
+
+```
+apps/dashboard/src/components/knowledge-base/
+  CategoryList.tsx        — Drag-and-drop sortable list. Columns: name, entry count, enabled
+  CategoryCreate.tsx      — Name, slug, description, icon selector, order
+  CategoryEdit.tsx        — Same as create
+  EntryList.tsx           — Filterable by category. Columns: question (truncated), category, keywords, embedding status (✓/✗), priority, enabled
+  EntryCreate.tsx         — Question (textarea), Answer (rich text or textarea), Keywords (tag input), Category (dropdown), Priority, Language
+  EntryEdit.tsx           — Same as create + version history tab + embedding status indicator
+  EntryShow.tsx           — Full Q&A display, keywords, embedding vector status, version history, similar entries
+  KBSearchTest.tsx        — Input box + results list with scores. Side-by-side: "What the user asks" → "What the bot would answer"
+  KBBulkActions.tsx       — Import CSV (question, answer, category, keywords), Export, Re-embed All button
+  EmbeddingStatusBadge.tsx — Small component showing ✓ embedded / ⟳ pending / ✗ failed
+```
+
 ### Menu Section
 
 ```
@@ -230,6 +251,7 @@ POST /api/knowledge-base/[tenantSlug]/search
 Categories
 Entries
 Search Test
+Bulk Actions
 ```
 
 ---

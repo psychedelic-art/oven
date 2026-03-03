@@ -163,14 +163,43 @@ export function isBusinessHours(tenant: Tenant): boolean {
 ### React Admin Resources
 
 - **Tenants** — List, Create, Edit, Show
-  - List: Datagrid with name, slug, enabled toggle, member count, schedule summary
-  - Create: SimpleForm with business identity, schedule editor, services tag input, payment methods, tone selector
-  - Edit: Tabbed form — General, Schedule, Services & Payments, Messaging, Limits
-  - Show: Business card layout with schedule, members list, usage summary
+  - List: Datagrid with name, slug, enabled, member count, channels configured
+  - Create: Wizard-style form (see TenantCreate fields below)
+  - Edit: Same form as create, with tabs
+  - Show: Overview dashboard — config summary, active channels, usage gauges, recent conversations
 
-- **Tenant Members** — Inline within tenant detail (not a standalone resource)
+- **Tenant Members** — Inline within tenant show/edit (not a standalone resource)
   - Datagrid showing user name, email, role, added date
-  - Add member button with user autocomplete + role selector
+  - Add/remove users, assign roles (owner/admin/member)
+
+### TenantCreate / TenantEdit Form Tabs
+
+| Tab | Fields | Input Type |
+|-----|--------|------------|
+| **Identity** | name, slug (auto-gen from name), nit, businessName, logo (file upload) | TextInput, FileInput |
+| **Schedule** | schedule (per day of week) | `<ScheduleEditor>` custom component |
+| **Services** | authorizedServices, paymentMethods | `<ServicesTagInput>`, `<PaymentMethodsInput>` |
+| **Communication** | tone, humanContactInfo (phone, email, WhatsApp), emergencyInstructions | `<ToneSelector>`, `<ContactInfoEditor>`, TextInput multiline |
+| **Messaging** | welcomeMessageBusinessHours, welcomeMessageOutOfHours, schedulingUrl | `<WelcomeMessageEditor>`, TextInput |
+| **Limits** | whatsappLimit (default 300), webLimit (default 500) | NumberInput |
+| **Members** | (inline list) | `<TenantMembersTab>` |
+
+### Files to Create
+
+```
+apps/dashboard/src/components/tenants/
+  TenantList.tsx          — All tenants. Columns: name, slug, enabled, member count, channels configured
+  TenantCreate.tsx        — Wizard-style form (see tabs above)
+  TenantEdit.tsx          — Same form as create, with tabs
+  TenantShow.tsx          — Overview dashboard: config summary, active channels, usage gauges, recent conversations
+  TenantMembersTab.tsx    — Inline member list on show/edit: add/remove users, assign roles (owner/admin/member)
+  ScheduleEditor.tsx      — Custom component: 7 rows (Mon–Sun), each with opening/closing time pickers + "closed" toggle
+  ServicesTagInput.tsx    — Tag input for authorizedServices array
+  PaymentMethodsInput.tsx — Tag input for paymentMethods array
+  ToneSelector.tsx        — Radio group: formal / friendly / casual (with preview of sample greeting)
+  ContactInfoEditor.tsx   — Grouped inputs: phone, email, WhatsApp number, emergency instructions
+  WelcomeMessageEditor.tsx — Two textareas: business hours message + out-of-hours message, with variable placeholders ({businessName}, {schedule})
+```
 
 ### Custom Pages
 
@@ -179,7 +208,7 @@ export function isBusinessHours(tenant: Tenant): boolean {
 ### Menu Section
 
 ```
-──── Organization ────
+──── Tenants ────
 Tenants
 ```
 

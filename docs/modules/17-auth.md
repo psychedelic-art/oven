@@ -9,9 +9,9 @@
 
 ## 1. Overview
 
-Auth is the **authentication and authorization module** that provides identity verification, session management, API key handling, and tenant-scoped access control. It implements multiple auth strategies — JWT/session tokens for the dashboard, API keys for webhook endpoints and programmatic access, and session tokens for anonymous widget users.
+Auth is the **authentication and authorization module** that provides identity verification, session management, API key handling, and tenant-scoped access control. It uses the **adapter pattern** (matching the existing `execution-strategy.ts` pattern from `module-workflows`) to support pluggable auth providers — AuthJS for the MVP, with Firebase and Auth0 adapters planned.
 
-Auth integrates with `module-roles` for RBAC enforcement. After authenticating a request, the middleware resolves the user's roles and permissions and attaches them to the request context. All downstream API handlers can then check permissions without knowing auth implementation details.
+Auth integrates with `module-roles` for RBAC enforcement. After authenticating a request, the middleware delegates to the active `AuthAdapter`, resolves the user's roles and permissions, and attaches them to the request context. All downstream API handlers can then check permissions without knowing which auth provider is active.
 
 ### Auth Strategies
 
@@ -21,6 +21,14 @@ Auth integrates with `module-roles` for RBAC enforcement. After authenticating a
 | **Session** | Persistent dashboard sessions | HTTP-only cookie |
 | **API Key** | Webhooks, external integrations, CI/CD | `X-API-Key: <key>` |
 | **Session Token** | Anonymous chat widget users | `X-Session-Token: <token>` |
+
+### Adapter Packages
+
+| Package | Provider | MVP? |
+|---------|----------|------|
+| `packages/auth-authjs/` | AuthJS (Next.js native) | **Yes** — simplest for Next.js 15 |
+| `packages/auth-firebase/` | Firebase Auth | Future |
+| `packages/auth-auth0/` | Auth0 | Future |
 
 ---
 
@@ -36,11 +44,147 @@ A persistent login session with token, expiration, and device metadata. Sessions
 A named, scoped key for programmatic API access. API keys can be tenant-scoped (access only that tenant's data) or global (for platform admin use). Each key has configurable permission scoping.
 
 ### Auth Middleware
-A Next.js middleware that runs on every API request. Extracts credentials from the request, validates them, resolves user + tenant + permissions, and attaches the auth context to the request. Failed auth returns 401. Missing permissions return 403.
+A Next.js middleware that runs on every API request. Extracts credentials from the request, delegates to the active `AuthAdapter` for validation, resolves user + tenant + permissions, and attaches the auth context to the request. Failed auth returns 401. Missing permissions return 403.
 
 ---
 
-## 3. Database Schema
+## 3. Adapter Interface
+
+The auth module defines an `AuthAdapter` interface; separate packages implement it for each provider. This matches the adapter pattern used by `module-notifications` (Rule 3.3 from `module-rules.md`) and mirrors the `execution-strategy.ts` pattern already in the codebase.
+
+```typescript
+// packages/module-auth/src/adapters/types.ts
+export interface AuthAdapter {
+  name: string;                                                       // 'authjs' | 'firebase' | 'auth0'
+  // Core auth operations
+  verifyToken(token: string): Promise<AuthUser | null>;
+  createSession(user: AuthUser): Promise<SessionToken>;
+  revokeSession(token: string): Promise<void>;
+  // API key verification (shared across all adapters — uses DB directly)
+  verifyApiKey(key: string): Promise<ApiKeyInfo | null>;
+  // Optional: social login, MFA, provider-specific features
+  getLoginUrl?(provider: string, redirectUrl: string): string;
+  handleCallback?(code: string): Promise<AuthUser>;
+  // Optional: password operations (not all providers use passwords)
+  hashPassword?(password: string): Promise<string>;
+  verifyPassword?(password: string, hash: string): Promise<boolean>;
+}
+
+export interface AuthUser {
+  id: number;
+  email: string;
+  name: string;
+  avatar?: string;
+  defaultTenantId?: number;
+}
+
+export interface SessionToken {
+  accessToken: string;
+  refreshToken?: string;
+  expiresIn: number;                                                  // seconds
+}
+
+export interface ApiKeyInfo {
+  id: number;
+  tenantId: number | null;
+  userId: number | null;
+  permissions: string[] | null;
+}
+```
+
+### Adapter Registry
+
+```typescript
+// packages/module-auth/src/adapters/registry.ts
+const adapters = new Map<string, AuthAdapter>();
+let activeAdapter: AuthAdapter | null = null;
+
+export function registerAuthAdapter(adapter: AuthAdapter) {
+  adapters.set(adapter.name, adapter);
+  if (!activeAdapter) activeAdapter = adapter;                        // first registered becomes default
+}
+
+export function setActiveAuthAdapter(name: string) {
+  const adapter = adapters.get(name);
+  if (!adapter) throw new Error(`Auth adapter "${name}" not registered`);
+  activeAdapter = adapter;
+}
+
+export function getAuthAdapter(): AuthAdapter {
+  if (!activeAdapter) throw new Error('No auth adapter registered');
+  return activeAdapter;
+}
+```
+
+### AuthJS Adapter (MVP)
+
+```typescript
+// packages/auth-authjs/src/index.ts
+import type { AuthAdapter } from '@oven/module-auth';
+import NextAuth from 'next-auth';
+import Credentials from 'next-auth/providers/credentials';
+import { argon2Verify, argon2Hash } from 'hash-wasm';
+
+export const authJsAdapter: AuthAdapter = {
+  name: 'authjs',
+
+  async verifyToken(token: string): Promise<AuthUser | null> {
+    // Verify JWT signed by NextAuth
+    const payload = await decode({ token, secret: process.env.AUTH_SECRET! });
+    if (!payload?.sub) return null;
+    return { id: Number(payload.sub), email: payload.email!, name: payload.name! };
+  },
+
+  async createSession(user: AuthUser): Promise<SessionToken> {
+    const accessToken = await encode({
+      token: { sub: String(user.id), email: user.email, name: user.name },
+      secret: process.env.AUTH_SECRET!,
+      maxAge: 15 * 60,
+    });
+    return { accessToken, expiresIn: 900 };
+  },
+
+  async revokeSession(token: string): Promise<void> {
+    // Invalidate in auth_sessions table
+    const hashed = hashToken(token);
+    await db.delete(authSessions).where(eq(authSessions.token, hashed));
+  },
+
+  async verifyApiKey(key: string): Promise<ApiKeyInfo | null> {
+    const hashed = hashToken(key);
+    const [row] = await db.select().from(apiKeys)
+      .where(and(eq(apiKeys.keyHash, hashed), eq(apiKeys.enabled, true)))
+      .limit(1);
+    if (!row || (row.expiresAt && row.expiresAt < new Date())) return null;
+    await db.update(apiKeys).set({ lastUsedAt: new Date() }).where(eq(apiKeys.id, row.id));
+    return { id: row.id, tenantId: row.tenantId, userId: row.userId, permissions: row.permissions };
+  },
+
+  async hashPassword(password: string): Promise<string> {
+    return argon2Hash({ password, salt: crypto.getRandomValues(new Uint8Array(16)), type: 2 });
+  },
+
+  async verifyPassword(password: string, hash: string): Promise<boolean> {
+    return argon2Verify({ password, hash });
+  },
+};
+```
+
+### Registration at App Startup
+
+```typescript
+// apps/dashboard/src/lib/modules.ts
+import { registerAuthAdapter } from '@oven/module-auth';
+import { authJsAdapter } from '@oven/auth-authjs';
+
+registerAuthAdapter(authJsAdapter);  // MVP — AuthJS for Next.js
+// Future: registerAuthAdapter(firebaseAdapter);
+// Future: registerAuthAdapter(auth0Adapter);
+```
+
+---
+
+## 4. Database Schema
 
 ### Tables
 
@@ -126,15 +270,17 @@ export const passwordResetTokens = pgTable('password_reset_tokens', {
 
 ## 4. Auth Middleware
 
+The middleware delegates all token/credential verification to the active `AuthAdapter` — it never calls JWT or password libraries directly.
+
 ### Flow
 
 ```
 Request → Middleware →
   1. Check for public endpoint (api_endpoint_permissions.isPublic) → Skip auth
-  2. Check for API Key (X-API-Key header) → Validate hash, resolve permissions
-  3. Check for Session Token (X-Session-Token header) → Validate anonymous session
-  4. Check for Bearer Token (Authorization header) → Validate JWT
-  5. Check for Session Cookie → Validate session
+  2. Check for API Key (X-API-Key header) → adapter.verifyApiKey(key)
+  3. Check for Session Token (X-Session-Token header) → Validate anonymous session (DB lookup)
+  4. Check for Bearer Token (Authorization header) → adapter.verifyToken(token)
+  5. Check for Session Cookie → adapter.verifyToken(cookieValue)
   6. No credentials → 401 Unauthorized
 
 After auth:
@@ -167,40 +313,45 @@ if (!auth.permissions.includes('kb-entries.create')) {
 
 ---
 
-## 5. JWT Utilities
+## 5. Token & Password Utilities (Adapter-Delegated)
+
+All token generation, verification, and password hashing is delegated to the active `AuthAdapter`. The module provides thin wrappers that call `getAuthAdapter()`:
 
 ```typescript
-// Token generation
-export function generateAccessToken(user: User, tenantId?: number): string {
-  return jwt.sign(
-    { sub: user.id, email: user.email, tid: tenantId },
-    process.env.JWT_SECRET!,
-    { expiresIn: '15m', algorithm: 'HS256' }
-  );
+// packages/module-auth/src/auth-utils.ts
+import { getAuthAdapter } from './adapters/registry';
+
+export async function verifyToken(token: string) {
+  return getAuthAdapter().verifyToken(token);
 }
 
-export function generateRefreshToken(user: User): string {
-  return jwt.sign(
-    { sub: user.id, type: 'refresh' },
-    process.env.JWT_REFRESH_SECRET!,
-    { expiresIn: '7d', algorithm: 'HS256' }
-  );
+export async function createSession(user: AuthUser) {
+  return getAuthAdapter().createSession(user);
 }
 
-// Token verification
-export function verifyAccessToken(token: string): JwtPayload {
-  return jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+export async function verifyApiKey(key: string) {
+  return getAuthAdapter().verifyApiKey(key);
 }
 
-// Password hashing (argon2)
-export async function hashPassword(password: string): Promise<string> {
-  return argon2.hash(password, { type: argon2.argon2id });
+export async function hashPassword(password: string) {
+  const adapter = getAuthAdapter();
+  if (!adapter.hashPassword) throw new Error('Active auth adapter does not support password hashing');
+  return adapter.hashPassword(password);
 }
 
-export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  return argon2.verify(hash, password);
+export async function verifyPassword(password: string, hash: string) {
+  const adapter = getAuthAdapter();
+  if (!adapter.verifyPassword) throw new Error('Active auth adapter does not support password verification');
+  return adapter.verifyPassword(password, hash);
 }
 ```
+
+**Why adapter-delegated?** Different providers handle tokens differently:
+- **AuthJS** uses NextAuth `encode()`/`decode()` with `AUTH_SECRET`
+- **Firebase** uses Firebase Admin SDK `verifyIdToken()`
+- **Auth0** uses JWKS endpoint for RS256 verification
+
+The module never imports `jsonwebtoken` or `argon2` directly — those are implementation details of the adapter package.
 
 ---
 
@@ -246,23 +397,45 @@ Response:
 
 ### React Admin Resources
 
-- **API Keys** — List, Create
-  - List: Datagrid with name, key prefix, tenant scope, last used, expiry, enabled toggle
-  - Create: Form with name, tenant selector (optional), expiry date, permission overrides. Shows the full API key **once** after creation
+- **Users** — List, Create, Edit, Show (tenant-scoped via `tenant_members` join)
+  - List: Datagrid filterable by tenant. Columns: name, email, status, login history
+  - Create: Invite user — email, name, tenant, role assignment
+  - Edit: Edit user details, toggle active/inactive
+  - Show: User details, login history, tenant memberships
+
+- **API Keys** — List, Create, Show
+  - List: Datagrid with name, key prefix (masked), tenant scope, last used, expiry, enabled toggle
+  - Create: Form with name, tenant selector (optional), permissions, expiry date. Shows the full API key **once** after creation
+  - Show: Key details (key shown only on creation)
 
 ### Custom Pages
 
-- **Login Page** (`/login`) — Email/password form with "Forgot password?" link
-- **Register Page** (`/register`) — User registration form (if self-registration is enabled)
-- **Profile Page** (`/profile`) — Name, email, avatar, password change, active sessions list
-- **Active Sessions** (`/profile/sessions`) — List of active sessions with device info and revoke buttons
+- **Login Page** (`/login`) — Email/password form with "Forgot password?" link. Outside `<Admin>` layout (no sidebar). Redirects to dashboard on success
+- **Register Page** (`/register`) — User registration form (if self-registration enabled via config)
+- **Profile Page** (`/profile`) — Current user profile: change password, view sessions, tenant memberships
+- **Active Sessions** (`/profile/sessions`) — Active sessions with device info and revoke buttons
+
+### Files to Create
+
+```
+apps/dashboard/src/components/auth/
+  LoginPage.tsx           — Email/password form, calls POST /api/auth/login
+  ProfilePage.tsx         — User profile, password change
+  UserList.tsx            — List users (filterable by tenant)
+  UserCreate.tsx          — Invite user: email, name, tenant, role
+  UserEdit.tsx            — Edit user details, toggle active/inactive
+  UserShow.tsx            — View user details, login history
+  ApiKeyList.tsx          — List API keys (masked), last used, expiry
+  ApiKeyCreate.tsx        — Generate new key: name, tenant, permissions, expiry
+  ApiKeyShow.tsx          — View key details (key shown once on create)
+```
 
 ### Menu Section
 
 ```
-──── Account ────
+──── Access Control ────
+Users
 API Keys
-Profile
 ```
 
 ---
@@ -421,7 +594,7 @@ export const authModule: ModuleDefinition = {
     },
   },
   chat: {
-    description: 'Authentication module with JWT, session, and API key strategies. Manages users, sessions, and API keys with tenant-scoped access control.',
+    description: 'Authentication module with pluggable adapter pattern (AuthJS/Firebase/Auth0). Manages users, sessions, and API keys with tenant-scoped access control.',
     capabilities: [
       'list API keys',
       'create API keys',
@@ -492,8 +665,9 @@ export async function seedAuth(db: any) {
 ## 12. API Handler Example
 
 ```typescript
-// POST /api/auth/login — Login handler
+// POST /api/auth/login — Login handler (adapter-delegated)
 import { badRequest, notFound } from '@oven/module-registry/api-utils';
+import { verifyPassword, createSession } from '../auth-utils';
 
 export async function POST(request: NextRequest) {
   const { email, password } = await request.json();
@@ -506,19 +680,22 @@ export async function POST(request: NextRequest) {
 
   if (!user || user.status !== 'active') return notFound('Invalid credentials');
 
+  // Delegate password verification to active adapter
   const valid = await verifyPassword(password, user.passwordHash);
   if (!valid) return notFound('Invalid credentials');
 
-  const accessToken = generateAccessToken(user, user.defaultTenantId);
-  const refreshToken = generateRefreshToken(user);
+  // Delegate session/token creation to active adapter
+  const session = await createSession({
+    id: user.id, email: user.email, name: user.name, defaultTenantId: user.defaultTenantId,
+  });
 
-  // Create session record
+  // Create session record in DB (shared across all adapters)
   await db.insert(authSessions).values({
     userId: user.id,
-    token: hashToken(accessToken),
-    refreshToken: hashToken(refreshToken),
-    expiresAt: new Date(Date.now() + 15 * 60 * 1000),
-    refreshExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    token: hashToken(session.accessToken),
+    refreshToken: session.refreshToken ? hashToken(session.refreshToken) : null,
+    expiresAt: new Date(Date.now() + session.expiresIn * 1000),
+    refreshExpiresAt: session.refreshToken ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : null,
     ipAddress: request.headers.get('x-forwarded-for'),
     userAgent: request.headers.get('user-agent'),
   });
@@ -531,13 +708,13 @@ export async function POST(request: NextRequest) {
     userId: user.id,
     email: user.email,
     ipAddress: request.headers.get('x-forwarded-for'),
-    authMethod: 'jwt',
+    authMethod: 'adapter',
   });
 
   return Response.json({
-    accessToken,
-    refreshToken,
-    expiresIn: 900,
+    accessToken: session.accessToken,
+    refreshToken: session.refreshToken,
+    expiresIn: session.expiresIn,
     user: { id: user.id, email: user.email, name: user.name, defaultTenantId: user.defaultTenantId },
   });
 }

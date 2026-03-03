@@ -88,8 +88,9 @@ export const notificationChannels = pgTable('notification_channels', {
   id: serial('id').primaryKey(),
   tenantId: integer('tenant_id').notNull(),
   channelType: varchar('channel_type', { length: 50 }).notNull(), // whatsapp | email | sms
+  adapterName: varchar('adapter_name', { length: 50 }).notNull(), // 'twilio' | 'meta' | 'resend'
   name: varchar('name', { length: 255 }).notNull(),
-  config: jsonb('config').notNull(),                                // channel-specific (encrypted sensitive fields)
+  config: jsonb('config').notNull(),                                // adapter-specific (encrypted sensitive fields)
   webhookVerifyToken: varchar('webhook_verify_token', { length: 255 }),
   enabled: boolean('enabled').notNull().default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -97,18 +98,41 @@ export const notificationChannels = pgTable('notification_channels', {
 }, (table) => [
   index('nc_tenant_id_idx').on(table.tenantId),
   index('nc_channel_type_idx').on(table.channelType),
+  index('nc_adapter_name_idx').on(table.adapterName),
   index('nc_enabled_idx').on(table.enabled),
 ]);
 ```
 
-**WhatsApp channel config shape**:
+**Adapter-specific config shapes**:
+
+| Adapter | Config Fields |
+|---------|--------------|
+| **Twilio** (WhatsApp/SMS) | `accountSid`, `authToken`, `phoneNumber`, `webhookUrl` (auto-generated) |
+| **Meta** (WhatsApp Cloud API) | `phoneNumberId`, `businessAccountId`, `accessToken`, `apiVersion`, `webhookVerifyToken` |
+| **Resend** (Email) | `apiKey`, `fromEmail`, `fromName`, `replyTo` |
+
 ```json
+// Example: Meta WhatsApp channel config
 {
   "phoneNumberId": "123456789",
   "businessAccountId": "987654321",
   "accessToken": "EAAxxxxx...",
   "apiVersion": "v21.0"
 }
+```
+
+### Adapter Resolution Flow
+
+When a webhook arrives, the system resolves the adapter from the channel's `adapterName`:
+
+```
+Webhook arrives → identify tenant by phone/email mapping
+  → lookup notification_channels WHERE config->>'phoneNumber' = :fromNumber
+  → get adapterName from channel record
+  → resolve adapter: adapterRegistry.get(adapterName)
+  → call adapter.parseInboundWebhook(req)
+  → process message through agent pipeline
+  → call adapter.sendMessage(channel.config, to, response)
 ```
 
 **`notification_conversations`** — Threaded conversations
@@ -303,17 +327,44 @@ A registered workflow node type `notifications.checkLimit` is available for agen
 ### React Admin Resources
 
 - **Notification Channels** — List, Create, Edit, Show
-  - List: Datagrid with tenant, channel type badge, name, enabled toggle
-  - Create: Form with tenant selector, channel type dropdown, config JSON editor, webhook verify token
-  - Edit: Same as create + test connectivity button
+  - List: Datagrid with tenant, channel type badge, adapter name, phone/email, enabled toggle
+  - Create: Tenant (dropdown) → Channel type selector → Adapter selector → adapter-specific config via `<AdapterConfigFields>` dynamic form
+  - Edit: Same as create + "Test Connection" button
+  - Show: Config summary, recent conversations, usage gauge
 
 - **Conversations** — List, Show
   - List: Datagrid with tenant filter, channel type filter, status filter, external user ID, last message timestamp
-  - Show: Full message history (WhatsApp-style chat bubbles), escalation status, agent session link
+  - Show: Full message history (WhatsApp-style chat bubbles: inbound left, outbound right, delivery status icons ✓ sent / ✓✓ delivered / ✓✓ read). Escalation banner if escalated
 
-- **Escalations** — List, Show
-  - List: Filterable by tenant, status, reason. Resolve action button
-  - Show: Conversation context, user message, resolve form
+- **Escalations** — List, Edit, Show
+  - List: Filterable by tenant, status, reason. Columns: tenant, channel, reason, user message (truncated), status, created
+  - Edit: View full context + "Mark Resolved" button with resolution notes
+  - Show: Full conversation context, escalation reason, user message, resolution history
+
+### Files to Create
+
+```
+apps/dashboard/src/components/notifications/
+  ChannelList.tsx           — Columns: tenant, type (WhatsApp/Email/SMS), adapter (twilio/meta/resend), enabled, phone/email
+  ChannelCreate.tsx         — Tenant (dropdown) → Channel type → Adapter selector → adapter-specific config
+  ChannelEdit.tsx           — Same as create + "Test Connection" button
+  ChannelShow.tsx           — Config summary, recent conversations, usage gauge
+  ConversationList.tsx      — Columns: tenant, channel, external user (phone/email), status, message count, last activity
+  ConversationShow.tsx      — Message thread: inbound (left), outbound (right), timestamps, delivery status icons
+  EscalationList.tsx        — Columns: tenant, channel, reason, user message (truncated), status (pending/resolved), created
+  EscalationEdit.tsx        — View full context + "Mark Resolved" button with resolution notes
+  EscalationShow.tsx        — Full conversation context, escalation reason, resolution history
+  UsageDashboard.tsx        — Per-tenant: bar chart (messages vs limit), line chart (daily count), table (tenant, channel, count, limit, %)
+  AdapterConfigFields.tsx   — Dynamic form fields based on selected adapter (see table below)
+```
+
+### AdapterConfigFields — Dynamic Config per Adapter
+
+| Adapter | Config Fields | Input Type |
+|---------|--------------|------------|
+| **Twilio** (WhatsApp/SMS) | accountSid, authToken (password), phoneNumber, webhookUrl (auto-generated, read-only) | TextInput, PasswordInput |
+| **Meta** (WhatsApp Cloud API) | phoneNumberId, businessAccountId, accessToken (password), webhookVerifyToken | TextInput, PasswordInput |
+| **Resend** (Email) | apiKey (password), fromEmail, fromName, replyTo | TextInput, PasswordInput |
 
 ### Custom Pages
 

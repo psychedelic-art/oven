@@ -197,36 +197,30 @@ packages/agent-ui/
   vite.config.widget.ts              ← Standalone widget build
   src/
     index.ts                         ← Export ChatWidget, AgentPlayground, ConversationView
-    components/
-      ChatWidget/
-        ChatWidget.tsx               ← Main widget component
-        ChatBubble.tsx               ← Floating open/close button
-        MessageList.tsx              ← Scrollable message container
-        MessageBubble.tsx            ← Individual message rendering
-        QuickReplies.tsx             ← Category button row
-        InputBar.tsx                 ← Text input + send button + file upload
-        TypingIndicator.tsx          ← Animated dots
-        EscalationCard.tsx           ← Contact info display on escalation
-        SchedulingButton.tsx         ← "Schedule Appointment" CTA
-        WelcomeMessage.tsx           ← Initial greeting with business hours
-      AgentPlayground/
-        AgentPlayground.tsx          ← Main playground component
-        AgentSelector.tsx            ← Agent dropdown
-        ExposedParamsPanel.tsx       ← Configurable params editor
-        ToolCallCard.tsx             ← Expandable tool invocation detail
-        ExecutionMetadata.tsx        ← Token/latency/cost display
-      ConversationView/
-        ConversationView.tsx         ← Read-only message history
-        MessageTimeline.tsx          ← Timeline-style message layout
-        MetadataPanel.tsx            ← Session metadata sidebar
+    widget/
+      ChatWidget.tsx                 ← Main widget component (Props: tenantSlug, theme, agentSlug, apiBaseUrl)
+      ChatBubble.tsx                 ← Single message bubble (user/assistant) with markdown rendering
+      TypingIndicator.tsx            ← Animated dots while agent is thinking
+      WelcomeScreen.tsx              ← Initial state: welcome message + quick-reply category buttons
+      EscalationBanner.tsx           ← Shows contact info when handoff=true
+      AppointmentButton.tsx          ← "Agendar cita" button → opens schedulingUrl
+      WidgetLauncher.tsx             ← Floating button (bottom-right) that opens/closes the widget
+      embed.ts                       ← Embeddable entry point: reads data-* attrs, renders into shadow DOM
+      styles.css                     ← Widget-specific scoped styles
+    playground/
+      AgentPlayground.tsx            ← Full playground: message list, input bar, settings panel, tool call cards
+      ToolCallCard.tsx               ← Expandable card showing tool name, input, output, duration
+      ParamsPanel.tsx                ← Sidebar: model selector, temperature slider, maxTokens (from agent.exposedParams)
+    shared/
+      ConversationView.tsx           ← Generic message thread renderer (Props: messages[], onSendMessage, streaming)
+      MessageList.tsx                ← Scrollable message list with auto-scroll on new messages
+      MessageInput.tsx               ← Text input + send button + optional file attach
+      StreamingText.tsx              ← Component that renders streaming tokens as they arrive
     hooks/
       useChat.ts                     ← Wrapper around @ai-sdk/react useChat
       useTenantConfig.ts             ← Fetches public tenant config
       useBusinessHours.ts            ← Computes business hours status
       useAnonymousSession.ts         ← Session token management (localStorage)
-    widget/
-      mount.tsx                      ← Auto-mount for <script> tag embedding
-      styles.css                     ← Widget-specific scoped styles
     themes/
       light.css                      ← Light theme variables
       dark.css                       ← Dark theme variables
