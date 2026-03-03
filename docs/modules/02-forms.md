@@ -210,3 +210,219 @@ A standalone React package wrapping GrapeJS with OVEN-specific configuration:
 | **module-question-types** | Educational question components are a special category in the component library |
 | **module-analytics-forms** | Analytics dashboards can embed form submission data |
 | **module-chat** | Chat agent can create and modify forms |
+
+---
+
+## Module Rules Compliance
+
+> Added per [`module-rules.md`](../module-rules.md) — 7 required items.
+
+### A. Schema Updates — tenantId + Indexes
+
+```typescript
+// forms
+tenantId: integer('tenant_id').notNull(),
+}, (table) => [
+  index('forms_tenant_id_idx').on(table.tenantId),
+  index('forms_slug_idx').on(table.slug),
+  index('forms_status_idx').on(table.status),
+  index('forms_created_by_idx').on(table.createdBy),
+]);
+
+// form_versions
+}, (table) => [
+  index('fv_form_id_idx').on(table.formId),
+  unique('fv_unique').on(table.formId, table.version),
+]);
+
+// form_components
+tenantId: integer('tenant_id'),  // nullable — null means platform-global
+}, (table) => [
+  index('fc_tenant_id_idx').on(table.tenantId),
+  index('fc_slug_idx').on(table.slug),
+  index('fc_category_idx').on(table.category),
+]);
+
+// form_data_sources
+tenantId: integer('tenant_id'),  // nullable — null means shared
+}, (table) => [
+  index('fds_tenant_id_idx').on(table.tenantId),
+  index('fds_form_id_idx').on(table.formId),
+  index('fds_slug_idx').on(table.slug),
+]);
+
+// form_submissions
+tenantId: integer('tenant_id').notNull(),
+}, (table) => [
+  index('fsub_tenant_id_idx').on(table.tenantId),
+  index('fsub_form_id_idx').on(table.formId),
+  index('fsub_submitted_by_idx').on(table.submittedBy),
+]);
+```
+
+### B. Chat Block
+
+```typescript
+chat: {
+  description: 'Enterprise interface builder with GrapeJS visual editor. Builds dynamic forms, pages, and applications with 3-layer architecture (Data, Business, Frontend).',
+  capabilities: [
+    'create forms and pages',
+    'publish forms',
+    'list form submissions',
+    'manage reusable components',
+    'configure data sources',
+  ],
+  actionSchemas: [
+    {
+      name: 'forms.list',
+      description: 'List forms with filtering and pagination',
+      parameters: {
+        tenantId: { type: 'number' },
+        status: { type: 'string', description: 'draft/published/archived' },
+      },
+      returns: { data: { type: 'array' }, total: { type: 'number' } },
+      requiredPermissions: ['forms.read'],
+      endpoint: { method: 'GET', path: 'forms' },
+    },
+    {
+      name: 'forms.create',
+      description: 'Create a new form or page',
+      parameters: {
+        name: { type: 'string', required: true },
+        slug: { type: 'string', required: true },
+        description: { type: 'string' },
+      },
+      returns: { id: { type: 'number' }, slug: { type: 'string' } },
+      requiredPermissions: ['forms.create'],
+      endpoint: { method: 'POST', path: 'forms' },
+    },
+    {
+      name: 'forms.listSubmissions',
+      description: 'List submissions for a form',
+      parameters: {
+        formId: { type: 'number', required: true },
+      },
+      returns: { data: { type: 'array' }, total: { type: 'number' } },
+      requiredPermissions: ['form-submissions.read'],
+      endpoint: { method: 'GET', path: 'form-submissions' },
+    },
+  ],
+},
+```
+
+### C. configSchema
+
+```typescript
+configSchema: [
+  {
+    key: 'MAX_COMPONENTS_PER_FORM',
+    type: 'number',
+    description: 'Maximum components per form definition',
+    defaultValue: 200,
+    instanceScoped: true,
+  },
+  {
+    key: 'MAX_DATA_SOURCES_PER_FORM',
+    type: 'number',
+    description: 'Maximum data sources per form',
+    defaultValue: 20,
+    instanceScoped: true,
+  },
+  {
+    key: 'SUBMISSION_RETENTION_DAYS',
+    type: 'number',
+    description: 'Days to retain form submissions (0 = forever)',
+    defaultValue: 0,
+    instanceScoped: true,
+  },
+],
+```
+
+### D. Typed Event Schemas
+
+```typescript
+events: {
+  schemas: {
+    'forms.form.created': {
+      id: { type: 'number', required: true },
+      tenantId: { type: 'number', required: true },
+      name: { type: 'string' },
+      slug: { type: 'string' },
+      createdBy: { type: 'number' },
+    },
+    'forms.form.published': {
+      id: { type: 'number', required: true },
+      tenantId: { type: 'number', required: true },
+      name: { type: 'string' },
+      slug: { type: 'string' },
+      version: { type: 'number' },
+    },
+    'forms.submission.created': {
+      id: { type: 'number', required: true },
+      tenantId: { type: 'number', required: true },
+      formId: { type: 'number', required: true },
+      submittedBy: { type: 'number' },
+    },
+    'forms.component.registered': {
+      id: { type: 'number', required: true },
+      tenantId: { type: 'number', description: 'null if platform-global' },
+      name: { type: 'string' },
+      slug: { type: 'string' },
+      category: { type: 'string' },
+    },
+  },
+},
+```
+
+### E. Seed Function
+
+```typescript
+export async function seedForms(db: any) {
+  const modulePermissions = [
+    { resource: 'forms', action: 'read', slug: 'forms.read', description: 'View forms' },
+    { resource: 'forms', action: 'create', slug: 'forms.create', description: 'Create forms' },
+    { resource: 'forms', action: 'update', slug: 'forms.update', description: 'Edit forms' },
+    { resource: 'forms', action: 'delete', slug: 'forms.delete', description: 'Delete forms' },
+    { resource: 'forms', action: 'publish', slug: 'forms.publish', description: 'Publish forms' },
+    { resource: 'form-submissions', action: 'read', slug: 'form-submissions.read', description: 'View submissions' },
+    { resource: 'form-submissions', action: 'create', slug: 'form-submissions.create', description: 'Submit forms' },
+    { resource: 'form-components', action: 'read', slug: 'form-components.read', description: 'View components' },
+    { resource: 'form-components', action: 'create', slug: 'form-components.create', description: 'Register components' },
+    { resource: 'form-components', action: 'update', slug: 'form-components.update', description: 'Edit components' },
+    { resource: 'form-components', action: 'delete', slug: 'form-components.delete', description: 'Delete components' },
+    { resource: 'form-data-sources', action: 'read', slug: 'form-data-sources.read', description: 'View data sources' },
+    { resource: 'form-data-sources', action: 'create', slug: 'form-data-sources.create', description: 'Create data sources' },
+  ];
+
+  for (const perm of modulePermissions) {
+    await db.insert(permissions).values(perm).onConflictDoNothing();
+  }
+}
+```
+
+### F. API Handler Example
+
+```typescript
+// GET /api/forms — List handler with tenant filtering
+import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+
+export async function GET(request: NextRequest) {
+  const params = parseListParams(request);
+  const tenantId = request.headers.get('x-tenant-id');
+
+  const conditions = [];
+  if (tenantId) conditions.push(eq(forms.tenantId, Number(tenantId)));
+  if (params.filter?.status) conditions.push(eq(forms.status, params.filter.status));
+
+  const where = conditions.length ? and(...conditions) : undefined;
+
+  const [rows, [{ count }]] = await Promise.all([
+    db.select().from(forms).where(where)
+      .orderBy(desc(forms.updatedAt))
+      .offset(params.offset).limit(params.limit),
+    db.select({ count: sql`count(*)` }).from(forms).where(where),
+  ]);
+
+  return listResponse(rows, 'forms', params, Number(count));
+}
+```

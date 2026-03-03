@@ -163,3 +163,182 @@ Grades
 | **module-workflows** | Trigger workflows on grade completion (send results, update records) |
 | **module-analytics-forms** | Scoring data feeds analytics dashboards (score distributions, performance trends) |
 | **module-chat** | Chat agent can query grades, summarize performance, identify at-risk students |
+
+---
+
+## Module Rules Compliance
+
+> Added per [`module-rules.md`](../module-rules.md) — 7 required items.
+
+### A. Schema Updates — tenantId + Indexes
+
+```typescript
+// scoring_strategies — platform-global (no tenantId), but needs indexes
+}, (table) => [
+  index('ss_slug_idx').on(table.slug),
+  index('ss_type_idx').on(table.type),
+  index('ss_built_in_idx').on(table.builtIn),
+]);
+
+// scoring_rubrics
+tenantId: integer('tenant_id').notNull(),
+}, (table) => [
+  index('sr_tenant_id_idx').on(table.tenantId),
+  index('sr_slug_idx').on(table.slug),
+  index('sr_created_by_idx').on(table.createdBy),
+]);
+
+// score_records
+tenantId: integer('tenant_id').notNull(),
+}, (table) => [
+  index('scr_tenant_id_idx').on(table.tenantId),
+  index('scr_attempt_id_idx').on(table.attemptId),
+  index('scr_question_id_idx').on(table.questionId),
+  index('scr_status_idx').on(table.status),
+  index('scr_graded_by_idx').on(table.gradedBy),
+]);
+
+// grades
+tenantId: integer('tenant_id').notNull(),
+}, (table) => [
+  index('g_tenant_id_idx').on(table.tenantId),
+  index('g_attempt_id_idx').on(table.attemptId),
+  index('g_exam_id_idx').on(table.examId),
+  index('g_student_id_idx').on(table.studentId),
+]);
+
+// grading_tasks
+}, (table) => [
+  index('gt_score_record_id_idx').on(table.scoreRecordId),
+  index('gt_assigned_to_idx').on(table.assignedTo),
+  index('gt_status_idx').on(table.status),
+]);
+```
+
+### B. Chat Block
+
+```typescript
+chat: {
+  description: 'Evaluation and grading engine. Processes exam responses, applies scoring strategies, supports rubric-based manual grading, and computes aggregate grades.',
+  capabilities: ['evaluate exam attempts', 'manage rubrics', 'view grades', 'assign grading tasks', 'query student performance'],
+  actionSchemas: [
+    {
+      name: 'scoring.evaluate',
+      description: 'Trigger scoring for an exam attempt',
+      parameters: { attemptId: { type: 'number', required: true } },
+      requiredPermissions: ['scoring.evaluate'],
+      endpoint: { method: 'POST', path: 'scoring/evaluate' },
+    },
+    {
+      name: 'scoring.getGrade',
+      description: 'Get aggregate grade for an attempt',
+      parameters: { attemptId: { type: 'number', required: true } },
+      returns: { totalPoints: { type: 'number' }, percentage: { type: 'number' }, passed: { type: 'boolean' } },
+      requiredPermissions: ['grades.read'],
+      endpoint: { method: 'GET', path: 'scoring/attempts/[attemptId]/grade' },
+    },
+    {
+      name: 'scoring.listGradingTasks',
+      description: 'List pending grading tasks for the current reviewer',
+      parameters: { status: { type: 'string' } },
+      requiredPermissions: ['grading-tasks.read'],
+      endpoint: { method: 'GET', path: 'scoring/grading-tasks' },
+    },
+  ],
+},
+```
+
+### C. configSchema
+
+```typescript
+configSchema: [
+  { key: 'AUTO_GRADE_ON_SUBMIT', type: 'boolean', description: 'Auto-trigger scoring when attempt is submitted', defaultValue: true, instanceScoped: true },
+  { key: 'GRADING_TASK_DUE_DAYS', type: 'number', description: 'Default days until grading task is due', defaultValue: 7, instanceScoped: true },
+  { key: 'PASS_PERCENTAGE_DEFAULT', type: 'number', description: 'Default passing percentage when exam does not specify', defaultValue: 60, instanceScoped: true },
+],
+```
+
+### D. Typed Event Schemas
+
+```typescript
+events: {
+  schemas: {
+    'scoring.evaluation.started': {
+      attemptId: { type: 'number', required: true }, tenantId: { type: 'number', required: true },
+      examId: { type: 'number' }, studentId: { type: 'number' },
+    },
+    'scoring.evaluation.completed': {
+      attemptId: { type: 'number', required: true }, tenantId: { type: 'number', required: true },
+      examId: { type: 'number' }, studentId: { type: 'number' },
+      percentage: { type: 'number' }, passed: { type: 'boolean' },
+    },
+    'scoring.response.auto-graded': {
+      scoreRecordId: { type: 'number', required: true }, tenantId: { type: 'number', required: true },
+      attemptId: { type: 'number' }, questionId: { type: 'number' }, pointsEarned: { type: 'number' },
+    },
+    'scoring.grading-task.created': {
+      taskId: { type: 'number', required: true }, tenantId: { type: 'number', required: true },
+      scoreRecordId: { type: 'number' }, assignedTo: { type: 'number' },
+    },
+    'scoring.grade.computed': {
+      gradeId: { type: 'number', required: true }, tenantId: { type: 'number', required: true },
+      attemptId: { type: 'number' }, totalPoints: { type: 'number' }, percentage: { type: 'number' },
+    },
+  },
+},
+```
+
+### E. Seed Function
+
+```typescript
+export async function seedScoring(db: any) {
+  const modulePermissions = [
+    { resource: 'scoring', action: 'evaluate', slug: 'scoring.evaluate', description: 'Trigger scoring' },
+    { resource: 'scoring-rubrics', action: 'read', slug: 'scoring-rubrics.read', description: 'View rubrics' },
+    { resource: 'scoring-rubrics', action: 'create', slug: 'scoring-rubrics.create', description: 'Create rubrics' },
+    { resource: 'scoring-rubrics', action: 'update', slug: 'scoring-rubrics.update', description: 'Edit rubrics' },
+    { resource: 'scoring-rubrics', action: 'delete', slug: 'scoring-rubrics.delete', description: 'Delete rubrics' },
+    { resource: 'grades', action: 'read', slug: 'grades.read', description: 'View grades' },
+    { resource: 'grading-tasks', action: 'read', slug: 'grading-tasks.read', description: 'View grading tasks' },
+    { resource: 'grading-tasks', action: 'grade', slug: 'grading-tasks.grade', description: 'Submit manual grades' },
+    { resource: 'score-records', action: 'read', slug: 'score-records.read', description: 'View score records' },
+  ];
+  for (const perm of modulePermissions) {
+    await db.insert(permissions).values(perm).onConflictDoNothing();
+  }
+
+  // Seed built-in scoring strategies
+  const strategies = [
+    { name: 'Exact Match', slug: 'exact-match', type: 'auto', builtIn: true, isSystem: true },
+    { name: 'Multi-Match', slug: 'multi-match', type: 'auto', builtIn: true, isSystem: true },
+    { name: 'Order Match', slug: 'order-match', type: 'auto', builtIn: true, isSystem: true },
+    { name: 'Text Match', slug: 'text-match', type: 'auto', builtIn: true, isSystem: true },
+    { name: 'Rubric Grading', slug: 'rubric-grading', type: 'manual', builtIn: true, isSystem: true },
+    { name: 'Code Execution', slug: 'code-execution', type: 'auto', builtIn: true, isSystem: true },
+  ];
+  for (const s of strategies) {
+    await db.insert(scoringStrategies).values(s).onConflictDoNothing();
+  }
+}
+```
+
+### F. API Handler Example
+
+```typescript
+import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+
+export async function GET(request: NextRequest) {
+  const params = parseListParams(request);
+  const tenantId = request.headers.get('x-tenant-id');
+  const conditions = [];
+  if (tenantId) conditions.push(eq(grades.tenantId, Number(tenantId)));
+  if (params.filter?.examId) conditions.push(eq(grades.examId, params.filter.examId));
+  if (params.filter?.studentId) conditions.push(eq(grades.studentId, params.filter.studentId));
+  const where = conditions.length ? and(...conditions) : undefined;
+  const [rows, [{ count }]] = await Promise.all([
+    db.select().from(grades).where(where).orderBy(desc(grades.computedAt)).offset(params.offset).limit(params.limit),
+    db.select({ count: sql`count(*)` }).from(grades).where(where),
+  ]);
+  return listResponse(rows, 'grades', params, Number(count));
+}
+```

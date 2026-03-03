@@ -389,3 +389,173 @@ MCP Servers
 - **Parallel execution** — Tool executor nodes can invoke multiple tools in parallel when the LLM requests multiple tool calls in a single response
 - **Observability** — Every execution is tracked at the workflow level and the per-node level, with token usage, latency, and error information
 - **Backward compatibility** — Agent workflows are stored in the same format family as regular workflows; the base workflow engine can inspect (though not execute agent-specific nodes in) agent workflow definitions
+
+---
+
+## Module Rules Compliance
+
+> Added per [`module-rules.md`](../module-rules.md) — 7 required items.
+
+### A. Schema Updates — tenantId + Indexes
+
+```typescript
+// agent_workflows
+tenantId: integer('tenant_id'),  // nullable — platform-wide workflows have no tenant
+}, (table) => [
+  index('aw_tenant_id_idx').on(table.tenantId),
+  index('aw_slug_idx').on(table.slug),
+  index('aw_enabled_idx').on(table.enabled),
+]);
+
+// agent_workflow_versions
+}, (table) => [
+  index('awv_workflow_id_idx').on(table.agentWorkflowId),
+]);
+
+// agent_workflow_executions
+tenantId: integer('tenant_id'),
+}, (table) => [
+  index('awe_tenant_id_idx').on(table.tenantId),
+  index('awe_workflow_id_idx').on(table.agentWorkflowId),
+  index('awe_agent_id_idx').on(table.agentId),
+  index('awe_session_id_idx').on(table.sessionId),
+  index('awe_status_idx').on(table.status),
+]);
+
+// agent_workflow_node_executions
+}, (table) => [
+  index('awne_execution_id_idx').on(table.executionId),
+  index('awne_node_type_idx').on(table.nodeType),
+  index('awne_status_idx').on(table.status),
+]);
+
+// agent_memory
+}, (table) => [
+  index('amem_agent_id_idx').on(table.agentId),
+  index('amem_user_id_idx').on(table.userId),
+  index('amem_key_idx').on(table.key),
+]);
+
+// mcp_server_definitions
+}, (table) => [
+  index('mcp_workflow_id_idx').on(table.agentWorkflowId),
+  index('mcp_slug_idx').on(table.slug),
+  index('mcp_status_idx').on(table.status),
+]);
+```
+
+### B. Chat Block
+
+```typescript
+chat: {
+  description: 'Graph-based AI agent orchestration. Defines multi-step reasoning workflows with LLM nodes, tool loops, memory, human-in-the-loop, and MCP export.',
+  capabilities: ['create agent workflows', 'execute workflows', 'manage agent memory', 'generate MCP servers', 'resume paused executions'],
+  actionSchemas: [
+    {
+      name: 'agentWorkflows.list',
+      description: 'List agent workflow definitions',
+      parameters: { tenantId: { type: 'number' }, enabled: { type: 'boolean' } },
+      returns: { data: { type: 'array' }, total: { type: 'number' } },
+      requiredPermissions: ['agent-workflows.read'],
+      endpoint: { method: 'GET', path: 'agent-workflows' },
+    },
+    {
+      name: 'agentWorkflows.execute',
+      description: 'Manually trigger an agent workflow execution',
+      parameters: { workflowId: { type: 'number', required: true }, input: { type: 'object' } },
+      requiredPermissions: ['agent-workflows.execute'],
+      endpoint: { method: 'POST', path: 'agent-workflows/[id]/execute' },
+    },
+    {
+      name: 'agentWorkflows.resume',
+      description: 'Resume a paused execution (human-in-the-loop)',
+      parameters: { executionId: { type: 'number', required: true }, action: { type: 'string', description: 'approve/edit/reject' } },
+      requiredPermissions: ['agent-workflow-executions.resume'],
+      endpoint: { method: 'POST', path: 'agent-workflow-executions/[id]/resume' },
+    },
+  ],
+},
+```
+
+### C. configSchema
+
+```typescript
+configSchema: [
+  { key: 'MAX_TOOL_ITERATIONS', type: 'number', description: 'Global max iterations for tool-calling loops', defaultValue: 10, instanceScoped: true },
+  { key: 'CHECKPOINT_ENABLED', type: 'boolean', description: 'Enable execution checkpointing', defaultValue: true, instanceScoped: false },
+  { key: 'MCP_AUTO_REGENERATE', type: 'boolean', description: 'Auto-regenerate MCP definitions on workflow change', defaultValue: true, instanceScoped: false },
+  { key: 'EXECUTION_TIMEOUT_MS', type: 'number', description: 'Maximum workflow execution duration', defaultValue: 300000, instanceScoped: true },
+],
+```
+
+### D. Typed Event Schemas
+
+```typescript
+events: {
+  schemas: {
+    'agents-workflow.workflow.created': {
+      id: { type: 'number', required: true }, tenantId: { type: 'number' },
+      name: { type: 'string' }, slug: { type: 'string' },
+    },
+    'agents-workflow.execution.started': {
+      id: { type: 'number', required: true }, agentWorkflowId: { type: 'number', required: true },
+      tenantId: { type: 'number' }, agentId: { type: 'number' },
+    },
+    'agents-workflow.execution.completed': {
+      id: { type: 'number', required: true }, agentWorkflowId: { type: 'number', required: true },
+      status: { type: 'string' }, tokenUsage: { type: 'object' },
+    },
+    'agents-workflow.execution.paused': {
+      id: { type: 'number', required: true }, agentWorkflowId: { type: 'number', required: true },
+      nodeId: { type: 'string' }, reason: { type: 'string' },
+    },
+    'agents-workflow.mcp.generated': {
+      mcpServerId: { type: 'number', required: true }, agentWorkflowId: { type: 'number', required: true },
+    },
+  },
+},
+```
+
+### E. Seed Function
+
+```typescript
+export async function seedWorkflowAgents(db: any) {
+  const modulePermissions = [
+    { resource: 'agent-workflows', action: 'read', slug: 'agent-workflows.read', description: 'View agent workflows' },
+    { resource: 'agent-workflows', action: 'create', slug: 'agent-workflows.create', description: 'Create workflows' },
+    { resource: 'agent-workflows', action: 'update', slug: 'agent-workflows.update', description: 'Edit workflows' },
+    { resource: 'agent-workflows', action: 'delete', slug: 'agent-workflows.delete', description: 'Delete workflows' },
+    { resource: 'agent-workflows', action: 'execute', slug: 'agent-workflows.execute', description: 'Execute workflows' },
+    { resource: 'agent-workflow-executions', action: 'read', slug: 'agent-workflow-executions.read', description: 'View executions' },
+    { resource: 'agent-workflow-executions', action: 'resume', slug: 'agent-workflow-executions.resume', description: 'Resume paused executions' },
+    { resource: 'agent-workflow-executions', action: 'cancel', slug: 'agent-workflow-executions.cancel', description: 'Cancel executions' },
+    { resource: 'agent-memory', action: 'read', slug: 'agent-memory.read', description: 'View agent memory' },
+    { resource: 'agent-memory', action: 'create', slug: 'agent-memory.create', description: 'Create memory entries' },
+    { resource: 'agent-memory', action: 'delete', slug: 'agent-memory.delete', description: 'Delete memory entries' },
+    { resource: 'mcp-servers', action: 'read', slug: 'mcp-servers.read', description: 'View MCP servers' },
+  ];
+  for (const perm of modulePermissions) {
+    await db.insert(permissions).values(perm).onConflictDoNothing();
+  }
+}
+```
+
+### F. API Handler Example
+
+```typescript
+import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+
+export async function GET(request: NextRequest) {
+  const params = parseListParams(request);
+  const tenantId = request.headers.get('x-tenant-id');
+  const conditions = [];
+  if (tenantId) conditions.push(eq(agentWorkflows.tenantId, Number(tenantId)));
+  if (params.filter?.enabled !== undefined) conditions.push(eq(agentWorkflows.enabled, params.filter.enabled));
+  const where = conditions.length ? and(...conditions) : undefined;
+  const [rows, [{ count }]] = await Promise.all([
+    db.select().from(agentWorkflows).where(where).orderBy(desc(agentWorkflows.updatedAt)).offset(params.offset).limit(params.limit),
+    db.select({ count: sql`count(*)` }).from(agentWorkflows).where(where),
+  ]);
+  return listResponse(rows, 'agent-workflows', params, Number(count));
+}
+```
