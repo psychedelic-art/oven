@@ -147,3 +147,189 @@ Behaviors
 | **module-scoring-engine** | Scoring contract defines how answers are evaluated |
 | **module-forms** | Question types can be registered as GrapeJS blocks in the form editor |
 | **module-chat** | Chat agent can browse and suggest question types |
+
+---
+
+## Module Rules Compliance
+
+> Added per [`module-rules.md`](../module-rules.md) — 7 required items.
+>
+> **Note**: `question_types` and `question_type_behaviors` are **platform-global** entities (shared across all tenants), so they do NOT get a `tenantId` column. However, they still need indexes, chat block, configSchema, event schemas, seed, and API handler examples.
+
+### A. Schema Updates — Indexes (no tenantId)
+
+```typescript
+// question_types — platform-global, no tenantId
+}, (table) => [
+  index('qt_slug_idx').on(table.slug),
+  index('qt_category_idx').on(table.category),
+  index('qt_built_in_idx').on(table.builtIn),
+  index('qt_enabled_idx').on(table.enabled),
+]);
+
+// question_type_behaviors — platform-global, no tenantId
+}, (table) => [
+  index('qtb_slug_idx').on(table.slug),
+  index('qtb_type_idx').on(table.type),
+]);
+```
+
+### B. Chat Block
+
+```typescript
+chat: {
+  description: 'Behavior composition system for educational question blueprints. Defines input methods, validation, scoring contracts, and display for assessment question types.',
+  capabilities: [
+    'list question types',
+    'create custom question types',
+    'browse behavior library',
+    'preview question type rendering',
+  ],
+  actionSchemas: [
+    {
+      name: 'questionTypes.list',
+      description: 'List available question types',
+      parameters: {
+        category: { type: 'string', description: 'Filter by category (selection/text/interactive/rich/media/composite)' },
+        builtIn: { type: 'boolean', description: 'Filter built-in vs custom' },
+      },
+      returns: { data: { type: 'array' }, total: { type: 'number' } },
+      requiredPermissions: ['question-types.read'],
+      endpoint: { method: 'GET', path: 'question-types' },
+    },
+    {
+      name: 'questionTypes.create',
+      description: 'Create a new custom question type from behaviors',
+      parameters: {
+        name: { type: 'string', required: true },
+        slug: { type: 'string', required: true },
+        category: { type: 'string', required: true },
+        behaviors: { type: 'object', description: 'Composed behavior configuration' },
+        scoringContract: { type: 'object', description: 'Expected scoring output shape' },
+      },
+      requiredPermissions: ['question-types.create'],
+      endpoint: { method: 'POST', path: 'question-types' },
+    },
+  ],
+},
+```
+
+### C. configSchema
+
+```typescript
+configSchema: [
+  {
+    key: 'ALLOW_CUSTOM_QUESTION_TYPES',
+    type: 'boolean',
+    description: 'Whether non-admin users can create custom question types',
+    defaultValue: false,
+    instanceScoped: false,
+  },
+  {
+    key: 'MAX_BEHAVIORS_PER_TYPE',
+    type: 'number',
+    description: 'Maximum behaviors composable into a single question type',
+    defaultValue: 10,
+    instanceScoped: false,
+  },
+],
+```
+
+### D. Typed Event Schemas
+
+```typescript
+events: {
+  schemas: {
+    'question-types.type.created': {
+      id: { type: 'number', required: true },
+      name: { type: 'string' },
+      slug: { type: 'string' },
+      category: { type: 'string' },
+    },
+    'question-types.type.updated': {
+      id: { type: 'number', required: true },
+      name: { type: 'string' },
+      slug: { type: 'string' },
+    },
+    'question-types.type.deleted': {
+      id: { type: 'number', required: true },
+      name: { type: 'string' },
+      slug: { type: 'string' },
+    },
+    'question-types.behavior.registered': {
+      id: { type: 'number', required: true },
+      name: { type: 'string' },
+      slug: { type: 'string' },
+      type: { type: 'string', description: 'input/display/validation/interaction/scoring' },
+    },
+  },
+},
+```
+
+### E. Seed Function
+
+```typescript
+export async function seedQuestionTypes(db: any) {
+  // Seed permissions
+  const modulePermissions = [
+    { resource: 'question-types', action: 'read', slug: 'question-types.read', description: 'View question types' },
+    { resource: 'question-types', action: 'create', slug: 'question-types.create', description: 'Create question types' },
+    { resource: 'question-types', action: 'update', slug: 'question-types.update', description: 'Edit question types' },
+    { resource: 'question-types', action: 'delete', slug: 'question-types.delete', description: 'Delete question types' },
+    { resource: 'question-type-behaviors', action: 'read', slug: 'question-type-behaviors.read', description: 'View behaviors' },
+    { resource: 'question-type-behaviors', action: 'create', slug: 'question-type-behaviors.create', description: 'Register behaviors' },
+    { resource: 'question-type-behaviors', action: 'update', slug: 'question-type-behaviors.update', description: 'Edit behaviors' },
+    { resource: 'question-type-behaviors', action: 'delete', slug: 'question-type-behaviors.delete', description: 'Delete behaviors' },
+  ];
+
+  for (const perm of modulePermissions) {
+    await db.insert(permissions).values(perm).onConflictDoNothing();
+  }
+
+  // Seed built-in question types
+  const builtInTypes = [
+    { name: 'Multiple Choice (Single)', slug: 'mcq-single', category: 'selection', builtIn: true, isSystem: true },
+    { name: 'Multiple Choice (Multiple)', slug: 'mcq-multiple', category: 'selection', builtIn: true, isSystem: true },
+    { name: 'True/False', slug: 'true-false', category: 'selection', builtIn: true, isSystem: true },
+    { name: 'Short Answer', slug: 'short-answer', category: 'text', builtIn: true, isSystem: true },
+    { name: 'Long Answer / Essay', slug: 'essay', category: 'text', builtIn: true, isSystem: true },
+    { name: 'Fill-in-the-Blank', slug: 'fill-blank', category: 'text', builtIn: true, isSystem: true },
+    { name: 'Drag-and-Drop Ordering', slug: 'dnd-ordering', category: 'interactive', builtIn: true, isSystem: true },
+    { name: 'Drag-and-Drop Matching', slug: 'dnd-matching', category: 'interactive', builtIn: true, isSystem: true },
+    { name: 'Code Editor', slug: 'code-editor', category: 'rich', builtIn: true, isSystem: true },
+    { name: 'Math Expression', slug: 'math-expression', category: 'rich', builtIn: true, isSystem: true },
+    { name: 'Likert Scale', slug: 'likert-scale', category: 'composite', builtIn: true, isSystem: true },
+  ];
+
+  for (const qt of builtInTypes) {
+    await db.insert(questionTypes).values(qt).onConflictDoNothing();
+  }
+}
+```
+
+### F. API Handler Example
+
+```typescript
+// GET /api/question-types — List handler (platform-global, no tenant filter)
+import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+
+export async function GET(request: NextRequest) {
+  const params = parseListParams(request);
+
+  const conditions = [];
+  if (params.filter?.category) conditions.push(eq(questionTypes.category, params.filter.category));
+  if (params.filter?.builtIn !== undefined) conditions.push(eq(questionTypes.builtIn, params.filter.builtIn));
+  conditions.push(eq(questionTypes.enabled, true));
+
+  const where = conditions.length ? and(...conditions) : undefined;
+
+  const [rows, [{ count }]] = await Promise.all([
+    db.select().from(questionTypes).where(where)
+      .orderBy(asc(questionTypes.category), asc(questionTypes.name))
+      .offset(params.offset).limit(params.limit),
+    db.select({ count: sql`count(*)` }).from(questionTypes).where(where),
+  ]);
+
+  return listResponse(rows, 'question-types', params, Number(count));
+}
+```

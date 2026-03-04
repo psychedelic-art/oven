@@ -205,3 +205,151 @@ Dashboards
 | **module-exams** | Exam data tables available for dashboard exploration |
 | **module-scoring-engine** | Score/grade tables available for dashboard exploration |
 | **module-chat** | Chat agent can create dashboards, query data, suggest visualizations |
+
+---
+
+## Module Rules Compliance
+
+> Added per [`module-rules.md`](../module-rules.md) — 7 required items.
+
+### A. Schema Updates — tenantId + Indexes
+
+```typescript
+// dashboards
+tenantId: integer('tenant_id').notNull(),
+}, (table) => [
+  index('d_tenant_id_idx').on(table.tenantId),
+  index('d_slug_idx').on(table.slug),
+  index('d_status_idx').on(table.status),
+  index('d_created_by_idx').on(table.createdBy),
+]);
+
+// dashboard_versions
+}, (table) => [
+  index('dv_dashboard_id_idx').on(table.dashboardId),
+]);
+
+// dashboard_tabs
+}, (table) => [
+  index('dt_dashboard_id_idx').on(table.dashboardId),
+]);
+
+// dashboard_saved_views
+}, (table) => [
+  index('dsv_dashboard_id_idx').on(table.dashboardId),
+  index('dsv_created_by_idx').on(table.createdBy),
+]);
+
+// dashboard_kpis
+}, (table) => [
+  index('dk_dashboard_id_idx').on(table.dashboardId),
+]);
+```
+
+### B. Chat Block
+
+```typescript
+chat: {
+  description: 'Data exploration and visualization module with wizard-based creation, ReactFlow data connector, tabs, KPIs, and comparison mode.',
+  capabilities: ['create dashboards', 'query dashboard data', 'manage saved views', 'configure KPIs'],
+  actionSchemas: [
+    {
+      name: 'dashboards.list',
+      description: 'List dashboards with filtering',
+      parameters: { tenantId: { type: 'number' }, status: { type: 'string' } },
+      returns: { data: { type: 'array' }, total: { type: 'number' } },
+      requiredPermissions: ['dashboards.read'],
+      endpoint: { method: 'GET', path: 'dashboards' },
+    },
+    {
+      name: 'dashboards.getData',
+      description: 'Execute the data pipeline and return results',
+      parameters: { dashboardId: { type: 'number', required: true }, filters: { type: 'object' } },
+      requiredPermissions: ['dashboards.read'],
+      endpoint: { method: 'GET', path: 'dashboards/[id]/data' },
+    },
+    {
+      name: 'dashboards.listTables',
+      description: 'List available database tables for dashboard creation',
+      parameters: {},
+      requiredPermissions: ['dashboards.create'],
+      endpoint: { method: 'GET', path: 'dashboards/schema/tables' },
+    },
+  ],
+},
+```
+
+### C. configSchema
+
+```typescript
+configSchema: [
+  { key: 'MAX_TABS_PER_DASHBOARD', type: 'number', description: 'Maximum tabs per dashboard', defaultValue: 10, instanceScoped: true },
+  { key: 'MAX_KPIS_PER_DASHBOARD', type: 'number', description: 'Maximum KPIs per dashboard', defaultValue: 8, instanceScoped: true },
+  { key: 'QUERY_TIMEOUT_SECONDS', type: 'number', description: 'Timeout for dashboard data queries', defaultValue: 30, instanceScoped: false },
+],
+```
+
+### D. Typed Event Schemas
+
+```typescript
+events: {
+  schemas: {
+    'dashboards.dashboard.created': {
+      id: { type: 'number', required: true }, tenantId: { type: 'number', required: true },
+      name: { type: 'string' }, createdBy: { type: 'number' },
+    },
+    'dashboards.dashboard.published': {
+      id: { type: 'number', required: true }, tenantId: { type: 'number', required: true },
+      name: { type: 'string' }, version: { type: 'number' },
+    },
+    'dashboards.view.saved': {
+      id: { type: 'number', required: true }, dashboardId: { type: 'number', required: true },
+      tenantId: { type: 'number', required: true }, name: { type: 'string' }, createdBy: { type: 'number' },
+    },
+    'dashboards.kpi.created': {
+      id: { type: 'number', required: true }, dashboardId: { type: 'number', required: true },
+      tenantId: { type: 'number', required: true }, name: { type: 'string' },
+    },
+  },
+},
+```
+
+### E. Seed Function
+
+```typescript
+export async function seedDashboards(db: any) {
+  const modulePermissions = [
+    { resource: 'dashboards', action: 'read', slug: 'dashboards.read', description: 'View dashboards' },
+    { resource: 'dashboards', action: 'create', slug: 'dashboards.create', description: 'Create dashboards' },
+    { resource: 'dashboards', action: 'update', slug: 'dashboards.update', description: 'Edit dashboards' },
+    { resource: 'dashboards', action: 'delete', slug: 'dashboards.delete', description: 'Delete dashboards' },
+    { resource: 'dashboards', action: 'publish', slug: 'dashboards.publish', description: 'Publish dashboards' },
+    { resource: 'dashboard-saved-views', action: 'read', slug: 'dashboard-saved-views.read', description: 'View saved views' },
+    { resource: 'dashboard-saved-views', action: 'create', slug: 'dashboard-saved-views.create', description: 'Save views' },
+    { resource: 'dashboard-kpis', action: 'create', slug: 'dashboard-kpis.create', description: 'Create KPIs' },
+  ];
+  for (const perm of modulePermissions) {
+    await db.insert(permissions).values(perm).onConflictDoNothing();
+  }
+}
+```
+
+### F. API Handler Example
+
+```typescript
+import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+
+export async function GET(request: NextRequest) {
+  const params = parseListParams(request);
+  const tenantId = request.headers.get('x-tenant-id');
+  const conditions = [];
+  if (tenantId) conditions.push(eq(dashboards.tenantId, Number(tenantId)));
+  if (params.filter?.status) conditions.push(eq(dashboards.status, params.filter.status));
+  const where = conditions.length ? and(...conditions) : undefined;
+  const [rows, [{ count }]] = await Promise.all([
+    db.select().from(dashboards).where(where).orderBy(desc(dashboards.updatedAt)).offset(params.offset).limit(params.limit),
+    db.select({ count: sql`count(*)` }).from(dashboards).where(where),
+  ]);
+  return listResponse(rows, 'dashboards', params, Number(count));
+}
+```

@@ -231,3 +231,160 @@ Templates
 | **module-forms** | Form submission data feeds form analytics |
 | **module-dashboards** | Analytics Forms can be embedded in data dashboards |
 | **module-chat** | Chat agent can query metrics, generate insights |
+
+---
+
+## Module Rules Compliance
+
+> Added per [`module-rules.md`](../module-rules.md) — 7 required items.
+
+### A. Schema Updates — tenantId + Indexes
+
+```typescript
+// analytics_forms
+tenantId: integer('tenant_id').notNull(),
+}, (table) => [
+  index('af_tenant_id_idx').on(table.tenantId),
+  index('af_slug_idx').on(table.slug),
+  index('af_status_idx').on(table.status),
+  index('af_created_by_idx').on(table.createdBy),
+]);
+
+// analytics_form_versions
+}, (table) => [
+  index('afv_analytics_form_id_idx').on(table.analyticsFormId),
+]);
+
+// analytics_data_sources
+tenantId: integer('tenant_id'),  // nullable — shared sources have no tenant
+}, (table) => [
+  index('ads_tenant_id_idx').on(table.tenantId),
+  index('ads_slug_idx').on(table.slug),
+  index('ads_type_idx').on(table.type),
+]);
+
+// analytics_metrics
+tenantId: integer('tenant_id').notNull(),
+}, (table) => [
+  index('am_tenant_id_idx').on(table.tenantId),
+  index('am_slug_idx').on(table.slug),
+  index('am_data_source_id_idx').on(table.dataSourceId),
+]);
+
+// analytics_templates — platform-global, no tenantId
+}, (table) => [
+  index('at_slug_idx').on(table.slug),
+  index('at_category_idx').on(table.category),
+  index('at_built_in_idx').on(table.builtIn),
+]);
+```
+
+### B. Chat Block
+
+```typescript
+chat: {
+  description: 'Visual analytics dashboard builder with 75+ visualization components, metric layer, and GrapeJS editor.',
+  capabilities: ['create analytics dashboards', 'define metrics', 'configure data sources', 'browse templates'],
+  actionSchemas: [
+    {
+      name: 'analyticsForms.list',
+      description: 'List analytics dashboards',
+      parameters: { tenantId: { type: 'number' }, status: { type: 'string' } },
+      returns: { data: { type: 'array' }, total: { type: 'number' } },
+      requiredPermissions: ['analytics-forms.read'],
+      endpoint: { method: 'GET', path: 'analytics-forms' },
+    },
+    {
+      name: 'analyticsForms.listMetrics',
+      description: 'List defined metrics',
+      parameters: { tenantId: { type: 'number' } },
+      requiredPermissions: ['analytics-metrics.read'],
+      endpoint: { method: 'GET', path: 'analytics-metrics' },
+    },
+    {
+      name: 'analyticsForms.cloneTemplate',
+      description: 'Clone a template into a new dashboard',
+      parameters: { templateId: { type: 'number', required: true } },
+      requiredPermissions: ['analytics-forms.create'],
+      endpoint: { method: 'POST', path: 'analytics-templates/[id]/clone' },
+    },
+  ],
+},
+```
+
+### C. configSchema
+
+```typescript
+configSchema: [
+  { key: 'MAX_DATA_SOURCES_PER_DASHBOARD', type: 'number', description: 'Maximum data sources per dashboard', defaultValue: 20, instanceScoped: true },
+  { key: 'DEFAULT_REFRESH_INTERVAL', type: 'number', description: 'Default refresh interval in seconds (0 = manual)', defaultValue: 0, instanceScoped: true },
+  { key: 'MAX_METRICS', type: 'number', description: 'Maximum metric definitions per tenant', defaultValue: 100, instanceScoped: true },
+],
+```
+
+### D. Typed Event Schemas
+
+```typescript
+events: {
+  schemas: {
+    'analytics-forms.form.created': {
+      id: { type: 'number', required: true }, tenantId: { type: 'number', required: true },
+      name: { type: 'string' }, createdBy: { type: 'number' },
+    },
+    'analytics-forms.form.published': {
+      id: { type: 'number', required: true }, tenantId: { type: 'number', required: true },
+      name: { type: 'string' }, version: { type: 'number' },
+    },
+    'analytics-forms.metric.created': {
+      id: { type: 'number', required: true }, tenantId: { type: 'number', required: true },
+      name: { type: 'string' }, slug: { type: 'string' },
+    },
+    'analytics-forms.data-source.created': {
+      id: { type: 'number', required: true }, tenantId: { type: 'number' },
+      name: { type: 'string' }, type: { type: 'string' },
+    },
+  },
+},
+```
+
+### E. Seed Function
+
+```typescript
+export async function seedAnalyticsForms(db: any) {
+  const modulePermissions = [
+    { resource: 'analytics-forms', action: 'read', slug: 'analytics-forms.read', description: 'View analytics dashboards' },
+    { resource: 'analytics-forms', action: 'create', slug: 'analytics-forms.create', description: 'Create dashboards' },
+    { resource: 'analytics-forms', action: 'update', slug: 'analytics-forms.update', description: 'Edit dashboards' },
+    { resource: 'analytics-forms', action: 'delete', slug: 'analytics-forms.delete', description: 'Delete dashboards' },
+    { resource: 'analytics-forms', action: 'publish', slug: 'analytics-forms.publish', description: 'Publish dashboards' },
+    { resource: 'analytics-metrics', action: 'read', slug: 'analytics-metrics.read', description: 'View metrics' },
+    { resource: 'analytics-metrics', action: 'create', slug: 'analytics-metrics.create', description: 'Create metrics' },
+    { resource: 'analytics-metrics', action: 'update', slug: 'analytics-metrics.update', description: 'Edit metrics' },
+    { resource: 'analytics-data-sources', action: 'read', slug: 'analytics-data-sources.read', description: 'View data sources' },
+    { resource: 'analytics-data-sources', action: 'create', slug: 'analytics-data-sources.create', description: 'Create data sources' },
+  ];
+  for (const perm of modulePermissions) {
+    await db.insert(permissions).values(perm).onConflictDoNothing();
+  }
+}
+```
+
+### F. API Handler Example
+
+```typescript
+import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+
+export async function GET(request: NextRequest) {
+  const params = parseListParams(request);
+  const tenantId = request.headers.get('x-tenant-id');
+  const conditions = [];
+  if (tenantId) conditions.push(eq(analyticsForms.tenantId, Number(tenantId)));
+  if (params.filter?.status) conditions.push(eq(analyticsForms.status, params.filter.status));
+  const where = conditions.length ? and(...conditions) : undefined;
+  const [rows, [{ count }]] = await Promise.all([
+    db.select().from(analyticsForms).where(where).orderBy(desc(analyticsForms.updatedAt)).offset(params.offset).limit(params.limit),
+    db.select({ count: sql`count(*)` }).from(analyticsForms).where(where),
+  ]);
+  return listResponse(rows, 'analytics-forms', params, Number(count));
+}
+```

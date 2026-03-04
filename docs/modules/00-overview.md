@@ -1,8 +1,9 @@
 # OVEN — Future Modules Architecture
 
-> **Last Updated**: 2026-02-24
+> **Last Updated**: 2026-03-03
 > **Status**: Specification (pre-implementation)
 > **Base Architecture**: Next.js 15 + React Admin 5 + Drizzle ORM + Neon Postgres + Turbo + pnpm
+> **Module Rules**: All modules must comply with [module-rules.md](../module-rules.md) — 12 hard requirements for registration, discoverability, pluggability, loose coupling, multi-tenancy, RLS, UX, and more.
 
 ---
 
@@ -66,18 +67,39 @@ Every module in this specification follows the same core principles that govern 
                             │  module-roles  │  (existing — permissions for all)
                             └────────────────┘
 
-          ┌──────────────────────────────────────────────────────────┐
-          │                       module-ai                          │
-          │  (provider-agnostic AI services layer — Vercel AI SDK)   │
-          │                                                          │
-          │  Providers: OpenAI, Anthropic, Google, Mistral, Groq…    │
-          │  Tools: generateText, embed, generateImage, TTS, RAG…    │
-          │  Vector DBs: pgvector, Pinecone, Qdrant, ChromaDB…       │
-          │  React: @ai-sdk/react (useChat, useObject, useCompletion)│
-          │                                                          │
-          │  Used by: chat, agent-core, workflow-agents, forms,      │
-          │           dashboards, scoring-engine, and all modules     │
-          └──────────────────────────────────────────────────────────┘
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │                              Core Infrastructure                        │
+  │                                                                          │
+  │  module-tenants ─── module-auth ─── module-files ─── module-notifications│
+  │  (multi-tenancy)    (adapters:      (bucket         (adapters:           │
+  │  (domains,          Firebase,       storage)        Twilio, Meta,        │
+  │   hierarchy)        Auth0, AuthJS)                  Resend)              │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │                     Tenant-Facing Portal Layer                           │
+  │                                                                          │
+  │  module-ui-flows ──→ module-forms ──→ apps/portal (Next.js subdomain)   │
+  │  (dynamic pages,     (GrapeJS         (serves tenant portals on          │
+  │   routing, themes)    page rendering)  *.domain.com + custom domains)    │
+  │                                                                          │
+  │  module-knowledge-base ─── module-chat (agent-ui widget)                 │
+  │  (FAQ entries,              (embedded in portal pages)                    │
+  │   embeddings, search)                                                    │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │                       module-ai                                          │
+  │  (provider-agnostic AI services layer — Vercel AI SDK)                   │
+  │                                                                          │
+  │  Providers: OpenAI, Anthropic, Google, Mistral, Groq…                    │
+  │  Tools: generateText, embed, generateImage, TTS, RAG…                    │
+  │  Vector DBs: pgvector, Pinecone, Qdrant, ChromaDB…                       │
+  │  React: @ai-sdk/react (useChat, useObject, useCompletion)                │
+  │                                                                          │
+  │  Used by: chat, agent-core, workflow-agents, forms,                      │
+  │           dashboards, scoring-engine, and all modules                     │
+  └──────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -100,6 +122,20 @@ Each module has its own detailed specification:
 | 10 | Agent Core | `module-agent-core` | [10-agent-core.md](./10-agent-core.md) |
 | 11 | Workflow Agents | `module-workflow-agents` | [11-workflow-agents.md](./11-workflow-agents.md) |
 | 12 | AI Services | `module-ai` | [12-ai.md](./12-ai.md) |
+| 13 | Tenants | `module-tenants` | [13-tenants.md](./13-tenants.md) |
+| 14 | Files | `module-files` | [14-files.md](./14-files.md) |
+| 15 | Notifications | `module-notifications` + adapters | [15-notifications.md](./15-notifications.md) |
+| 16 | Agent UI | `agent-ui` (editor package) | [16-agent-ui.md](./16-agent-ui.md) |
+| 17 | Auth | `module-auth` + adapters | [17-auth.md](./17-auth.md) |
+| 18 | Knowledge Base | `module-knowledge-base` | [18-knowledge-base.md](./18-knowledge-base.md) |
+| 19 | UI Flows | `module-ui-flows` + `ui-flows-editor` | [19-ui-flows.md](./19-ui-flows.md) |
+
+### Apps
+
+| App | Location | Purpose |
+|-----|----------|---------|
+| Dashboard | `apps/dashboard/` | Admin dashboard (React Admin 5) — existing |
+| Portal | `apps/portal/` | Tenant-facing portals on subdomains — [architecture](../apps-portal.md) |
 
 ---
 
@@ -131,6 +167,10 @@ All new modules should emit lifecycle events following the existing `{module}.{e
 - `agents-workflow.execution.started`, `agents-workflow.execution.paused`, `agents-workflow.mcp.generated`
 - `dashboards.dashboard.created`, `dashboards.view.saved`
 - `ai.provider.created`, `ai.tool.invoked`, `ai.vectorStore.created`, `ai.usage.budgetWarning`
+- `tenants.tenant.created`, `tenants.tenant.updated`, `tenants.domain.verified`
+- `notifications.message.received`, `notifications.message.sent`, `notifications.usage.limitExceeded`
+- `kb.entry.created`, `kb.entry.updated`, `kb.entry.embedded`
+- `ui-flows.flow.published`, `ui-flows.page.visited`, `ui-flows.form.submitted`
 
 ### Versioning Pattern
 
@@ -139,3 +179,27 @@ All modules storing JSON definitions should use the established versioning patte
 - Companion `{entity}_versions` table stores historical snapshots
 - PUT handlers auto-create snapshots when the definition changes
 - Version history panel in visual editors, with restore endpoint
+
+### Multi-Tenancy
+
+All modules storing tenant-specific data must comply with [module-rules.md](../module-rules.md) Rule 5:
+- Every tenant-scoped table has a `tenantId` column with index
+- API handlers filter by `tenantId` from auth context
+- Events include `tenantId` in payload
+- RLS policies can be created for any module table via the visual RLS builder
+
+### Module Rules Compliance
+
+Every module spec in this folder must satisfy the 12 rules in [module-rules.md](../module-rules.md):
+1. Registered as a Module (ModuleDefinition contract)
+2. Discoverable (`chat` block, event schemas)
+3. Pluggable (no cross-module imports, adapter pattern)
+4. Loosely Coupled (EventBus, plain integer FKs)
+5. Tenant-Scoped and RLS-Protected
+6. UX Friendly (React Admin conventions)
+7. JSON-First Definitions (JSONB + version tables)
+8. Config Cascade (configSchema entries)
+9. Event-Driven Integration (lifecycle + domain events)
+10. API Design (shared utilities, Content-Range)
+11. Schema Design (standard columns, indexes)
+12. Seed Data (idempotent, permissions)

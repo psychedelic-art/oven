@@ -181,3 +181,163 @@ Attempts
 | **module-flows** | Exams can be flow items for review/approval before publishing |
 | **module-workflows** | Trigger workflows on attempt submission (notifications, scoring, reports) |
 | **module-chat** | Chat agent can create exams, assign questions, view attempt summaries |
+
+---
+
+## Module Rules Compliance
+
+> Added per [`module-rules.md`](../module-rules.md) — 7 required items.
+
+### A. Schema Updates — tenantId + Indexes
+
+```typescript
+// exams
+tenantId: integer('tenant_id').notNull(),
+}, (table) => [
+  index('exams_tenant_id_idx').on(table.tenantId),
+  index('exams_slug_idx').on(table.slug),
+  index('exams_status_idx').on(table.status),
+  index('exams_created_by_idx').on(table.createdBy),
+]);
+
+// exam_sections
+}, (table) => [
+  index('es_exam_id_idx').on(table.examId),
+]);
+
+// exam_questions
+}, (table) => [
+  index('eq_exam_id_idx').on(table.examId),
+  index('eq_section_id_idx').on(table.sectionId),
+  index('eq_question_id_idx').on(table.questionId),
+]);
+
+// exam_attempts
+tenantId: integer('tenant_id').notNull(),
+}, (table) => [
+  index('ea_tenant_id_idx').on(table.tenantId),
+  index('ea_exam_id_idx').on(table.examId),
+  index('ea_student_id_idx').on(table.studentId),
+  index('ea_status_idx').on(table.status),
+]);
+
+// exam_responses
+}, (table) => [
+  index('er_attempt_id_idx').on(table.attemptId),
+  index('er_question_id_idx').on(table.questionId),
+]);
+
+// exam_versions
+}, (table) => [
+  index('ev_exam_id_idx').on(table.examId),
+]);
+```
+
+### B. Chat Block
+
+```typescript
+chat: {
+  description: 'Assessment composition and delivery. Assembles questions into timed exams with sections, configurable delivery, and resumable attempts.',
+  capabilities: ['create exams', 'assign questions to exams', 'start exam attempts', 'view attempt results'],
+  actionSchemas: [
+    {
+      name: 'exams.list',
+      description: 'List exams with filtering',
+      parameters: { tenantId: { type: 'number' }, status: { type: 'string' } },
+      returns: { data: { type: 'array' }, total: { type: 'number' } },
+      requiredPermissions: ['exams.read'],
+      endpoint: { method: 'GET', path: 'exams' },
+    },
+    {
+      name: 'exams.create',
+      description: 'Create a new exam',
+      parameters: { name: { type: 'string', required: true }, totalPoints: { type: 'number' }, timeLimitSeconds: { type: 'number' } },
+      requiredPermissions: ['exams.create'],
+      endpoint: { method: 'POST', path: 'exams' },
+    },
+    {
+      name: 'exams.startAttempt',
+      description: 'Start an exam attempt for a student',
+      parameters: { examId: { type: 'number', required: true } },
+      requiredPermissions: ['exam-attempts.create'],
+      endpoint: { method: 'POST', path: 'exams/[id]/start' },
+    },
+  ],
+},
+```
+
+### C. configSchema
+
+```typescript
+configSchema: [
+  { key: 'MAX_QUESTIONS_PER_EXAM', type: 'number', description: 'Maximum questions per exam', defaultValue: 200, instanceScoped: true },
+  { key: 'MAX_ATTEMPTS_DEFAULT', type: 'number', description: 'Default max attempts', defaultValue: 1, instanceScoped: true },
+  { key: 'AUTO_SUBMIT_ON_TIMEOUT', type: 'boolean', description: 'Auto-submit when time runs out', defaultValue: true, instanceScoped: false },
+],
+```
+
+### D. Typed Event Schemas
+
+```typescript
+events: {
+  schemas: {
+    'exams.exam.created': {
+      id: { type: 'number', required: true }, tenantId: { type: 'number', required: true },
+      name: { type: 'string' }, createdBy: { type: 'number' },
+    },
+    'exams.attempt.started': {
+      id: { type: 'number', required: true }, tenantId: { type: 'number', required: true },
+      examId: { type: 'number', required: true }, studentId: { type: 'number' },
+    },
+    'exams.attempt.submitted': {
+      id: { type: 'number', required: true }, tenantId: { type: 'number', required: true },
+      examId: { type: 'number', required: true }, studentId: { type: 'number' }, attemptNumber: { type: 'number' },
+    },
+    'exams.attempt.timed-out': {
+      id: { type: 'number', required: true }, tenantId: { type: 'number', required: true },
+      examId: { type: 'number', required: true }, studentId: { type: 'number' },
+    },
+  },
+},
+```
+
+### E. Seed Function
+
+```typescript
+export async function seedExams(db: any) {
+  const modulePermissions = [
+    { resource: 'exams', action: 'read', slug: 'exams.read', description: 'View exams' },
+    { resource: 'exams', action: 'create', slug: 'exams.create', description: 'Create exams' },
+    { resource: 'exams', action: 'update', slug: 'exams.update', description: 'Edit exams' },
+    { resource: 'exams', action: 'delete', slug: 'exams.delete', description: 'Delete exams' },
+    { resource: 'exams', action: 'publish', slug: 'exams.publish', description: 'Publish exams' },
+    { resource: 'exam-attempts', action: 'read', slug: 'exam-attempts.read', description: 'View attempts' },
+    { resource: 'exam-attempts', action: 'create', slug: 'exam-attempts.create', description: 'Start attempts' },
+    { resource: 'exam-attempts', action: 'submit', slug: 'exam-attempts.submit', description: 'Submit attempts' },
+    { resource: 'exam-sections', action: 'create', slug: 'exam-sections.create', description: 'Create sections' },
+  ];
+  for (const perm of modulePermissions) {
+    await db.insert(permissions).values(perm).onConflictDoNothing();
+  }
+}
+```
+
+### F. API Handler Example
+
+```typescript
+import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+
+export async function GET(request: NextRequest) {
+  const params = parseListParams(request);
+  const tenantId = request.headers.get('x-tenant-id');
+  const conditions = [];
+  if (tenantId) conditions.push(eq(exams.tenantId, Number(tenantId)));
+  if (params.filter?.status) conditions.push(eq(exams.status, params.filter.status));
+  const where = conditions.length ? and(...conditions) : undefined;
+  const [rows, [{ count }]] = await Promise.all([
+    db.select().from(exams).where(where).orderBy(desc(exams.updatedAt)).offset(params.offset).limit(params.limit),
+    db.select({ count: sql`count(*)` }).from(exams).where(where),
+  ]);
+  return listResponse(rows, 'exams', params, Number(count));
+}
+```

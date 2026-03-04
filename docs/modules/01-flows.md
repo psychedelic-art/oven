@@ -202,3 +202,245 @@ The workflow receives the flow item's `contentType`, `contentId`, `metadata`, an
 | **module-analytics-forms** | Embed analytics dashboards as review content |
 | **module-dashboards** | Flow items can reference dashboards |
 | **module-chat** | Chat agent can create flows, move items, add comments |
+
+---
+
+## Module Rules Compliance
+
+> Added per [`module-rules.md`](../module-rules.md) — 7 required items.
+
+### A. Schema Updates — tenantId + Indexes
+
+All tenant-scoped tables gain a `tenantId` column and composite indexes:
+
+```typescript
+// flows
+tenantId: integer('tenant_id').notNull(),
+// ... existing columns ...
+}, (table) => [
+  index('flows_tenant_id_idx').on(table.tenantId),
+  index('flows_slug_idx').on(table.slug),
+  index('flows_status_idx').on(table.status),
+]);
+
+// flow_stages
+tenantId: integer('tenant_id').notNull(),
+}, (table) => [
+  index('fs_tenant_id_idx').on(table.tenantId),
+  index('fs_flow_id_idx').on(table.flowId),
+  index('fs_slug_idx').on(table.slug),
+]);
+
+// flow_items
+tenantId: integer('tenant_id').notNull(),
+}, (table) => [
+  index('fi_tenant_id_idx').on(table.tenantId),
+  index('fi_flow_id_idx').on(table.flowId),
+  index('fi_current_stage_idx').on(table.currentStageId),
+  index('fi_status_idx').on(table.status),
+  index('fi_content_idx').on(table.contentType, table.contentId),
+]);
+
+// flow_transitions
+}, (table) => [
+  index('ft_flow_item_id_idx').on(table.flowItemId),
+  index('ft_from_stage_idx').on(table.fromStageId),
+  index('ft_to_stage_idx').on(table.toStageId),
+]);
+
+// flow_comments
+}, (table) => [
+  index('fc_flow_item_id_idx').on(table.flowItemId),
+  index('fc_stage_id_idx').on(table.stageId),
+  index('fc_author_id_idx').on(table.authorId),
+]);
+
+// flow_reviews
+}, (table) => [
+  index('fr_flow_item_id_idx').on(table.flowItemId),
+  index('fr_reviewer_id_idx').on(table.reviewerId),
+]);
+```
+
+### B. Chat Block
+
+```typescript
+chat: {
+  description: 'Content pipeline system with stages, transitions, reviews, and comments. Orchestrates any content type through structured approval flows.',
+  capabilities: [
+    'create flow templates',
+    'manage flow items',
+    'transition items between stages',
+    'add comments and reviews',
+    'view transition history',
+  ],
+  actionSchemas: [
+    {
+      name: 'flows.list',
+      description: 'List flow templates with filtering and pagination',
+      parameters: {
+        tenantId: { type: 'number', description: 'Filter by tenant' },
+        status: { type: 'string', description: 'Filter by status (draft/published/archived)' },
+      },
+      returns: { data: { type: 'array' }, total: { type: 'number' } },
+      requiredPermissions: ['flows.read'],
+      endpoint: { method: 'GET', path: 'flows' },
+    },
+    {
+      name: 'flows.createItem',
+      description: 'Create a new flow item (content entering the pipeline)',
+      parameters: {
+        flowId: { type: 'number', required: true },
+        contentType: { type: 'string', required: true },
+        contentId: { type: 'number', required: true },
+        metadata: { type: 'object' },
+      },
+      returns: { id: { type: 'number' }, currentStageId: { type: 'number' } },
+      requiredPermissions: ['flow-items.create'],
+      endpoint: { method: 'POST', path: 'flow-items' },
+    },
+    {
+      name: 'flows.transition',
+      description: 'Move a flow item to a new stage',
+      parameters: {
+        flowItemId: { type: 'number', required: true },
+        toStageId: { type: 'number', required: true },
+        action: { type: 'string', description: 'approve/reject/move' },
+        reason: { type: 'string' },
+      },
+      requiredPermissions: ['flow-items.transition'],
+      endpoint: { method: 'POST', path: 'flow-items/[id]/transition' },
+    },
+  ],
+},
+```
+
+### C. configSchema
+
+```typescript
+configSchema: [
+  {
+    key: 'MAX_STAGES_PER_FLOW',
+    type: 'number',
+    description: 'Maximum stages allowed per flow template',
+    defaultValue: 20,
+    instanceScoped: true,
+  },
+  {
+    key: 'MAX_ITEMS_PER_FLOW',
+    type: 'number',
+    description: 'Maximum active items per flow',
+    defaultValue: 500,
+    instanceScoped: true,
+  },
+  {
+    key: 'AUTO_ARCHIVE_COMPLETED_DAYS',
+    type: 'number',
+    description: 'Days after completion before auto-archiving items (0 = disabled)',
+    defaultValue: 30,
+    instanceScoped: true,
+  },
+],
+```
+
+### D. Typed Event Schemas
+
+```typescript
+events: {
+  emits: [
+    'flows.flow.created', 'flows.flow.updated',
+    'flows.item.created', 'flows.item.stage-changed',
+    'flows.item.completed', 'flows.item.cancelled',
+    'flows.comment.created', 'flows.review.submitted',
+  ],
+  schemas: {
+    'flows.flow.created': {
+      id: { type: 'number', description: 'Flow DB ID', required: true },
+      tenantId: { type: 'number', description: 'Owning tenant', required: true },
+      name: { type: 'string', description: 'Flow name' },
+      slug: { type: 'string', description: 'URL slug' },
+    },
+    'flows.item.created': {
+      id: { type: 'number', description: 'Flow item ID', required: true },
+      tenantId: { type: 'number', description: 'Owning tenant', required: true },
+      flowId: { type: 'number', description: 'Parent flow ID', required: true },
+      contentType: { type: 'string', description: 'Referenced content module' },
+      contentId: { type: 'number', description: 'Referenced entity ID' },
+    },
+    'flows.item.stage-changed': {
+      id: { type: 'number', description: 'Flow item ID', required: true },
+      tenantId: { type: 'number', description: 'Owning tenant', required: true },
+      flowId: { type: 'number', required: true },
+      fromStage: { type: 'number', description: 'Previous stage ID' },
+      toStage: { type: 'number', description: 'New stage ID' },
+      action: { type: 'string', description: 'Transition action (approve/reject/move)' },
+      performedBy: { type: 'number', description: 'User who performed transition' },
+    },
+    'flows.item.completed': {
+      id: { type: 'number', required: true },
+      tenantId: { type: 'number', required: true },
+      flowId: { type: 'number', required: true },
+      contentType: { type: 'string' },
+      contentId: { type: 'number' },
+    },
+    'flows.review.submitted': {
+      id: { type: 'number', description: 'Review ID', required: true },
+      tenantId: { type: 'number', required: true },
+      flowItemId: { type: 'number', required: true },
+      reviewerId: { type: 'number' },
+      decision: { type: 'string', description: 'approve/reject/request-changes' },
+    },
+  },
+},
+```
+
+### E. Seed Function
+
+```typescript
+export async function seedFlows(db: any) {
+  const modulePermissions = [
+    { resource: 'flows', action: 'read', slug: 'flows.read', description: 'View flow templates' },
+    { resource: 'flows', action: 'create', slug: 'flows.create', description: 'Create flow templates' },
+    { resource: 'flows', action: 'update', slug: 'flows.update', description: 'Edit flow templates' },
+    { resource: 'flows', action: 'delete', slug: 'flows.delete', description: 'Delete flow templates' },
+    { resource: 'flow-items', action: 'read', slug: 'flow-items.read', description: 'View flow items' },
+    { resource: 'flow-items', action: 'create', slug: 'flow-items.create', description: 'Create flow items' },
+    { resource: 'flow-items', action: 'update', slug: 'flow-items.update', description: 'Edit flow items' },
+    { resource: 'flow-items', action: 'transition', slug: 'flow-items.transition', description: 'Transition flow items between stages' },
+    { resource: 'flow-comments', action: 'create', slug: 'flow-comments.create', description: 'Add comments to flow items' },
+    { resource: 'flow-reviews', action: 'create', slug: 'flow-reviews.create', description: 'Submit reviews for flow items' },
+    { resource: 'flow-reviews', action: 'read', slug: 'flow-reviews.read', description: 'View reviews' },
+  ];
+
+  for (const perm of modulePermissions) {
+    await db.insert(permissions).values(perm).onConflictDoNothing();
+  }
+}
+```
+
+### F. API Handler Example
+
+```typescript
+// GET /api/flows — List handler with tenant filtering
+import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+
+export async function GET(request: NextRequest) {
+  const params = parseListParams(request);
+  const tenantId = request.headers.get('x-tenant-id');
+
+  const conditions = [];
+  if (tenantId) conditions.push(eq(flows.tenantId, Number(tenantId)));
+  if (params.filter?.status) conditions.push(eq(flows.status, params.filter.status));
+
+  const where = conditions.length ? and(...conditions) : undefined;
+
+  const [rows, [{ count }]] = await Promise.all([
+    db.select().from(flows).where(where)
+      .orderBy(desc(flows.updatedAt))
+      .offset(params.offset).limit(params.limit),
+    db.select({ count: sql`count(*)` }).from(flows).where(where),
+  ]);
+
+  return listResponse(rows, 'flows', params, Number(count));
+}
+```

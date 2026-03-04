@@ -316,3 +316,183 @@ This means that when a new module is registered with API endpoints, agents autom
 - **Observability** — Every execution is logged with token usage, latency, tools used, and errors for monitoring and cost tracking
 - **Rate Limiting** — The invoke endpoint should support configurable rate limits per user and per agent to prevent abuse
 - **Timeout** — Agent executions have a configurable maximum duration (default aligned with the platform's hosting limits); exceeded executions are marked as failed
+
+---
+
+## Module Rules Compliance
+
+> Added per [`module-rules.md`](../module-rules.md) — 7 required items.
+
+### A. Schema Updates — tenantId + Indexes
+
+```typescript
+// agents
+tenantId: integer('tenant_id'),  // nullable — platform-wide agents have no tenant
+}, (table) => [
+  index('agents_tenant_id_idx').on(table.tenantId),
+  index('agents_slug_idx').on(table.slug),
+  index('agents_enabled_idx').on(table.enabled),
+]);
+
+// agent_versions
+}, (table) => [
+  index('av_agent_id_idx').on(table.agentId),
+]);
+
+// agent_node_definitions — platform-global
+}, (table) => [
+  index('and_slug_idx').on(table.slug),
+  index('and_category_idx').on(table.category),
+  index('and_is_system_idx').on(table.isSystem),
+]);
+
+// agent_sessions
+tenantId: integer('tenant_id'),
+}, (table) => [
+  index('as_tenant_id_idx').on(table.tenantId),
+  index('as_agent_id_idx').on(table.agentId),
+  index('as_user_id_idx').on(table.userId),
+  index('as_status_idx').on(table.status),
+]);
+
+// agent_messages
+}, (table) => [
+  index('am_session_id_idx').on(table.sessionId),
+  index('am_role_idx').on(table.role),
+]);
+
+// agent_executions
+}, (table) => [
+  index('ae_agent_id_idx').on(table.agentId),
+  index('ae_session_id_idx').on(table.sessionId),
+  index('ae_status_idx').on(table.status),
+]);
+```
+
+### B. Chat Block
+
+```typescript
+chat: {
+  description: 'Agent management layer. Defines, configures, and invokes AI agents with tool bindings, multimodal input, and exposed parameters.',
+  capabilities: ['create agents', 'invoke agents', 'manage node definitions', 'test agents in playground', 'list available tools'],
+  actionSchemas: [
+    {
+      name: 'agents.list',
+      description: 'List all agent definitions',
+      parameters: { tenantId: { type: 'number' }, enabled: { type: 'boolean' } },
+      returns: { data: { type: 'array' }, total: { type: 'number' } },
+      requiredPermissions: ['agents.read'],
+      endpoint: { method: 'GET', path: 'agents' },
+    },
+    {
+      name: 'agents.invoke',
+      description: 'Invoke an agent by slug — send messages and get a response',
+      parameters: {
+        slug: { type: 'string', required: true },
+        messages: { type: 'array', required: true },
+        params: { type: 'object', description: 'Override exposed parameters' },
+        stream: { type: 'boolean' },
+      },
+      requiredPermissions: ['agents.invoke'],
+      endpoint: { method: 'POST', path: 'agents/[slug]/invoke' },
+    },
+    {
+      name: 'agents.listTools',
+      description: 'List all available tools discovered from the registry',
+      parameters: {},
+      requiredPermissions: ['agents.read'],
+      endpoint: { method: 'GET', path: 'agents/tools' },
+    },
+  ],
+},
+```
+
+### C. configSchema
+
+```typescript
+configSchema: [
+  { key: 'MAX_TOOL_BINDINGS_PER_AGENT', type: 'number', description: 'Maximum tool bindings per agent', defaultValue: 50, instanceScoped: true },
+  { key: 'DEFAULT_MAX_TOKENS', type: 'number', description: 'Default max tokens for agent responses', defaultValue: 4096, instanceScoped: true },
+  { key: 'EXECUTION_TIMEOUT_MS', type: 'number', description: 'Maximum execution duration in ms', defaultValue: 120000, instanceScoped: false },
+  { key: 'TOOL_WRAPPER_REFRESH_INTERVAL', type: 'number', description: 'Seconds between Tool Wrapper registry refreshes', defaultValue: 60, instanceScoped: false },
+],
+```
+
+### D. Typed Event Schemas
+
+```typescript
+events: {
+  schemas: {
+    'agents.agent.created': {
+      id: { type: 'number', required: true }, tenantId: { type: 'number' },
+      name: { type: 'string' }, slug: { type: 'string' },
+    },
+    'agents.execution.completed': {
+      id: { type: 'number', required: true }, agentId: { type: 'number', required: true },
+      sessionId: { type: 'number' }, status: { type: 'string' },
+      tokenUsage: { type: 'object', description: '{ input, output, total }' },
+      latencyMs: { type: 'number' },
+    },
+    'agents.tool.invoked': {
+      executionId: { type: 'number', required: true },
+      toolName: { type: 'string', required: true },
+      moduleSlug: { type: 'string' }, status: { type: 'string' },
+    },
+  },
+},
+```
+
+### E. Seed Function
+
+```typescript
+export async function seedAgentCore(db: any) {
+  const modulePermissions = [
+    { resource: 'agents', action: 'read', slug: 'agents.read', description: 'View agents' },
+    { resource: 'agents', action: 'create', slug: 'agents.create', description: 'Create agents' },
+    { resource: 'agents', action: 'update', slug: 'agents.update', description: 'Edit agents' },
+    { resource: 'agents', action: 'delete', slug: 'agents.delete', description: 'Delete agents' },
+    { resource: 'agents', action: 'invoke', slug: 'agents.invoke', description: 'Invoke agents' },
+    { resource: 'agent-nodes', action: 'read', slug: 'agent-nodes.read', description: 'View node definitions' },
+    { resource: 'agent-nodes', action: 'create', slug: 'agent-nodes.create', description: 'Create nodes' },
+    { resource: 'agent-sessions', action: 'read', slug: 'agent-sessions.read', description: 'View sessions' },
+    { resource: 'agent-sessions', action: 'create', slug: 'agent-sessions.create', description: 'Create sessions' },
+    { resource: 'agent-executions', action: 'read', slug: 'agent-executions.read', description: 'View executions' },
+  ];
+  for (const perm of modulePermissions) {
+    await db.insert(permissions).values(perm).onConflictDoNothing();
+  }
+
+  // Seed built-in node definitions
+  const builtInNodes = [
+    { name: 'LLM', slug: 'llm', category: 'llm', isSystem: true, description: 'Language model invocation' },
+    { name: 'Tool Executor', slug: 'tool', category: 'tool', isSystem: true, description: 'Execute tool calls' },
+    { name: 'Condition', slug: 'condition', category: 'condition', isSystem: true, description: 'Branch on state' },
+    { name: 'Transform', slug: 'transform', category: 'transform', isSystem: true, description: 'Reshape state data' },
+    { name: 'Human Review', slug: 'human-in-the-loop', category: 'human-in-the-loop', isSystem: true, description: 'Pause for human approval' },
+    { name: 'Memory', slug: 'memory', category: 'memory', isSystem: true, description: 'Read/write long-term memory' },
+  ];
+  for (const node of builtInNodes) {
+    await db.insert(agentNodeDefinitions).values(node).onConflictDoNothing();
+  }
+}
+```
+
+### F. API Handler Example
+
+```typescript
+import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+
+export async function GET(request: NextRequest) {
+  const params = parseListParams(request);
+  const tenantId = request.headers.get('x-tenant-id');
+  const conditions = [];
+  if (tenantId) conditions.push(eq(agents.tenantId, Number(tenantId)));
+  if (params.filter?.enabled !== undefined) conditions.push(eq(agents.enabled, params.filter.enabled));
+  const where = conditions.length ? and(...conditions) : undefined;
+  const [rows, [{ count }]] = await Promise.all([
+    db.select().from(agents).where(where).orderBy(desc(agents.updatedAt)).offset(params.offset).limit(params.limit),
+    db.select({ count: sql`count(*)` }).from(agents).where(where),
+  ]);
+  return listResponse(rows, 'agents', params, Number(count));
+}
+```

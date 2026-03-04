@@ -263,3 +263,145 @@ Modules that don't declare a `chat` block are still discoverable through their `
 | **module-registry** | Discovery source for module capabilities. The backing agent reads `registry.getAll()` and `chat` blocks to understand what tools are available. Chat itself reads the registry for the `/api/chat/capabilities` endpoint. |
 | **module-roles** | All tool invocations respect the user's permissions. The backing agent never bypasses RLS or role restrictions. |
 | **All other modules** | Interacts via the agent's Tool Wrapper and declared `actionSchemas` — fully loosely coupled. |
+
+---
+
+## Module Rules Compliance
+
+> Added per [`module-rules.md`](../module-rules.md) — 7 required items.
+
+### A. Schema Updates — tenantId + Indexes
+
+```typescript
+// chat_sessions
+tenantId: integer('tenant_id'),  // nullable — platform-wide sessions have no tenant
+}, (table) => [
+  index('cs_tenant_id_idx').on(table.tenantId),
+  index('cs_user_id_idx').on(table.userId),
+  index('cs_agent_id_idx').on(table.agentId),
+  index('cs_status_idx').on(table.status),
+]);
+
+// chat_messages
+}, (table) => [
+  index('cm_session_id_idx').on(table.sessionId),
+  index('cm_role_idx').on(table.role),
+]);
+
+// chat_actions
+}, (table) => [
+  index('ca_message_id_idx').on(table.messageId),
+  index('ca_module_slug_idx').on(table.moduleSlug),
+  index('ca_status_idx').on(table.status),
+]);
+```
+
+### B. Chat Block
+
+```typescript
+chat: {
+  description: 'User-facing conversational interface to the OVEN platform. Manages chat sessions, message history, and delegates reasoning to backing agents.',
+  capabilities: ['create chat sessions', 'send messages', 'list sessions', 'view action history', 'switch backing agent'],
+  actionSchemas: [
+    {
+      name: 'chat.listSessions',
+      description: 'List chat sessions for the current user',
+      parameters: { tenantId: { type: 'number' }, status: { type: 'string' } },
+      returns: { data: { type: 'array' }, total: { type: 'number' } },
+      requiredPermissions: ['chat-sessions.read'],
+      endpoint: { method: 'GET', path: 'chat/sessions' },
+    },
+    {
+      name: 'chat.sendMessage',
+      description: 'Send a message to a chat session (triggers agent reasoning)',
+      parameters: { sessionId: { type: 'number', required: true }, content: { type: 'string', required: true } },
+      requiredPermissions: ['chat-messages.create'],
+      endpoint: { method: 'POST', path: 'chat/sessions/[id]/messages' },
+    },
+    {
+      name: 'chat.listCapabilities',
+      description: 'List all discovered module capabilities from the registry',
+      parameters: {},
+      requiredPermissions: ['chat-sessions.read'],
+      endpoint: { method: 'GET', path: 'chat/capabilities' },
+    },
+  ],
+},
+```
+
+### C. configSchema
+
+```typescript
+configSchema: [
+  { key: 'MAX_MESSAGES_PER_SESSION', type: 'number', description: 'Maximum messages per chat session', defaultValue: 500, instanceScoped: true },
+  { key: 'DEFAULT_AGENT_SLUG', type: 'string', description: 'Default backing agent slug for new sessions', defaultValue: 'platform-assistant', instanceScoped: true },
+  { key: 'ENABLE_CHAT_SIDEBAR', type: 'boolean', description: 'Show collapsible chat sidebar on all pages', defaultValue: true, instanceScoped: false },
+],
+```
+
+### D. Typed Event Schemas
+
+```typescript
+events: {
+  schemas: {
+    'chat.session.created': {
+      id: { type: 'number', required: true }, tenantId: { type: 'number' },
+      userId: { type: 'number' }, agentId: { type: 'number' },
+    },
+    'chat.session.archived': {
+      id: { type: 'number', required: true }, userId: { type: 'number' },
+    },
+    'chat.session.agent-changed': {
+      id: { type: 'number', required: true },
+      previousAgentId: { type: 'number' }, newAgentId: { type: 'number' },
+    },
+    'chat.message.sent': {
+      id: { type: 'number', required: true }, sessionId: { type: 'number', required: true },
+      role: { type: 'string' },
+    },
+    'chat.action.executed': {
+      id: { type: 'number', required: true }, sessionId: { type: 'number', required: true },
+      moduleSlug: { type: 'string' }, actionName: { type: 'string' }, status: { type: 'string' },
+    },
+  },
+},
+```
+
+### E. Seed Function
+
+```typescript
+export async function seedChat(db: any) {
+  const modulePermissions = [
+    { resource: 'chat-sessions', action: 'read', slug: 'chat-sessions.read', description: 'View chat sessions' },
+    { resource: 'chat-sessions', action: 'create', slug: 'chat-sessions.create', description: 'Create chat sessions' },
+    { resource: 'chat-sessions', action: 'delete', slug: 'chat-sessions.delete', description: 'Archive chat sessions' },
+    { resource: 'chat-messages', action: 'read', slug: 'chat-messages.read', description: 'Read messages' },
+    { resource: 'chat-messages', action: 'create', slug: 'chat-messages.create', description: 'Send messages' },
+    { resource: 'chat-actions', action: 'read', slug: 'chat-actions.read', description: 'View action history' },
+  ];
+  for (const perm of modulePermissions) {
+    await db.insert(permissions).values(perm).onConflictDoNothing();
+  }
+}
+```
+
+### F. API Handler Example
+
+```typescript
+import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+
+export async function GET(request: NextRequest) {
+  const params = parseListParams(request);
+  const userId = request.headers.get('x-user-id');
+  const tenantId = request.headers.get('x-tenant-id');
+  const conditions = [eq(chatSessions.userId, Number(userId))];
+  if (tenantId) conditions.push(eq(chatSessions.tenantId, Number(tenantId)));
+  if (params.filter?.status) conditions.push(eq(chatSessions.status, params.filter.status));
+  const where = and(...conditions);
+  const [rows, [{ count }]] = await Promise.all([
+    db.select().from(chatSessions).where(where).orderBy(desc(chatSessions.updatedAt)).offset(params.offset).limit(params.limit),
+    db.select({ count: sql`count(*)` }).from(chatSessions).where(where),
+  ]);
+  return listResponse(rows, 'chat-sessions', params, Number(count));
+}
+```
