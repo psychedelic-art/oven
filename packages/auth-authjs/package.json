@@ -10,7 +10,7 @@
   "dependencies": {
     "@oven/module-auth": "workspace:*",
     "@oven/module-registry": "workspace:*",
-    "next-auth": "^5.0.0",
+    "next-auth": "5.0.0-beta.30",
     "hash-wasm": "^4.11.0",
     "drizzle-orm": "^0.38.0",
     "@neondatabase/serverless": "^0.10.0"
