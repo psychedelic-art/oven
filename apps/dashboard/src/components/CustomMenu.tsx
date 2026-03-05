@@ -44,9 +44,53 @@ export default function CustomMenu() {
       <Divider sx={{ my: 1 }} />
       <Box sx={{ px: 2, pb: 0.5 }}>
         <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10 }}>
+          Tenants
+        </Typography>
+      </Box>
+      <Menu.ResourceItem name="tenants" />
+      <Menu.ResourceItem name="tenant-members" />
+      <Menu.ResourceItem name="tenant-subscriptions" />
+
+      <Divider sx={{ my: 1 }} />
+      <Box sx={{ px: 2, pb: 0.5 }}>
+        <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10 }}>
+          Service Catalog
+        </Typography>
+      </Box>
+      <Menu.ResourceItem name="service-categories" />
+      <Menu.ResourceItem name="services" />
+      <Menu.ResourceItem name="providers" />
+      <Menu.ResourceItem name="provider-services" />
+      <Menu.ResourceItem name="billing-plans" />
+
+      <Divider sx={{ my: 1 }} />
+      <Box sx={{ px: 2, pb: 0.5 }}>
+        <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10 }}>
+          Flows
+        </Typography>
+      </Box>
+      <Menu.ResourceItem name="flows" />
+      <Menu.ResourceItem name="flow-items" />
+      <Menu.ResourceItem name="flow-reviews" />
+
+      <Divider sx={{ my: 1 }} />
+      <Box sx={{ px: 2, pb: 0.5 }}>
+        <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10 }}>
+          Forms
+        </Typography>
+      </Box>
+      <Menu.ResourceItem name="forms" />
+      <Menu.ResourceItem name="form-submissions" />
+      <Menu.ResourceItem name="form-components" />
+
+      <Divider sx={{ my: 1 }} />
+      <Box sx={{ px: 2, pb: 0.5 }}>
+        <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10 }}>
           Access Control
         </Typography>
       </Box>
+      <Menu.ResourceItem name="users" />
+      <Menu.ResourceItem name="api-keys" />
       <Menu.ResourceItem name="roles" />
       <Menu.ResourceItem name="permissions" />
       <Menu.ResourceItem name="hierarchy-nodes" />

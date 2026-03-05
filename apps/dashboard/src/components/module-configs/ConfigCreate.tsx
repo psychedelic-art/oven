@@ -5,12 +5,19 @@ import {
   SimpleForm,
   TextInput,
   SelectInput,
+  NumberInput,
 } from 'react-admin';
 
 export default function ConfigCreate() {
   return (
     <Create>
       <SimpleForm>
+        <NumberInput
+          source="tenantId"
+          label="Tenant ID"
+          helperText="Leave empty for platform-level config"
+          fullWidth
+        />
         <TextInput source="moduleName" label="Module Name" isRequired fullWidth />
         <SelectInput
           source="scope"

@@ -93,6 +93,91 @@ import ConfigList from './module-configs/ConfigList';
 import ConfigCreate from './module-configs/ConfigCreate';
 import ConfigEdit from './module-configs/ConfigEdit';
 
+// Tenants
+import TenantList from './tenants/TenantList';
+import TenantCreate from './tenants/TenantCreate';
+import TenantEdit from './tenants/TenantEdit';
+import TenantShow from './tenants/TenantShow';
+
+// Tenant Members
+import TenantMemberList from './tenant-members/TenantMemberList';
+import TenantMemberCreate from './tenant-members/TenantMemberCreate';
+
+// Service Categories
+import ServiceCategoryList from './service-categories/ServiceCategoryList';
+import ServiceCategoryCreate from './service-categories/ServiceCategoryCreate';
+import ServiceCategoryEdit from './service-categories/ServiceCategoryEdit';
+import ServiceCategoryShow from './service-categories/ServiceCategoryShow';
+
+// Services
+import ServiceList from './services/ServiceList';
+import ServiceCreate from './services/ServiceCreate';
+import ServiceEdit from './services/ServiceEdit';
+import ServiceShow from './services/ServiceShow';
+
+// Providers
+import ProviderList from './providers/ProviderList';
+import ProviderCreate from './providers/ProviderCreate';
+import ProviderEdit from './providers/ProviderEdit';
+import ProviderShow from './providers/ProviderShow';
+
+// Provider Services
+import ProviderServiceList from './provider-services/ProviderServiceList';
+import ProviderServiceCreate from './provider-services/ProviderServiceCreate';
+import ProviderServiceEdit from './provider-services/ProviderServiceEdit';
+
+// Billing Plans
+import BillingPlanList from './billing-plans/BillingPlanList';
+import BillingPlanCreate from './billing-plans/BillingPlanCreate';
+import BillingPlanEdit from './billing-plans/BillingPlanEdit';
+import BillingPlanShow from './billing-plans/BillingPlanShow';
+
+// Plan Quotas
+import PlanQuotaCreate from './plan-quotas/PlanQuotaCreate';
+import PlanQuotaEdit from './plan-quotas/PlanQuotaEdit';
+
+// Tenant Subscriptions
+import TenantSubscriptionList from './tenant-subscriptions/TenantSubscriptionList';
+import TenantSubscriptionCreate from './tenant-subscriptions/TenantSubscriptionCreate';
+import TenantSubscriptionEdit from './tenant-subscriptions/TenantSubscriptionEdit';
+import TenantSubscriptionShow from './tenant-subscriptions/TenantSubscriptionShow';
+
+// Quota Overrides
+import QuotaOverrideCreate from './quota-overrides/QuotaOverrideCreate';
+import QuotaOverrideEdit from './quota-overrides/QuotaOverrideEdit';
+
+// Auth
+import UserList from './auth/UserList';
+import UserCreate from './auth/UserCreate';
+import UserEdit from './auth/UserEdit';
+import UserShow from './auth/UserShow';
+import ApiKeyList from './auth/ApiKeyList';
+import ApiKeyCreate from './auth/ApiKeyCreate';
+import ApiKeyShow from './auth/ApiKeyShow';
+import LoginPage from './auth/LoginPage';
+import ProfilePage from './auth/ProfilePage';
+
+// Forms
+import FormList from './forms/FormList';
+import FormCreate from './forms/FormCreate';
+import FormEdit from './forms/FormEdit';
+import FormShow from './forms/FormShow';
+import FormSubmissionList from './form-submissions/FormSubmissionList';
+import FormSubmissionShow from './form-submissions/FormSubmissionShow';
+import FormComponentList from './form-components/FormComponentList';
+import FormComponentCreate from './form-components/FormComponentCreate';
+import FormComponentEdit from './form-components/FormComponentEdit';
+
+// Flows
+import FlowList from './flows/FlowList';
+import FlowCreate from './flows/FlowCreate';
+import FlowEdit from './flows/FlowEdit';
+import FlowShow from './flows/FlowShow';
+import FlowItemList from './flow-items/FlowItemList';
+import FlowItemCreate from './flow-items/FlowItemCreate';
+import FlowItemShow from './flow-items/FlowItemShow';
+import FlowReviewList from './flow-reviews/FlowReviewList';
+
 // Icons
 import GridViewIcon from '@mui/icons-material/GridView';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -110,6 +195,22 @@ import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
 import SecurityIcon from '@mui/icons-material/Security';
 import ApiIcon from '@mui/icons-material/Api';
+import BusinessIcon from '@mui/icons-material/Business';
+import GroupAddIcon from '@mui/icons-material/GroupAdd';
+import CategoryIcon from '@mui/icons-material/Category';
+import MiscellaneousServicesIcon from '@mui/icons-material/MiscellaneousServices';
+import CloudIcon from '@mui/icons-material/Cloud';
+import LinkIcon from '@mui/icons-material/Link';
+import PaymentsIcon from '@mui/icons-material/Payments';
+import CardMembershipIcon from '@mui/icons-material/CardMembership';
+import PersonIcon from '@mui/icons-material/Person';
+import KeyIcon from '@mui/icons-material/Key';
+import DescriptionIcon from '@mui/icons-material/Description';
+import SendIcon from '@mui/icons-material/Send';
+import WidgetsIcon from '@mui/icons-material/Widgets';
+import AltRouteIcon from '@mui/icons-material/AltRoute';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import RateReviewIcon from '@mui/icons-material/RateReview';
 
 const CustomLayout = (props: any) => <Layout {...props} menu={CustomMenu} />;
 
@@ -220,6 +321,91 @@ export default function AdminApp() {
         create={ConfigCreate}
       />
 
+      {/* Tenants Module Resources */}
+      <Resource
+        name="tenants"
+        options={{ label: 'Tenants' }}
+        icon={BusinessIcon}
+        list={TenantList}
+        edit={TenantEdit}
+        create={TenantCreate}
+        show={TenantShow}
+      />
+      <Resource
+        name="tenant-members"
+        options={{ label: 'Members' }}
+        icon={GroupAddIcon}
+        list={TenantMemberList}
+        create={TenantMemberCreate}
+      />
+
+      {/* Service Catalog Resources */}
+      <Resource
+        name="service-categories"
+        options={{ label: 'Categories' }}
+        icon={CategoryIcon}
+        list={ServiceCategoryList}
+        edit={ServiceCategoryEdit}
+        create={ServiceCategoryCreate}
+        show={ServiceCategoryShow}
+      />
+      <Resource
+        name="services"
+        options={{ label: 'Services' }}
+        icon={MiscellaneousServicesIcon}
+        list={ServiceList}
+        edit={ServiceEdit}
+        create={ServiceCreate}
+        show={ServiceShow}
+      />
+      <Resource
+        name="providers"
+        options={{ label: 'Providers' }}
+        icon={CloudIcon}
+        list={ProviderList}
+        edit={ProviderEdit}
+        create={ProviderCreate}
+        show={ProviderShow}
+      />
+      <Resource
+        name="provider-services"
+        options={{ label: 'Provider Services' }}
+        icon={LinkIcon}
+        list={ProviderServiceList}
+        edit={ProviderServiceEdit}
+        create={ProviderServiceCreate}
+      />
+
+      {/* Billing & Subscriptions Resources */}
+      <Resource
+        name="billing-plans"
+        options={{ label: 'Billing Plans' }}
+        icon={PaymentsIcon}
+        list={BillingPlanList}
+        edit={BillingPlanEdit}
+        create={BillingPlanCreate}
+        show={BillingPlanShow}
+      />
+      <Resource
+        name="plan-quotas"
+        create={PlanQuotaCreate}
+        edit={PlanQuotaEdit}
+      />
+      <Resource
+        name="tenant-subscriptions"
+        options={{ label: 'Subscriptions' }}
+        icon={CardMembershipIcon}
+        list={TenantSubscriptionList}
+        edit={TenantSubscriptionEdit}
+        create={TenantSubscriptionCreate}
+        show={TenantSubscriptionShow}
+      />
+      <Resource
+        name="quota-overrides"
+        create={QuotaOverrideCreate}
+        edit={QuotaOverrideEdit}
+      />
+
       {/* Roles Module Resources */}
       <Resource
         name="roles"
@@ -259,6 +445,79 @@ export default function AdminApp() {
         name="role-permissions"
       />
 
+      {/* Auth Module Resources */}
+      <Resource
+        name="users"
+        options={{ label: 'Users' }}
+        icon={PersonIcon}
+        list={UserList}
+        edit={UserEdit}
+        create={UserCreate}
+        show={UserShow}
+      />
+      <Resource
+        name="api-keys"
+        options={{ label: 'API Keys' }}
+        icon={KeyIcon}
+        list={ApiKeyList}
+        create={ApiKeyCreate}
+        show={ApiKeyShow}
+      />
+
+      {/* Forms Module Resources */}
+      <Resource
+        name="forms"
+        options={{ label: 'Forms' }}
+        icon={DescriptionIcon}
+        list={FormList}
+        edit={FormEdit}
+        create={FormCreate}
+        show={FormShow}
+      />
+      <Resource
+        name="form-submissions"
+        options={{ label: 'Submissions' }}
+        icon={SendIcon}
+        list={FormSubmissionList}
+        show={FormSubmissionShow}
+      />
+      <Resource
+        name="form-components"
+        options={{ label: 'Components' }}
+        icon={WidgetsIcon}
+        list={FormComponentList}
+        edit={FormComponentEdit}
+        create={FormComponentCreate}
+      />
+      <Resource name="form-data-sources" />
+      <Resource name="form-versions" />
+
+      {/* Flows Module Resources */}
+      <Resource
+        name="flows"
+        options={{ label: 'Flow Templates' }}
+        icon={AltRouteIcon}
+        list={FlowList}
+        edit={FlowEdit}
+        create={FlowCreate}
+        show={FlowShow}
+      />
+      <Resource
+        name="flow-items"
+        options={{ label: 'Flow Items' }}
+        icon={AssignmentIcon}
+        list={FlowItemList}
+        create={FlowItemCreate}
+        show={FlowItemShow}
+      />
+      <Resource
+        name="flow-reviews"
+        options={{ label: 'Reviews' }}
+        icon={RateReviewIcon}
+        list={FlowReviewList}
+      />
+      <Resource name="flow-versions" />
+
       {/* Custom Pages */}
       <CustomRoutes>
         <Route path="/modules" element={<ModuleManager />} />
@@ -266,6 +525,7 @@ export default function AdminApp() {
         <Route path="/workflows/:id/editor" element={<WorkflowEditorPage />} />
         <Route path="/rls-policies/:id/editor" element={<RlsEditorPage />} />
         <Route path="/api-permissions" element={<ApiPermissionList />} />
+        <Route path="/profile" element={<ProfilePage />} />
       </CustomRoutes>
     </Admin>
   );

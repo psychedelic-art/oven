@@ -190,7 +190,7 @@ Both channels call the **same agent** through `module-agent-core`'s invoke endpo
 |-------|---------------|-----------|--------|
 | 1 | module-registry EXTEND | `chat` block + `capabilities` in ModuleDefinition — all new modules need this | S |
 | 2 | module-tenants | `reply()` needs `tenantId` to resolve config. Everything is tenant-scoped | M |
-| 3 | module-auth + auth-authjs | Dashboard needs login. Webhooks need API key verification. AuthJS for MVP (simplest for Next.js) | L |
+| 3 | module-auth + auth-authjs + auth-firebase | Dashboard needs login. Webhooks need API key verification. AuthJS for MVP, Firebase for enterprise clients | L |
 | 4 | module-ai (scoped: providers + embeddings + pgvector) | KB embedding pipeline needs `ai.embed`. Provider registry for LLM hook. pgvector extension installer | L |
 | 5 | module-knowledge-base | FAQ entries + search = the core product. Keyword search first, vector search as upgrade | L |
 | 6 | module-agent-core (scoped: agent def + invoke + sessions) | The `reply()` engine. Unified invoke endpoint both channels call | L |
@@ -217,7 +217,7 @@ Both channels call the **same agent** through `module-agent-core`'s invoke endpo
 |-------|---------------|-----|--------|
 | 13 | notifications-meta | Direct WhatsApp Cloud API (cheaper long-term) | M |
 | 14 | notifications-resend | Email notifications for escalations | S |
-| 15 | auth-firebase / auth-auth0 | Alternative auth adapters | M each |
+| 15 | auth-auth0 | Alternative auth adapter | M |
 | 16 | Full module-workflow-agents | MCP, visual editor, memory, subagents | XL |
 
 ---
@@ -232,12 +232,14 @@ Both channels call the **same agent** through `module-agent-core`'s invoke endpo
 |------|--------|---------|
 | 1.1 | module-registry | Add `description`, `capabilities`, `chat` block to `ModuleDefinition` interface in `types.ts` |
 | 1.2 | module-tenants | Create package. Schema: `tenants` table (name, slug, businessName, schedule JSONB, services JSONB, paymentMethods JSONB, tone, humanContactInfo JSONB, emergencyInstructions, schedulingUrl, welcomeMessages, limits, enabled). CRUD API handlers. Seed first client |
-| 1.3 | module-auth | Create package + `auth-authjs` integration. Schema: `users`, `sessions`, `api_keys` tables. Auth middleware for Next.js. Login endpoint. API key verification for webhooks. `ADMIN_SECRET` for seed endpoint |
+| 1.3 | module-auth | Create package + `auth-authjs` + `auth-firebase` integrations. Schema: `users`, `sessions`, `api_keys`, `password_reset_tokens` tables. Auth middleware for Next.js. Login endpoint. API key verification for webhooks. `ADMIN_SECRET` for seed endpoint |
 | 1.4 | Neon DB | Enable pgvector extension (`CREATE EXTENSION IF NOT EXISTS vector`). Run Drizzle migrations |
-| 1.5 | Register modules | Add module-tenants + module-auth to `apps/dashboard/src/lib/modules.ts` |
-| 1.6 | Dashboard | Tenants CRUD page + login page |
+| 1.5 | module-forms + form-editor | Create packages. Schema: `forms`, `form_versions`, `form_components`, `form_data_sources`, `form_submissions`. GrapeJS editor stub. 14 API endpoints. Dashboard CRUD pages |
+| 1.6 | module-flows | Create package. Schema: `flows`, `flow_versions`, `flow_stages`, `flow_items`, `flow_transitions`, `flow_comments`, `flow_reviews`. 12 API endpoints. Dashboard CRUD pages |
+| 1.7 | Register modules | Add module-tenants + module-auth + module-forms + module-flows to `apps/dashboard/src/lib/modules.ts` |
+| 1.8 | Dashboard | Tenants CRUD + login page + forms CRUD + flows CRUD + auth users/API keys pages |
 
-**Deliverable**: Deployed skeleton on Vercel. Can login, create tenants, manage API keys.
+**Deliverable**: Deployed skeleton on Vercel. Can login, create tenants, manage API keys, build forms, run content pipelines.
 
 ### Sprint 2: Reply Engine (Days 3–5)
 
@@ -305,8 +307,7 @@ Both channels call the **same agent** through `module-agent-core`'s invoke endpo
 | 6.3 | Full module-workflow-agents | Memory nodes, MCP auto-generation, human-in-the-loop, subagent invocation, visual editor integration |
 | 6.4 | notifications-meta | Direct WhatsApp Cloud API adapter (alternative to Twilio) |
 | 6.5 | notifications-resend | Email adapter for escalation notifications to office |
-| 6.6 | auth-firebase | Firebase Auth adapter |
-| 6.7 | auth-auth0 | Auth0 adapter |
+| 6.6 | auth-auth0 | Auth0 adapter |
 | 6.8 | Full module-agent-core | Node library, versioning, playground, multimodal input |
 | 6.9 | Full module-chat | Chat sidebar, action cards, agent selector, capabilities endpoint |
 
@@ -319,9 +320,23 @@ Both channels call the **same agent** through `module-agent-core`'s invoke endpo
 **Sprint 1**:
 ```
 tenants                  -- module-tenants
+tenant_members           -- module-tenants
 users                    -- module-auth
 auth_sessions            -- module-auth
 api_keys                 -- module-auth
+password_reset_tokens    -- module-auth
+forms                    -- module-forms
+form_versions            -- module-forms
+form_components          -- module-forms
+form_data_sources        -- module-forms
+form_submissions         -- module-forms
+flows                    -- module-flows
+flow_versions            -- module-flows
+flow_stages              -- module-flows
+flow_items               -- module-flows
+flow_transitions         -- module-flows
+flow_comments            -- module-flows
+flow_reviews             -- module-flows
 ```
 
 **Sprint 2**:
@@ -503,11 +518,16 @@ function reply(tenantId, message, channel):
 ```
 packages/
   module-registry/           ← EXTEND (add chat block to ModuleDefinition)
-  module-tenants/            ← NEW (Sprint 1)
-  module-auth/               ← NEW (Sprint 1)
-  auth-authjs/               ← NEW (Sprint 1 — MVP auth adapter)
-  auth-firebase/             ← FUTURE (Sprint 6)
+  module-config/             ← DONE (config store with 5-tier cascade)
+  module-tenants/            ← DONE (Sprint 1)
+  module-subscriptions/      ← DONE (billing plans, quotas, provider services)
+  module-auth/               ← DONE (Sprint 1 — adapter interface + middleware)
+  auth-authjs/               ← DONE (Sprint 1 — NextAuth.js v5 adapter)
+  auth-firebase/             ← DONE (Sprint 1 — Firebase adapter)
   auth-auth0/                ← FUTURE (Sprint 6)
+  module-forms/              ← DONE (Sprint 1 — 5 tables, 14 endpoints)
+  form-editor/               ← DONE (Sprint 1 — GrapeJS stub)
+  module-flows/              ← DONE (Sprint 1 — 7 tables, 12 endpoints)
   module-ai/                 ← NEW (Sprint 2 — scoped, then full in Sprint 6)
   module-knowledge-base/     ← NEW (Sprint 2)
   module-agent-core/         ← NEW (Sprint 2 — scoped, then full in Sprint 6)
