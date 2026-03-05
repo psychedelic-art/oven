@@ -178,6 +178,13 @@ import FlowItemCreate from './flow-items/FlowItemCreate';
 import FlowItemShow from './flow-items/FlowItemShow';
 import FlowReviewList from './flow-reviews/FlowReviewList';
 
+// UI Flows
+import UiFlowList from './ui-flows/UiFlowList';
+import UiFlowCreate from './ui-flows/UiFlowCreate';
+import UiFlowEdit from './ui-flows/UiFlowEdit';
+import UiFlowShow from './ui-flows/UiFlowShow';
+import UiFlowAnalyticsList from './ui-flow-analytics/UiFlowAnalyticsList';
+
 // Icons
 import GridViewIcon from '@mui/icons-material/GridView';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -211,6 +218,8 @@ import WidgetsIcon from '@mui/icons-material/Widgets';
 import AltRouteIcon from '@mui/icons-material/AltRoute';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import RateReviewIcon from '@mui/icons-material/RateReview';
+import WebIcon from '@mui/icons-material/Web';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
 
 const CustomLayout = (props: any) => <Layout {...props} menu={CustomMenu} />;
 
@@ -517,6 +526,25 @@ export default function AdminApp() {
         list={FlowReviewList}
       />
       <Resource name="flow-versions" />
+
+      {/* UI Flows Module Resources */}
+      <Resource
+        name="ui-flows"
+        options={{ label: 'UI Flows' }}
+        icon={WebIcon}
+        list={UiFlowList}
+        edit={UiFlowEdit}
+        create={UiFlowCreate}
+        show={UiFlowShow}
+      />
+      <Resource
+        name="ui-flow-analytics"
+        options={{ label: 'Portal Analytics' }}
+        icon={AnalyticsIcon}
+        list={UiFlowAnalyticsList}
+      />
+      <Resource name="ui-flow-pages" />
+      <Resource name="ui-flow-versions" />
 
       {/* Custom Pages */}
       <CustomRoutes>

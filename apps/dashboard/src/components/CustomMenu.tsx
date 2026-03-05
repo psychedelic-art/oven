@@ -86,6 +86,15 @@ export default function CustomMenu() {
       <Divider sx={{ my: 1 }} />
       <Box sx={{ px: 2, pb: 0.5 }}>
         <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10 }}>
+          Portals
+        </Typography>
+      </Box>
+      <Menu.ResourceItem name="ui-flows" />
+      <Menu.ResourceItem name="ui-flow-analytics" />
+
+      <Divider sx={{ my: 1 }} />
+      <Box sx={{ px: 2, pb: 0.5 }}>
+        <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10 }}>
           Access Control
         </Typography>
       </Box>
