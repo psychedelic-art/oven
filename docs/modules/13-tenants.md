@@ -2,32 +2,34 @@
 
 > **Package**: `packages/module-tenants/`
 > **Name**: `@oven/module-tenants`
-> **Dependencies**: `module-registry`
+> **Dependencies**: `module-registry`, `module-config`
 > **Status**: Planned
 
 ---
 
 ## 1. Overview
 
-Tenants is the **multi-tenant client configuration module** that provides data isolation, per-client branding, and operational settings across the platform. Each tenant represents a client organization (e.g., a dental office, a school, a business unit) with its own identity, schedule, services, contact information, and usage limits.
+Tenants is the **multi-tenant identity module** that provides data isolation and organization management across the platform. Each tenant represents a client organization (e.g., a dental office, a school, a business unit) with a unique slug and identity.
 
-Every other module that stores tenant-specific data references a tenant via a plain `tenantId` integer column. The Tenants module provides the resolution layer — looking up tenant config by ID, slug, or custom domain — and exposes a public API for portal and widget initialization.
+The tenants table is intentionally slim — it stores only identity fields (`id`, `name`, `slug`, `enabled`, `metadata`). All operational configuration (schedule, tone, branding, contact info, services) lives in `module-config` as tenant-scoped config entries (see [module-config spec](./20-module-config.md)). Usage limits and billing are handled by `module-subscriptions` (see [module-subscriptions spec](./21-module-subscriptions.md)).
+
+This separation follows [Rule 13: Config Centralization](../module-rules.md) — tenant-customizable settings must not live as columns on domain tables.
 
 ---
 
 ## 2. Core Concepts
 
 ### Tenant
-A client organization with a unique slug, business identity, operational configuration, and branding. Tenants are the top-level isolation boundary for all tenant-scoped data across the platform.
+A client organization with a unique slug and identity. Tenants are the top-level isolation boundary for all tenant-scoped data across the platform. The tenant record itself only tracks _what the entity is_ (identity), not _how it behaves_ (configuration).
 
 ### Tenant Member
 A user associated with a tenant. Members have roles within the tenant context (owner, admin, member). A user can belong to multiple tenants.
 
-### Business Schedule
-Per-day opening hours stored as JSONB. Used by agent workflows to determine business-hours-aware behavior (welcome messages, escalation routing, auto-replies).
+### Tenant Config (via module-config)
+Operational settings stored as `module-config` entries under `moduleName='tenants'`. Includes schedule, timezone, locale, tone, branding, contact info, services, and messaging templates. Resolved via the 5-tier cascade (see [Rule 8](../module-rules.md)).
 
-### Tenant Config
-Operational settings that control tenant-specific behavior — message limits, authorized services, payment methods, tone preferences, emergency instructions, and scheduling URLs.
+### Tenant Subscription (via module-subscriptions)
+Billing plan and usage limits managed by `module-subscriptions`. Replaces the previous `whatsappLimit` and `webLimit` columns with a dynamic service-based quota system.
 
 ---
 
@@ -35,30 +37,14 @@ Operational settings that control tenant-specific behavior — message limits, a
 
 ### Tables
 
-**`tenants`** — Tenant definitions
+**`tenants`** — Tenant identity (slim)
 ```typescript
 export const tenants = pgTable('tenants', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),
   slug: varchar('slug', { length: 128 }).notNull().unique(),
-  nit: varchar('nit', { length: 50 }),                             // tax ID (Colombia-specific, optional)
-  businessName: varchar('business_name', { length: 255 }),
-  logo: varchar('logo', { length: 500 }),                          // URL via module-files
-  timezone: varchar('timezone', { length: 100 }).notNull().default('America/Bogota'),
-  locale: varchar('locale', { length: 10 }).notNull().default('es'),
-  schedule: jsonb('schedule'),                                      // { monday: { open: "08:00", close: "18:00" }, ... }
-  authorizedServices: jsonb('authorized_services'),                 // ["limpieza", "ortodoncia", "blanqueamiento", ...]
-  paymentMethods: jsonb('payment_methods'),                         // ["efectivo", "tarjeta", "transferencia"]
-  tone: varchar('tone', { length: 50 }).notNull().default('friendly'), // formal | friendly | casual
-  humanContactInfo: jsonb('human_contact_info'),                    // { phone, email, whatsapp }
-  emergencyInstructions: text('emergency_instructions'),
-  schedulingUrl: varchar('scheduling_url', { length: 500 }),
-  welcomeMessageBusinessHours: text('welcome_message_business_hours'),
-  welcomeMessageOutOfHours: text('welcome_message_out_of_hours'),
-  whatsappLimit: integer('whatsapp_limit').notNull().default(300),
-  webLimit: integer('web_limit').notNull().default(500),
-  metadata: jsonb('metadata'),
   enabled: boolean('enabled').notNull().default(true),
+  metadata: jsonb('metadata'),                              // freeform internal data (not config)
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => [
@@ -67,7 +53,7 @@ export const tenants = pgTable('tenants', {
 ]);
 ```
 
-**`tenant_members`** — User-tenant associations
+**`tenant_members`** — User-tenant associations (unchanged)
 ```typescript
 export const tenantMembers = pgTable('tenant_members', {
   id: serial('id').primaryKey(),
@@ -81,6 +67,71 @@ export const tenantMembers = pgTable('tenant_members', {
   index('tm_user_id_idx').on(table.userId),
   unique('tm_tenant_user').on(table.tenantId, table.userId),
 ]);
+```
+
+### Field Migration Map
+
+The following fields were removed from the `tenants` table and relocated:
+
+| Removed Field | Destination | Config Key / Location |
+|---|---|---|
+| nit | module-config | `tenants.NIT` |
+| businessName | module-config | `tenants.BUSINESS_NAME` |
+| logo | module-config | `tenants.LOGO` |
+| timezone | module-config | `tenants.TIMEZONE` |
+| locale | module-config | `tenants.LOCALE` |
+| schedule | module-config | `tenants.SCHEDULE` |
+| authorizedServices | module-config | `tenants.AUTHORIZED_SERVICES` |
+| paymentMethods | module-config | `tenants.PAYMENT_METHODS` |
+| tone | module-config | `tenants.TONE` |
+| humanContactInfo | module-config | `tenants.HUMAN_CONTACT_INFO` |
+| emergencyInstructions | module-config | `tenants.EMERGENCY_INSTRUCTIONS` |
+| schedulingUrl | module-config | `tenants.SCHEDULING_URL` |
+| welcomeMessageBusinessHours | module-config | `tenants.WELCOME_MESSAGE_BUSINESS_HOURS` |
+| welcomeMessageOutOfHours | module-config | `tenants.WELCOME_MESSAGE_OUT_OF_HOURS` |
+| whatsappLimit | module-subscriptions | `plan_quotas` for service `whatsapp` + optional `subscription_quota_overrides` |
+| webLimit | module-subscriptions | `plan_quotas` for service `web-chat` + optional `subscription_quota_overrides` |
+
+### Data Migration (Sprint 2)
+
+```sql
+-- Step 1: Insert existing tenant config values into module_configs
+INSERT INTO module_configs (tenant_id, module_name, scope, key, value)
+SELECT id, 'tenants', 'module', 'NIT', to_jsonb(nit)
+FROM tenants WHERE nit IS NOT NULL;
+
+INSERT INTO module_configs (tenant_id, module_name, scope, key, value)
+SELECT id, 'tenants', 'module', 'BUSINESS_NAME', to_jsonb(business_name)
+FROM tenants WHERE business_name IS NOT NULL;
+
+-- ... repeat for each migrated field ...
+
+INSERT INTO module_configs (tenant_id, module_name, scope, key, value)
+SELECT id, 'tenants', 'module', 'TIMEZONE', to_jsonb(timezone)
+FROM tenants;
+
+INSERT INTO module_configs (tenant_id, module_name, scope, key, value)
+SELECT id, 'tenants', 'module', 'SCHEDULE', schedule
+FROM tenants WHERE schedule IS NOT NULL;
+
+-- Step 2: Drop migrated columns
+ALTER TABLE tenants
+  DROP COLUMN nit,
+  DROP COLUMN business_name,
+  DROP COLUMN logo,
+  DROP COLUMN timezone,
+  DROP COLUMN locale,
+  DROP COLUMN schedule,
+  DROP COLUMN authorized_services,
+  DROP COLUMN payment_methods,
+  DROP COLUMN tone,
+  DROP COLUMN human_contact_info,
+  DROP COLUMN emergency_instructions,
+  DROP COLUMN scheduling_url,
+  DROP COLUMN welcome_message_business_hours,
+  DROP COLUMN welcome_message_out_of_hours,
+  DROP COLUMN whatsapp_limit,
+  DROP COLUMN web_limit;
 ```
 
 ---
@@ -97,46 +148,72 @@ export const tenantMembers = pgTable('tenant_members', {
 | DELETE | `/api/tenants/[id]/members/[userId]` | Remove a member | Authenticated |
 | GET | `/api/tenants/[id]/business-hours` | Check if currently business hours | Authenticated |
 
-### Public Tenant Config Response
+### Public Tenant Config — Composition Pattern
 
-`GET /api/tenants/[slug]/public` returns non-sensitive config for portal/widget initialization:
+`GET /api/tenants/[slug]/public` is now a **composition endpoint** that assembles data from multiple sources:
 
-```json
-{
-  "name": "Clínica Dental XYZ",
-  "businessName": "Clínica Dental XYZ S.A.S.",
-  "logo": "https://files.example.com/logo.png",
-  "timezone": "America/Bogota",
-  "locale": "es",
-  "schedule": {
-    "monday": { "open": "08:00", "close": "18:00" },
-    "tuesday": { "open": "08:00", "close": "18:00" },
-    "wednesday": { "open": "08:00", "close": "18:00" },
-    "thursday": { "open": "08:00", "close": "18:00" },
-    "friday": { "open": "08:00", "close": "17:00" },
-    "saturday": { "open": "09:00", "close": "13:00" },
-    "sunday": null
-  },
-  "authorizedServices": ["limpieza", "ortodoncia", "blanqueamiento", "endodoncia"],
-  "paymentMethods": ["efectivo", "tarjeta", "transferencia"],
-  "tone": "friendly",
-  "schedulingUrl": "https://calendar.example.com/clinica-xyz",
-  "welcomeMessageBusinessHours": "¡Hola! Bienvenido a Clínica Dental XYZ. ¿En qué puedo ayudarte?",
-  "welcomeMessageOutOfHours": "Hola, en este momento estamos fuera de horario. Nuestro horario es de lunes a viernes 8am-6pm.",
-  "isBusinessHours": true
+```typescript
+export async function GET(request: NextRequest, { params }: { params: { slug: string } }) {
+  const db = getDb();
+
+  // 1. Resolve tenant identity from slim table
+  const [tenant] = await db.select()
+    .from(tenants)
+    .where(and(eq(tenants.slug, params.slug), eq(tenants.enabled, true)))
+    .limit(1);
+
+  if (!tenant) return notFound();
+
+  // 2. Batch-resolve all 14 config keys from module-config
+  const configKeys = [
+    'BUSINESS_NAME', 'NIT', 'LOGO', 'TIMEZONE', 'LOCALE', 'SCHEDULE',
+    'AUTHORIZED_SERVICES', 'PAYMENT_METHODS', 'TONE', 'HUMAN_CONTACT_INFO',
+    'EMERGENCY_INSTRUCTIONS', 'SCHEDULING_URL',
+    'WELCOME_MESSAGE_BUSINESS_HOURS', 'WELCOME_MESSAGE_OUT_OF_HOURS',
+  ];
+
+  const configRes = await fetch(
+    `${baseUrl}/api/module-configs/resolve-batch?moduleName=tenants&tenantId=${tenant.id}&keys=${configKeys.join(',')}`
+  );
+  const { results } = await configRes.json();
+
+  // 3. Compute isBusinessHours from resolved SCHEDULE + TIMEZONE
+  const schedule = results.SCHEDULE?.value;
+  const timezone = results.TIMEZONE?.value || 'America/Bogota';
+  const isBusinessHours = computeBusinessHours(schedule, timezone);
+
+  // 4. Assemble backward-compatible response
+  return NextResponse.json({
+    name: tenant.name,
+    businessName: results.BUSINESS_NAME?.value,
+    logo: results.LOGO?.value,
+    timezone: results.TIMEZONE?.value || 'America/Bogota',
+    locale: results.LOCALE?.value || 'es',
+    schedule: results.SCHEDULE?.value,
+    authorizedServices: results.AUTHORIZED_SERVICES?.value,
+    paymentMethods: results.PAYMENT_METHODS?.value,
+    tone: results.TONE?.value || 'friendly',
+    schedulingUrl: results.SCHEDULING_URL?.value,
+    welcomeMessageBusinessHours: results.WELCOME_MESSAGE_BUSINESS_HOURS?.value,
+    welcomeMessageOutOfHours: results.WELCOME_MESSAGE_OUT_OF_HOURS?.value,
+    isBusinessHours,
+  });
 }
 ```
+
+The response shape is identical to the previous version — consumers are backward-compatible.
 
 ---
 
 ## 5. Business Hours Utility
 
 ```typescript
-export function isBusinessHours(tenant: Tenant): boolean {
+export function computeBusinessHours(schedule: Record<string, any> | null, timezone: string): boolean {
+  if (!schedule) return false;
+
   const now = new Date();
-  const tz = tenant.timezone || 'America/Bogota';
   const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: tz,
+    timeZone: timezone,
     weekday: 'long',
     hour: '2-digit',
     minute: '2-digit',
@@ -149,12 +226,14 @@ export function isBusinessHours(tenant: Tenant): boolean {
   const minute = parts.find(p => p.type === 'minute')?.value;
   const currentTime = `${hour}:${minute}`;
 
-  const daySchedule = tenant.schedule?.[weekday];
+  const daySchedule = schedule[weekday];
   if (!daySchedule) return false;
 
   return currentTime >= daySchedule.open && currentTime <= daySchedule.close;
 }
 ```
+
+The `GET /api/tenants/[id]/business-hours` endpoint resolves `SCHEDULE` and `TIMEZONE` from module-config, then calls `computeBusinessHours()`.
 
 ---
 
@@ -163,47 +242,69 @@ export function isBusinessHours(tenant: Tenant): boolean {
 ### React Admin Resources
 
 - **Tenants** — List, Create, Edit, Show
-  - List: Datagrid with name, slug, enabled, member count, channels configured
-  - Create: Wizard-style form (see TenantCreate fields below)
-  - Edit: Same form as create, with tabs
-  - Show: Overview dashboard — config summary, active channels, usage gauges, recent conversations
+  - List: Datagrid with name, slug, enabled, member count
+  - Create: Wizard-style form (Identity tab only for creation)
+  - Edit: Tabbed form (see tabs below)
+  - Show: Overview dashboard — config summary, active subscription, member activity
 
 - **Tenant Members** — Inline within tenant show/edit (not a standalone resource)
-  - Datagrid showing user name, email, role, added date
-  - Add/remove users, assign roles (owner/admin/member)
 
-### TenantCreate / TenantEdit Form Tabs
+### TenantEdit Form Tabs
 
-| Tab | Fields | Input Type |
-|-----|--------|------------|
-| **Identity** | name, slug (auto-gen from name), nit, businessName, logo (file upload) | TextInput, FileInput |
-| **Schedule** | schedule (per day of week) | `<ScheduleEditor>` custom component |
-| **Services** | authorizedServices, paymentMethods | `<ServicesTagInput>`, `<PaymentMethodsInput>` |
-| **Communication** | tone, humanContactInfo (phone, email, WhatsApp), emergencyInstructions | `<ToneSelector>`, `<ContactInfoEditor>`, TextInput multiline |
-| **Messaging** | welcomeMessageBusinessHours, welcomeMessageOutOfHours, schedulingUrl | `<WelcomeMessageEditor>`, TextInput |
-| **Limits** | whatsappLimit (default 300), webLimit (default 500) | NumberInput |
-| **Members** | (inline list) | `<TenantMembersTab>` |
+| Tab | Fields | Source | Input Type |
+|-----|--------|--------|------------|
+| **Identity** | name, slug | tenants table | TextInput |
+| **Config** | businessName, nit, logo, tone, timezone, locale, schedulingUrl | module-config | TextInput, FileInput, AutocompleteInput |
+| **Schedule** | schedule (per day of week) | module-config (`SCHEDULE`) | `<ScheduleEditor>` |
+| **Services** | authorizedServices, paymentMethods | module-config | `<ServicesTagInput>`, `<PaymentMethodsInput>` |
+| **Communication** | humanContactInfo, emergencyInstructions, welcomeMessageBusinessHours, welcomeMessageOutOfHours | module-config | `<ContactInfoEditor>`, TextInput multiline |
+| **Members** | (inline list) | tenant_members table | `<TenantMembersTab>` |
+
+The **Limits tab** is removed — usage limits are managed by `module-subscriptions` in its own UI.
+
+### Config Tab Implementation
+
+Config tabs read/write through `module-config` API instead of the tenants table:
+
+```typescript
+// TenantConfigTab.tsx
+const { record } = useEditContext();
+
+// Read: resolve config values
+const { data: config } = useQuery(['tenant-config', record.id], () =>
+  fetch(`/api/module-configs/resolve-batch?moduleName=tenants&tenantId=${record.id}&keys=BUSINESS_NAME,NIT,LOGO,TONE,TIMEZONE,LOCALE,SCHEDULING_URL`)
+    .then(r => r.json())
+);
+
+// Write: upsert config entry
+const saveConfig = async (key: string, value: any) => {
+  await fetch('/api/module-configs', {
+    method: 'POST',
+    body: JSON.stringify({ tenantId: record.id, moduleName: 'tenants', scope: 'module', key, value }),
+  });
+};
+```
 
 ### Files to Create
 
 ```
 apps/dashboard/src/components/tenants/
-  TenantList.tsx          — All tenants. Columns: name, slug, enabled, member count, channels configured
-  TenantCreate.tsx        — Wizard-style form (see tabs above)
-  TenantEdit.tsx          — Same form as create, with tabs
-  TenantShow.tsx          — Overview dashboard: config summary, active channels, usage gauges, recent conversations
-  TenantMembersTab.tsx    — Inline member list on show/edit: add/remove users, assign roles (owner/admin/member)
-  ScheduleEditor.tsx      — Custom component: 7 rows (Mon–Sun), each with opening/closing time pickers + "closed" toggle
-  ServicesTagInput.tsx    — Tag input for authorizedServices array
-  PaymentMethodsInput.tsx — Tag input for paymentMethods array
-  ToneSelector.tsx        — Radio group: formal / friendly / casual (with preview of sample greeting)
-  ContactInfoEditor.tsx   — Grouped inputs: phone, email, WhatsApp number, emergency instructions
-  WelcomeMessageEditor.tsx — Two textareas: business hours message + out-of-hours message, with variable placeholders ({businessName}, {schedule})
+  TenantList.tsx           — All tenants. Columns: name, slug, enabled, member count
+  TenantCreate.tsx         — Identity form: name, slug
+  TenantEdit.tsx           — Tabbed form (Identity, Config, Schedule, Services, Communication, Members)
+  TenantShow.tsx           — Overview dashboard: config summary, active subscription, members
+  TenantConfigTab.tsx      — Config tab: reads/writes module-config entries
+  TenantMembersTab.tsx     — Inline member list: add/remove users, assign roles
+  ScheduleEditor.tsx       — 7 rows (Mon–Sun), each with time pickers + "closed" toggle
+  ServicesTagInput.tsx     — Tag input for AUTHORIZED_SERVICES config
+  PaymentMethodsInput.tsx  — Tag input for PAYMENT_METHODS config
+  ContactInfoEditor.tsx    — Grouped inputs: phone, email, WhatsApp number
+  WelcomeMessageEditor.tsx — Two textareas: business hours + out-of-hours messages
 ```
 
 ### Custom Pages
 
-- **Tenant Dashboard** (`/tenants/[id]/dashboard`) — Overview with usage stats, active conversations, member activity
+- **Tenant Dashboard** (`/tenants/[id]/dashboard`) — Overview with active subscription, member activity, config summary
 
 ### Menu Section
 
@@ -230,13 +331,15 @@ Tenants
 
 | Module | Integration |
 |--------|-------------|
+| **module-config** | All tenant operational config (schedule, tone, branding, etc.) stored as tenant-scoped config entries |
+| **module-subscriptions** | Billing plans and usage limits (replaces whatsappLimit/webLimit columns) |
 | **module-roles** | Permission-based access to manage tenants and members |
 | **module-auth** | Tenant context attached to authenticated requests via middleware |
-| **module-notifications** | Channel configs and usage limits are tenant-scoped |
+| **module-notifications** | Channel configs and conversations are tenant-scoped |
 | **module-knowledge-base** | FAQ content is tenant-scoped |
 | **module-chat** | Chat sessions can be tenant-scoped |
 | **module-agent-core** | Agents can be tenant-specific with context injection |
-| **module-workflow-agents** | `agent.tenantContext` node reads tenant config |
+| **module-workflow-agents** | `agent.tenantContext` node reads tenant config via module-config |
 | **module-ui-flows** | Portals are tenant-scoped |
 | **module-files** | File uploads can be tenant-scoped |
 
@@ -247,14 +350,13 @@ Tenants
 ```typescript
 export const tenantsModule: ModuleDefinition = {
   name: 'tenants',
-  dependencies: [],
-  description: 'Multi-tenant client configuration with business identity, schedules, and usage limits',
+  dependencies: ['config'],
+  description: 'Multi-tenant identity module with slim identity table and config-driven operational settings',
   capabilities: [
     'create tenants',
     'manage tenant members',
-    'configure business hours',
-    'set usage limits',
     'resolve tenant by slug',
+    'check business hours',
   ],
   schema: { tenants, tenantMembers },
   seed: seedTenants,
@@ -285,27 +387,110 @@ export const tenantsModule: ModuleDefinition = {
     'tenants/[id]/business-hours': { GET: checkBusinessHours },
   },
   configSchema: [
+    // ─── Business Identity ────────────────────────────────────
     {
-      key: 'DEFAULT_WHATSAPP_LIMIT',
-      type: 'number',
-      description: 'Default monthly WhatsApp message limit for new tenants',
-      defaultValue: 300,
-      instanceScoped: false,
-    },
-    {
-      key: 'DEFAULT_WEB_LIMIT',
-      type: 'number',
-      description: 'Default monthly web chat message limit for new tenants',
-      defaultValue: 500,
-      instanceScoped: false,
-    },
-    {
-      key: 'DEFAULT_TIMEZONE',
+      key: 'NIT',
       type: 'string',
-      description: 'Default timezone for new tenants',
-      defaultValue: 'America/Bogota',
-      instanceScoped: false,
+      description: 'Tax ID (NIT) for the business',
+      defaultValue: null,
+      instanceScoped: true,
     },
+    {
+      key: 'BUSINESS_NAME',
+      type: 'string',
+      description: 'Legal business name',
+      defaultValue: null,
+      instanceScoped: true,
+    },
+    {
+      key: 'LOGO',
+      type: 'string',
+      description: 'Logo URL (via module-files)',
+      defaultValue: null,
+      instanceScoped: true,
+    },
+    // ─── Localization ─────────────────────────────────────────
+    {
+      key: 'TIMEZONE',
+      type: 'string',
+      description: 'Business timezone (IANA format)',
+      defaultValue: 'America/Bogota',
+      instanceScoped: true,
+    },
+    {
+      key: 'LOCALE',
+      type: 'string',
+      description: 'Default language locale',
+      defaultValue: 'es',
+      instanceScoped: true,
+    },
+    // ─── Schedule ─────────────────────────────────────────────
+    {
+      key: 'SCHEDULE',
+      type: 'json',
+      description: 'Per-day business hours: { monday: { open, close }, ... }',
+      defaultValue: null,
+      instanceScoped: true,
+    },
+    // ─── Services & Payments ──────────────────────────────────
+    {
+      key: 'AUTHORIZED_SERVICES',
+      type: 'json',
+      description: 'List of services the tenant offers (e.g., ["limpieza", "ortodoncia"])',
+      defaultValue: [],
+      instanceScoped: true,
+    },
+    {
+      key: 'PAYMENT_METHODS',
+      type: 'json',
+      description: 'Accepted payment methods (e.g., ["efectivo", "tarjeta"])',
+      defaultValue: [],
+      instanceScoped: true,
+    },
+    // ─── Communication ────────────────────────────────────────
+    {
+      key: 'TONE',
+      type: 'string',
+      description: 'Communication tone: formal | friendly | casual',
+      defaultValue: 'friendly',
+      instanceScoped: true,
+    },
+    {
+      key: 'HUMAN_CONTACT_INFO',
+      type: 'json',
+      description: 'Human contact info: { phone, email, whatsapp }',
+      defaultValue: null,
+      instanceScoped: true,
+    },
+    {
+      key: 'EMERGENCY_INSTRUCTIONS',
+      type: 'string',
+      description: 'Emergency/escalation instructions for agents',
+      defaultValue: null,
+      instanceScoped: true,
+    },
+    {
+      key: 'SCHEDULING_URL',
+      type: 'string',
+      description: 'External scheduling/booking URL',
+      defaultValue: null,
+      instanceScoped: true,
+    },
+    {
+      key: 'WELCOME_MESSAGE_BUSINESS_HOURS',
+      type: 'string',
+      description: 'Welcome message shown during business hours',
+      defaultValue: null,
+      instanceScoped: true,
+    },
+    {
+      key: 'WELCOME_MESSAGE_OUT_OF_HOURS',
+      type: 'string',
+      description: 'Welcome message shown outside business hours',
+      defaultValue: null,
+      instanceScoped: true,
+    },
+    // ─── Platform-Level Defaults ──────────────────────────────
     {
       key: 'MAX_MEMBERS_PER_TENANT',
       type: 'number',
@@ -349,7 +534,7 @@ export const tenantsModule: ModuleDefinition = {
     },
   },
   chat: {
-    description: 'Multi-tenant client configuration. Manages business identity, schedules, services, and usage limits for client organizations.',
+    description: 'Multi-tenant identity module. Manages tenant organizations with slim identity tables. Operational config (schedule, tone, branding) is stored in module-config. Usage limits are managed by module-subscriptions.',
     capabilities: [
       'list tenants',
       'get tenant config',
@@ -369,7 +554,7 @@ export const tenantsModule: ModuleDefinition = {
       },
       {
         name: 'tenants.getPublic',
-        description: 'Get public tenant configuration by slug',
+        description: 'Get public tenant configuration by slug (assembled from module-config)',
         parameters: {
           slug: { type: 'string', description: 'Tenant slug', required: true },
         },
@@ -451,3 +636,63 @@ export async function GET(request: NextRequest) {
   return listResponse(rows, 'tenants', params, Number(count));
 }
 ```
+
+---
+
+## Module Rules Compliance
+
+> Added per [`module-rules.md`](../module-rules.md) — 7 required items.
+
+### A. Schema Updates — Identity-Only Table
+
+The `tenants` table is intentionally slim with no tenant-customizable config columns (compliant with Rule 13):
+
+```typescript
+export const tenants = pgTable('tenants', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  slug: varchar('slug', { length: 128 }).notNull().unique(),
+  enabled: boolean('enabled').notNull().default(true),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  index('tenants_slug_idx').on(table.slug),
+  index('tenants_enabled_idx').on(table.enabled),
+]);
+```
+
+The `tenant_members` table is tenant-scoped with `tenantId` column and appropriate indexes.
+
+### B. Chat Block
+
+See Section 9 — full `chat` block with description, capabilities, and 3 actionSchemas (list, getPublic, checkBusinessHours).
+
+### C. configSchema
+
+See Section 9 — 15 config keys declared: NIT, BUSINESS_NAME, LOGO, TIMEZONE, LOCALE, SCHEDULE, AUTHORIZED_SERVICES, PAYMENT_METHODS, TONE, HUMAN_CONTACT_INFO, EMERGENCY_INSTRUCTIONS, SCHEDULING_URL, WELCOME_MESSAGE_BUSINESS_HOURS, WELCOME_MESSAGE_OUT_OF_HOURS, MAX_MEMBERS_PER_TENANT.
+
+All 14 relocated operational fields are stored in `module-config` and declared in `configSchema` per Rule 13.
+
+### D. Typed Event Schemas
+
+See Section 9 — 5 events with full typed schemas: `tenants.tenant.created`, `tenants.tenant.updated`, `tenants.tenant.deleted`, `tenants.member.added`, `tenants.member.removed`.
+
+### E. Seed Function
+
+See Section 10 — idempotent seed function that registers 7 permissions and 1 public endpoint.
+
+### F. API Handler Example
+
+See Section 11 — standard list handler using `parseListParams()` and `listResponse()` with Content-Range header.
+
+---
+
+## See Also
+
+- [Admin Use Cases](../use-cases.md) — cross-module workflow guide. Relevant use cases:
+  - **UC 2**: Onboard a New Tenant (Tenants + Config + Subscriptions)
+  - **UC 3**: Configure Tenant Settings (Tenants + Config)
+  - **UC 9**: Check Tenant Full Profile (Tenants + Config + Subscriptions)
+- [Module Config Spec](./20-module-config.md) — config storage and 5-tier cascade
+- [Module Subscriptions Spec](./21-module-subscriptions.md) — billing plans and usage limits

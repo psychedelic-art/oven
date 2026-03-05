@@ -510,7 +510,7 @@ Provide `POST /api/{entity}/[id]/versions/[versionId]/restore` to roll back to a
 
 ## Rule 8: Config Cascade
 
-Module configuration uses the existing 3-tier cascade system from `module-workflows`.
+Module configuration uses the 5-tier tenant-aware cascade system from `module-config` (see `docs/modules/20-module-config.md`).
 
 ### 8.1 — Declare configurable settings
 
@@ -533,17 +533,27 @@ configSchema: [
 ]
 ```
 
-### 8.2 — Resolution order
+### 8.2 — Resolution order (5-tier)
 
-1. **Instance override** — `scope='instance'`, `scopeId=tenantId` (most specific)
-2. **Module default** — `scope='module'`, `scopeId=null` (per-module)
-3. **Schema default** — from `configSchema[].defaultValue` (code-level)
+1. **Tenant instance override** — `tenantId=T, scope='instance', scopeId=X` (most specific)
+2. **Tenant module default** — `tenantId=T, scope='module', scopeId=NULL`
+3. **Platform instance override** — `tenantId=NULL, scope='instance', scopeId=X`
+4. **Platform module default** — `tenantId=NULL, scope='module', scopeId=NULL`
+5. **Schema default** — from `configSchema[].defaultValue` (code-level, least specific)
 
-Resolve via `GET /api/module-configs/resolve?moduleName=knowledge-base&key=MAX_FAQ_ENTRIES&scopeId=5`
+Resolve a single key via:
+```
+GET /api/module-configs/resolve?moduleName=knowledge-base&key=MAX_FAQ_ENTRIES&tenantId=5
+```
+
+Resolve multiple keys in a single request via:
+```
+GET /api/module-configs/resolve-batch?moduleName=knowledge-base&tenantId=5&keys=MAX_FAQ_ENTRIES,EMBEDDING_MODEL
+```
 
 ### 8.3 — Tenant-specific config overrides
 
-The config cascade's `scopeId` maps naturally to `tenantId`. Each tenant can have different settings (e.g., different embedding model, different limits) without code changes.
+The `moduleConfigs` table has a nullable `tenantId` column. Rows with `tenantId = NULL` are platform-global defaults; rows with a specific `tenantId` are tenant-scoped overrides. Each tenant can have different settings (e.g., different embedding model, different limits) without code changes. RLS policies ensure tenants can only read their own overrides plus platform globals.
 
 ---
 
@@ -741,6 +751,86 @@ export async function seedPermissions(db: any) {
 
 ---
 
+## Rule 13: Config Centralization
+
+Tenant-customizable settings must not live as columns on domain tables. They belong in `module-config`, accessed via the cascade resolution system defined in Rule 8.
+
+### 13.1 — No tenant-customizable columns on domain tables
+
+If a field's value can differ per tenant and is not part of the entity's core identity (i.e., not `id`, `name`, `slug`, `enabled`), it must be stored as a `module-config` entry — not as a column on the domain table.
+
+**Wrong** — business config baked into the identity table:
+```typescript
+export const tenants = pgTable('tenants', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  slug: varchar('slug', { length: 128 }).notNull().unique(),
+  timezone: varchar('timezone', { length: 100 }),       // ← WRONG: should be in module-config
+  tone: varchar('tone', { length: 50 }),                 // ← WRONG
+  schedule: jsonb('schedule'),                           // ← WRONG
+  whatsappLimit: integer('whatsapp_limit'),               // ← WRONG: usage limit, not identity
+});
+```
+
+**Right** — slim identity table + config entries:
+```typescript
+export const tenants = pgTable('tenants', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  slug: varchar('slug', { length: 128 }).notNull().unique(),
+  enabled: boolean('enabled').notNull().default(true),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Tenant-customizable settings declared in configSchema:
+configSchema: [
+  { key: 'TIMEZONE', type: 'string', defaultValue: 'America/Bogota', instanceScoped: true },
+  { key: 'TONE', type: 'string', defaultValue: 'friendly', instanceScoped: true },
+  { key: 'SCHEDULE', type: 'json', defaultValue: null, instanceScoped: true },
+]
+// Usage limits belong in module-subscriptions (plan_quotas / subscription_quota_overrides)
+```
+
+### 13.2 — Declare all settings in `configSchema`
+
+Every module-config key that your module reads at runtime must be declared in the module's `configSchema` array. This enables:
+- **Dashboard discoverability** — the config UI auto-generates forms from the schema
+- **Validation** — the resolve endpoint can validate types and apply defaults
+- **Documentation** — each key has a description visible to platform operators
+
+### 13.3 — Read config via the resolve endpoint at runtime
+
+Do not query the `module_configs` table directly. Always use the cascade resolution API:
+
+```typescript
+// Single key
+const res = await fetch(`/api/module-configs/resolve?moduleName=tenants&key=TIMEZONE&tenantId=${tenantId}`);
+const { value, source } = await res.json();
+
+// Multiple keys (batch)
+const res = await fetch(`/api/module-configs/resolve-batch?moduleName=tenants&tenantId=${tenantId}&keys=TIMEZONE,TONE,SCHEDULE`);
+const { results } = await res.json();
+// results.TIMEZONE.value, results.TONE.value, etc.
+```
+
+This ensures the 5-tier cascade (Rule 8.2) is always applied consistently.
+
+### 13.4 — Identity columns are exempt
+
+The following column types are exempt from this rule and should remain on domain tables:
+- **Primary key**: `id`
+- **Identity**: `name`, `slug`
+- **Status**: `enabled`, `status`
+- **Metadata**: `metadata` (freeform JSONB for non-configurable internal data)
+- **Timestamps**: `createdAt`, `updatedAt`
+- **Structural foreign keys**: `tenantId`, `parentId`, `categoryId`
+
+These columns define _what the entity is_, not _how it behaves_. Behavioral/configurable fields go in module-config.
+
+---
+
 ## Checklist: Before Merging a New Module
 
 - [ ] Implements `ModuleDefinition` contract fully
@@ -763,6 +853,8 @@ export async function seedPermissions(db: any) {
 - [ ] List views filter by active tenant
 - [ ] Seed function is idempotent
 - [ ] Config settings declared in `configSchema` if applicable
+- [ ] Tenant-customizable settings stored in `module-config` (not as domain table columns)
+- [ ] All configurable settings declared in `configSchema` with type, description, and defaultValue
 - [ ] Slug columns have unique constraint
 - [ ] Foreign keys are plain integers (no Drizzle `references()`)
 - [ ] Public endpoints marked in `api_endpoint_permissions`
