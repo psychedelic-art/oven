@@ -10,6 +10,7 @@ import {
   index,
   unique,
 } from 'drizzle-orm/pg-core';
+import { moduleConfigs } from '@oven/module-config/schema';
 
 // ─── workflows ──────────────────────────────────────────────────
 // Stores workflow definitions as serializable XState machine configs.
@@ -102,45 +103,8 @@ export const nodeExecutions = pgTable(
   ]
 );
 
-// ─── module_configs ─────────────────────────────────────────────
-// Config system: module-level defaults + per-instance overrides.
-// Resolution: instance override > module default > hardcoded fallback
-export const moduleConfigs = pgTable(
-  'module_configs',
-  {
-    id: serial('id').primaryKey(),
-
-    // Which module: "maps", "players", "sessions", etc.
-    moduleName: varchar('module_name', { length: 64 }).notNull(),
-
-    // Scope: "module" for default, "instance" for per-record override
-    scope: varchar('scope', { length: 32 }).notNull().default('module'),
-
-    // For instance scope: the specific record identifier (e.g. "5" for mapId=5)
-    scopeId: varchar('scope_id', { length: 128 }),
-
-    // Config property name, e.g. "chunkSize", "maxPlayers", "spawnTileX"
-    key: varchar('key', { length: 128 }).notNull(),
-
-    // Config value (any JSON type)
-    value: jsonb('value').notNull(),
-
-    description: text('description'),
-
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  },
-  (table) => [
-    unique('module_configs_unique').on(
-      table.moduleName,
-      table.scope,
-      table.scopeId,
-      table.key
-    ),
-    index('module_configs_module_idx').on(table.moduleName),
-    index('module_configs_lookup_idx').on(table.moduleName, table.key),
-  ]
-);
+// moduleConfigs is imported from @oven/module-config/schema
+// (canonical definition lives in module-config package)
 
 // ─── workflow_versions ─────────────────────────────────────────
 // Stores historical snapshots of workflow definitions for version history.
