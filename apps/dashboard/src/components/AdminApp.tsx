@@ -6,6 +6,7 @@ import { dataProvider } from '@/providers/dataProvider';
 import ModuleManager from './ModuleManager';
 import MapEditorPage from './maps/MapEditorPage';
 import WorkflowEditorPage from './workflows/WorkflowEditorPage';
+import UiFlowEditorPage from './ui-flows/UiFlowEditorPage';
 import RlsEditorPage from './rls-policies/RlsEditorPage';
 import CustomMenu from './CustomMenu';
 
@@ -551,6 +552,7 @@ export default function AdminApp() {
         <Route path="/modules" element={<ModuleManager />} />
         <Route path="/maps/:id/editor" element={<MapEditorPage />} />
         <Route path="/workflows/:id/editor" element={<WorkflowEditorPage />} />
+        <Route path="/ui-flows/:id/editor" element={<UiFlowEditorPage />} />
         <Route path="/rls-policies/:id/editor" element={<RlsEditorPage />} />
         <Route path="/api-permissions" element={<ApiPermissionList />} />
         <Route path="/profile" element={<ProfilePage />} />

@@ -32,6 +32,7 @@
     "@oven/module-tenants": "workspace:*",
     "@oven/module-roles": "workspace:*",
     "@oven/module-ui-flows": "workspace:*",
+    "@oven/ui-flows-editor": "workspace:*",
     "@oven/module-workflows": "workspace:*",
     "@oven/rls-editor": "workspace:*",
     "@oven/workflow-editor": "workspace:*",

@@ -10,6 +10,9 @@ import {
   index,
   unique,
 } from 'drizzle-orm/pg-core';
+// Re-export moduleConfigs from the canonical source so other files
+// (like seed.ts) can import { moduleConfigs } from './schema'
+export { moduleConfigs } from '@oven/module-config/schema';
 import { moduleConfigs } from '@oven/module-config/schema';
 
 // ─── workflows ──────────────────────────────────────────────────

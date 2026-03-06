@@ -9,8 +9,13 @@ import {
   FunctionField,
   ReferenceManyField,
   Datagrid,
+  TopToolbar,
+  EditButton,
+  useRecordContext,
 } from 'react-admin';
-import { Chip } from '@mui/material';
+import { Button, Chip } from '@mui/material';
+import EditNoteIcon from '@mui/icons-material/EditNote';
+import { Link } from 'react-router-dom';
 
 const statusColors: Record<string, 'info' | 'success' | 'default'> = {
   draft: 'info',
@@ -18,9 +23,28 @@ const statusColors: Record<string, 'info' | 'success' | 'default'> = {
   archived: 'default',
 };
 
+function UiFlowShowActions() {
+  const record = useRecordContext();
+  return (
+    <TopToolbar>
+      <Button
+        component={Link}
+        to={`/ui-flows/${record?.id}/editor`}
+        startIcon={<EditNoteIcon />}
+        size="small"
+        variant="contained"
+        sx={{ textTransform: 'none' }}
+      >
+        Open Editor
+      </Button>
+      <EditButton />
+    </TopToolbar>
+  );
+}
+
 export default function UiFlowShow() {
   return (
-    <Show>
+    <Show actions={<UiFlowShowActions />}>
       <SimpleShowLayout>
         <NumberField source="id" />
         <TextField source="name" />

@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
     '@oven/workflow-editor',
     '@oven/module-roles',
     '@oven/rls-editor',
+    '@oven/module-ui-flows',
+    '@oven/ui-flows-editor',
   ],
   serverExternalPackages: ['sharp'],
 };

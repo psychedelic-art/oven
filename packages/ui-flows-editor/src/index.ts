@@ -1,3 +1,12 @@
-// UI Flows Editor — ReactFlow-based visual editor for portal page/route graphs
-// TODO: Implement with @xyflow/react when ready
-export const UiFlowEditor = () => null;
+export { UiFlowCanvas } from './UiFlowCanvas';
+export { HomeNode } from './nodes/HomeNode';
+export { LandingPageNode } from './nodes/LandingPageNode';
+export { FormPageNode } from './nodes/FormPageNode';
+export { FaqPageNode } from './nodes/FaqPageNode';
+export { ChatPageNode } from './nodes/ChatPageNode';
+export { CustomPageNode } from './nodes/CustomPageNode';
+export { PagePalette } from './panels/PagePalette';
+export { PageInspector } from './panels/PageInspector';
+export { ThemePanel } from './panels/ThemePanel';
+export { NavigationPanel } from './panels/NavigationPanel';
+export { PublishDialog } from './components/PublishDialog';
