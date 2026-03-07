@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useCallback } from 'react';
+import { Box } from '@mui/material';
 import grapesjs, { type Editor } from 'grapesjs';
 import 'grapesjs/dist/css/grapes.min.css';
 import type { EditorConfig, EditorState } from './types';
@@ -72,6 +73,102 @@ function serializeComponent(component: any): ComponentNode {
   return node;
 }
 
+/** Register built-in HTML/form blocks so the editor is usable even without API blocks */
+function registerBuiltinBlocks(editor: Editor): void {
+  const bm = editor.BlockManager;
+
+  bm.add('text', {
+    label: 'Text',
+    category: '📄 Basic',
+    content: '<div data-gjs-type="text">Insert your text here</div>',
+    media: '<svg viewBox="0 0 24 24" width="28"><path fill="currentColor" d="M5 4v3h5.5v12h3V7H19V4z"/></svg>',
+  });
+
+  bm.add('heading', {
+    label: 'Heading',
+    category: '📄 Basic',
+    content: '<h2 data-gjs-type="text">Heading</h2>',
+    media: '<svg viewBox="0 0 24 24" width="28"><path fill="currentColor" d="M5 4v3h5.5v12h3V7H19V4z"/></svg>',
+  });
+
+  bm.add('image', {
+    label: 'Image',
+    category: '📄 Basic',
+    content: { type: 'image' },
+    media: '<svg viewBox="0 0 24 24" width="28"><path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>',
+  });
+
+  bm.add('link', {
+    label: 'Link',
+    category: '📄 Basic',
+    content: '<a href="#" data-gjs-type="link">Link text</a>',
+    media: '<svg viewBox="0 0 24 24" width="28"><path fill="currentColor" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>',
+  });
+
+  bm.add('video', {
+    label: 'Video',
+    category: '📄 Basic',
+    content: { type: 'video' },
+    media: '<svg viewBox="0 0 24 24" width="28"><path fill="currentColor" d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>',
+  });
+
+  bm.add('section', {
+    label: 'Section',
+    category: '📐 Layout',
+    content: '<section style="padding:40px 20px;min-height:100px"></section>',
+    media: '<svg viewBox="0 0 24 24" width="28"><path fill="currentColor" d="M3 5v14h18V5H3zm16 12H5V7h14v10z"/></svg>',
+  });
+
+  bm.add('columns-2', {
+    label: '2 Columns',
+    category: '📐 Layout',
+    content: '<div style="display:flex;gap:16px;padding:10px"><div style="flex:1;min-height:60px;padding:10px"></div><div style="flex:1;min-height:60px;padding:10px"></div></div>',
+    media: '<svg viewBox="0 0 24 24" width="28"><path fill="currentColor" d="M3 3h8v18H3V3zm10 0h8v18h-8V3z"/></svg>',
+  });
+
+  bm.add('columns-3', {
+    label: '3 Columns',
+    category: '📐 Layout',
+    content: '<div style="display:flex;gap:16px;padding:10px"><div style="flex:1;min-height:60px;padding:10px"></div><div style="flex:1;min-height:60px;padding:10px"></div><div style="flex:1;min-height:60px;padding:10px"></div></div>',
+    media: '<svg viewBox="0 0 24 24" width="28"><path fill="currentColor" d="M2 3h6v18H2V3zm7 0h6v18H9V3zm7 0h6v18h-6V3z"/></svg>',
+  });
+
+  bm.add('form-input', {
+    label: 'Text Input',
+    category: '📝 Form',
+    content: '<div style="margin-bottom:12px"><label style="display:block;margin-bottom:4px;font-size:14px">Label</label><input type="text" placeholder="Enter text..." style="width:100%;padding:8px 12px;border:1px solid #ccc;border-radius:4px;font-size:14px"/></div>',
+    media: '<svg viewBox="0 0 24 24" width="28"><path fill="currentColor" d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>',
+  });
+
+  bm.add('form-textarea', {
+    label: 'Textarea',
+    category: '📝 Form',
+    content: '<div style="margin-bottom:12px"><label style="display:block;margin-bottom:4px;font-size:14px">Label</label><textarea placeholder="Enter text..." rows="4" style="width:100%;padding:8px 12px;border:1px solid #ccc;border-radius:4px;font-size:14px;resize:vertical"></textarea></div>',
+    media: '<svg viewBox="0 0 24 24" width="28"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H4V4h16v16zM6 6h12v2H6zm0 4h12v2H6zm0 4h8v2H6z"/></svg>',
+  });
+
+  bm.add('form-select', {
+    label: 'Select',
+    category: '📝 Form',
+    content: '<div style="margin-bottom:12px"><label style="display:block;margin-bottom:4px;font-size:14px">Label</label><select style="width:100%;padding:8px 12px;border:1px solid #ccc;border-radius:4px;font-size:14px"><option value="">Choose...</option><option value="1">Option 1</option><option value="2">Option 2</option></select></div>',
+    media: '<svg viewBox="0 0 24 24" width="28"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>',
+  });
+
+  bm.add('form-checkbox', {
+    label: 'Checkbox',
+    category: '📝 Form',
+    content: '<div style="margin-bottom:12px;display:flex;align-items:center;gap:8px"><input type="checkbox" id="cb1"/><label for="cb1" style="font-size:14px">Checkbox label</label></div>',
+    media: '<svg viewBox="0 0 24 24" width="28"><path fill="currentColor" d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.11 0 2-.9 2-2V5c0-1.1-.89-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>',
+  });
+
+  bm.add('form-button', {
+    label: 'Button',
+    category: '📝 Form',
+    content: '<button type="submit" style="padding:10px 24px;background:#1976d2;color:white;border:none;border-radius:4px;font-size:14px;cursor:pointer">Submit</button>',
+    media: '<svg viewBox="0 0 24 24" width="28"><path fill="currentColor" d="M19 7H5c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm0 8H5V9h14v6z"/></svg>',
+  });
+}
+
 /**
  * GrapeJS visual form builder.
  *
@@ -115,7 +212,6 @@ export default function FormEditor({ config }: FormEditorProps) {
       height: '100%',
       width: 'auto',
       storageManager: false, // We handle persistence ourselves
-      panels: { defaults: [] },
       canvas: {
         styles: [
           'https://cdn.jsdelivr.net/npm/tailwindcss@4/dist/tailwind.min.css',
@@ -128,9 +224,53 @@ export default function FormEditor({ config }: FormEditorProps) {
           { name: 'Mobile', width: '375px', widthMedia: '480px' },
         ],
       },
+      styleManager: {
+        sectors: [
+          {
+            name: 'Layout',
+            open: false,
+            properties: [
+              'display', 'flex-direction', 'flex-wrap', 'justify-content',
+              'align-items', 'align-content', 'order', 'flex-basis',
+              'flex-grow', 'flex-shrink', 'align-self',
+            ],
+          },
+          {
+            name: 'Dimension',
+            open: false,
+            properties: [
+              'width', 'min-width', 'max-width',
+              'height', 'min-height', 'max-height',
+              'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+              'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+            ],
+          },
+          {
+            name: 'Typography',
+            open: false,
+            properties: [
+              'font-family', 'font-size', 'font-weight', 'letter-spacing',
+              'color', 'line-height', 'text-align', 'text-decoration',
+              'text-transform', 'text-shadow',
+            ],
+          },
+          {
+            name: 'Decorations',
+            open: false,
+            properties: [
+              'background-color', 'border-radius',
+              'border', 'border-width', 'border-style', 'border-color',
+              'box-shadow', 'opacity',
+            ],
+          },
+        ],
+      },
     });
 
     editorRef.current = editor;
+
+    // Register built-in HTML/form blocks (always available)
+    registerBuiltinBlocks(editor);
 
     // Register oven-ui components as GrapeJS blocks
     if (config.blocks && config.blocks.length > 0) {
@@ -177,9 +317,9 @@ export default function FormEditor({ config }: FormEditorProps) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div style={{ width: '100%', height: '100%', minHeight: 500, position: 'relative' }}>
+    <Box sx={{ width: '100%', height: '100%', minHeight: 500, position: 'relative' }}>
       {/* GrapeJS mounts here */}
-      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
-    </div>
+      <Box ref={containerRef} sx={{ width: '100%', height: '100%' }} />
+    </Box>
   );
 }
