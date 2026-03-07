@@ -48,7 +48,7 @@ function serializeComponent(component: any): ComponentNode {
     }
   }
 
-  const type = attrs['data-oven-type'] || component.get?.('type') || 'div';
+  const type = component.get?.('type') || attrs['data-oven-type'] || 'div';
   const children = (component.components?.() || []).map(serializeComponent);
 
   const node: ComponentNode = {
@@ -71,6 +71,33 @@ function serializeComponent(component: any): ComponentNode {
   }
 
   return node;
+}
+
+/**
+ * Convert a ComponentNode tree into HTML that GrapeJS can parse.
+ * This is the inverse of serializeComponent — used when loading seed data
+ * that only has our ComponentNode[] format but no GrapeJS projectData.
+ */
+function componentNodesToHtml(nodes: ComponentNode[]): string {
+  return nodes.map(nodeToHtml).join('\n');
+}
+
+function nodeToHtml(node: ComponentNode): string {
+  // Build attribute string from props
+  const attrs: string[] = [`data-gjs-type="${node.type}"`, `data-oven-type="${node.type}"`];
+  if (node.props) {
+    for (const [key, value] of Object.entries(node.props)) {
+      if (value === undefined || value === null) continue;
+      if (typeof value === 'object') {
+        attrs.push(`data-prop-${key}="${encodeURIComponent(JSON.stringify(value))}"`);
+      } else {
+        attrs.push(`${key}="${String(value).replace(/"/g, '&quot;')}"`);
+      }
+    }
+  }
+
+  const childrenHtml = node.children ? componentNodesToHtml(node.children) : '';
+  return `<div ${attrs.join(' ')}>${childrenHtml}</div>`;
 }
 
 /** Register built-in HTML/form blocks so the editor is usable even without API blocks */
@@ -213,8 +240,8 @@ export default function FormEditor({ config }: FormEditorProps) {
       width: 'auto',
       storageManager: false, // We handle persistence ourselves
       canvas: {
-        styles: [
-          'https://cdn.jsdelivr.net/npm/tailwindcss@4/dist/tailwind.min.css',
+        scripts: [
+          'https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4',
         ],
       },
       deviceManager: {
@@ -279,7 +306,12 @@ export default function FormEditor({ config }: FormEditorProps) {
 
     // Load existing definition if available
     if (config.definition?.projectData) {
+      // Preferred: reload from GrapeJS native project data (saved after first edit)
       editor.loadProjectData(config.definition.projectData);
+    } else if (config.definition?.components && config.definition.components.length > 0) {
+      // Fallback: convert ComponentNode[] tree to HTML (seed data / first load)
+      const html = componentNodesToHtml(config.definition.components);
+      editor.setComponents(html);
     }
 
     // Set up change handler
