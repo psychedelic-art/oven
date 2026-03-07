@@ -296,6 +296,66 @@ export default function FormEditor({ config }: FormEditorProps) {
 
     editorRef.current = editor;
 
+    // Inject CSS into the canvas iframe for container/slot styling
+    editor.on('canvas:frame:load', () => {
+      const canvasDoc = editor.Canvas.getDocument();
+      if (!canvasDoc) return;
+      if (canvasDoc.getElementById('oven-canvas-styles')) return;
+      const styleEl = canvasDoc.createElement('style');
+      styleEl.id = 'oven-canvas-styles';
+      styleEl.textContent = `
+        .oven-container-header {
+          padding: 4px 8px;
+          background: #f0f0f0;
+          border-bottom: 1px solid #ddd;
+          font: 12px sans-serif;
+          color: #666;
+        }
+        .oven-children-slot {
+          padding: 8px;
+          min-height: 60px;
+        }
+        .oven-slot-oven-grid-2col {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+        }
+        .oven-slot-oven-grid-3col {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 1rem;
+        }
+        .oven-children-slot:empty::after {
+          content: 'Drop components here';
+          display: block;
+          text-align: center;
+          padding: 20px;
+          color: #999;
+          font: 13px sans-serif;
+          border: 2px dashed #ddd;
+          border-radius: 4px;
+        }
+        .oven-fallback-placeholder {
+          padding: 12px 16px;
+          border: 1px dashed #ccc;
+          border-radius: 6px;
+          background: #fafafa;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-height: 40px;
+          font-family: sans-serif;
+          font-size: 13px;
+          color: #666;
+        }
+        .oven-fallback-placeholder code {
+          font-size: 11px;
+          color: #999;
+        }
+      `;
+      canvasDoc.head.appendChild(styleEl);
+    });
+
     // Register built-in HTML/form blocks (always available)
     registerBuiltinBlocks(editor);
 
