@@ -8,6 +8,7 @@ import {
   Slider,
   IconButton,
   Divider,
+  Button,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import type { ThemeConfig } from '@oven/module-ui-flows/types';
@@ -169,6 +170,167 @@ export function ThemePanel({ theme, onChange, onClose }: ThemePanelProps) {
         sx={{ mb: 1.5, '& textarea': { fontFamily: 'monospace', fontSize: 11 } }}
         helperText="Additional CSS to inject into the portal"
       />
+
+      <Divider sx={{ my: 2 }} />
+
+      {/* Live Preview Swatch */}
+      <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>
+        Preview
+      </Typography>
+      <Box
+        sx={{
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 1,
+          overflow: 'hidden',
+        }}
+      >
+        {/* Mini header bar */}
+        <Box
+          sx={{
+            bgcolor: theme.primaryColor || '#1976D2',
+            px: 1.5,
+            py: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+          }}
+        >
+          {theme.logoUrl && (
+            <Box
+              component="img"
+              src={theme.logoUrl}
+              alt="Logo"
+              sx={{ height: 20, width: 'auto', objectFit: 'contain' }}
+            />
+          )}
+          <Typography
+            sx={{
+              color: 'white',
+              fontSize: 11,
+              fontWeight: 600,
+              fontFamily: theme.fontFamily || 'Inter, sans-serif',
+            }}
+          >
+            My Portal
+          </Typography>
+        </Box>
+
+        {/* Mini content area */}
+        <Box
+          sx={{
+            bgcolor: theme.backgroundColor || '#ffffff',
+            p: 1.5,
+            display: 'flex',
+            gap: 1,
+          }}
+        >
+          {/* Mini sidebar nav */}
+          <Box sx={{ width: 60, flexShrink: 0 }}>
+            <Box
+              sx={{
+                bgcolor: theme.primaryColor || '#1976D2',
+                color: 'white',
+                fontSize: 8,
+                px: 0.75,
+                py: 0.5,
+                borderRadius: `${(theme.borderRadius ?? 8) / 4}px`,
+                mb: 0.5,
+                fontFamily: theme.fontFamily || 'Inter, sans-serif',
+              }}
+            >
+              Home
+            </Box>
+            <Box
+              sx={{
+                bgcolor: 'grey.100',
+                fontSize: 8,
+                px: 0.75,
+                py: 0.5,
+                borderRadius: `${(theme.borderRadius ?? 8) / 4}px`,
+                mb: 0.5,
+                fontFamily: theme.fontFamily || 'Inter, sans-serif',
+              }}
+            >
+              About
+            </Box>
+            <Box
+              sx={{
+                bgcolor: 'grey.100',
+                fontSize: 8,
+                px: 0.75,
+                py: 0.5,
+                borderRadius: `${(theme.borderRadius ?? 8) / 4}px`,
+                fontFamily: theme.fontFamily || 'Inter, sans-serif',
+              }}
+            >
+              Contact
+            </Box>
+          </Box>
+
+          {/* Mini page content */}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography
+              sx={{
+                fontSize: 12,
+                fontWeight: 700,
+                mb: 0.5,
+                fontFamily: theme.fontFamily || 'Inter, sans-serif',
+                color: 'text.primary',
+              }}
+            >
+              Welcome
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: 8,
+                mb: 1,
+                fontFamily: theme.fontFamily || 'Inter, sans-serif',
+                color: 'text.secondary',
+                lineHeight: 1.3,
+              }}
+            >
+              Your portal preview with live theme colors and fonts.
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
+              <Button
+                size="small"
+                variant="contained"
+                sx={{
+                  bgcolor: theme.primaryColor || '#1976D2',
+                  fontSize: 8,
+                  py: 0.25,
+                  px: 1,
+                  minWidth: 0,
+                  borderRadius: `${(theme.borderRadius ?? 8) / 2}px`,
+                  textTransform: 'none',
+                  fontFamily: theme.fontFamily || 'Inter, sans-serif',
+                  '&:hover': { bgcolor: theme.primaryColor || '#1976D2' },
+                }}
+              >
+                Primary
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                sx={{
+                  borderColor: theme.secondaryColor || '#dc004e',
+                  color: theme.secondaryColor || '#dc004e',
+                  fontSize: 8,
+                  py: 0.25,
+                  px: 1,
+                  minWidth: 0,
+                  borderRadius: `${(theme.borderRadius ?? 8) / 2}px`,
+                  textTransform: 'none',
+                  fontFamily: theme.fontFamily || 'Inter, sans-serif',
+                }}
+              >
+                Secondary
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
     </Box>
   );
 }

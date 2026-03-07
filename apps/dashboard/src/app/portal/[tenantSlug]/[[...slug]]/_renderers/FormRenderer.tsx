@@ -1,6 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import {
+  ComponentRenderer,
+  FormProvider,
+  renderComponentTree,
+} from '@oven/oven-ui/renderer';
+import type { ComponentNode, FormDefinition } from '@oven/oven-ui/types';
 
 interface FormRendererProps {
   title: string;
@@ -9,19 +15,12 @@ interface FormRendererProps {
   tenantSlug: string;
 }
 
-interface FormField {
-  id: string;
-  label: string;
-  type: string;
-  required?: boolean;
-  placeholder?: string;
-  options?: string[];
-}
-
 /**
- * Renders a form page.
- * If a formId or formRef is provided, fetches the form definition from the API.
- * Falls back to a placeholder if no form is configured.
+ * Portal form renderer.
+ *
+ * Fetches the form definition (JSON component tree) from the API and
+ * renders it using the oven-ui ComponentRenderer factory pattern.
+ * Each component in the tree maps to a real ShadCN/Tailwind React component.
  */
 export default function FormRenderer({
   title,
@@ -29,8 +28,7 @@ export default function FormRenderer({
   formRef,
   tenantSlug,
 }: FormRendererProps) {
-  const [fields, setFields] = useState<FormField[]>([]);
-  const [formTitle, setFormTitle] = useState(title);
+  const [definition, setDefinition] = useState<FormDefinition | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,8 +48,9 @@ export default function FormRenderer({
           return;
         }
         const data = await res.json();
-        if (data.name) setFormTitle(data.name);
-        if (data.definition?.fields) setFields(data.definition.fields);
+        if (data.definition) {
+          setDefinition(data.definition);
+        }
       } catch {
         // Silently fail — show placeholder
       } finally {
@@ -61,16 +60,8 @@ export default function FormRenderer({
     loadForm();
   }, [formId, formRef]);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async (values: Record<string, unknown>) => {
     setError(null);
-
-    const formData = new FormData(e.currentTarget);
-    const values: Record<string, string> = {};
-    formData.forEach((val, key) => {
-      values[key] = val.toString();
-    });
-
     try {
       const ref = formId || formRef;
       const res = await fetch(`/api/forms/${ref}/submit`, {
@@ -97,146 +88,54 @@ export default function FormRenderer({
     }
   };
 
+  // ── Loading state ──
   if (loading) {
     return (
-      <div className="portal-form-container">
-        <h2 className="portal-page-title">{title}</h2>
-        <p style={{ color: '#999' }}>Loading form...</p>
+      <div className="max-w-2xl mx-auto">
+        <h2 className="text-2xl font-bold mb-4">{title}</h2>
+        <p className="text-gray-400">Loading form...</p>
       </div>
     );
   }
 
+  // ── Success state ──
   if (submitted) {
     return (
-      <div className="portal-form-container" style={{ textAlign: 'center', padding: '3rem 0' }}>
-        <h2 style={{ color: 'var(--portal-primary)' }}>Thank you!</h2>
-        <p style={{ color: '#555' }}>Your submission has been received.</p>
+      <div className="max-w-2xl mx-auto text-center py-12">
+        <h2 className="text-2xl font-bold text-blue-600 mb-2">Thank you!</h2>
+        <p className="text-gray-500">Your submission has been received.</p>
       </div>
     );
   }
 
-  if (fields.length === 0) {
+  // ── No definition — placeholder ──
+  if (!definition?.components || definition.components.length === 0) {
     return (
-      <div className="portal-form-container">
-        <h2 className="portal-page-title">{formTitle}</h2>
-        <div
-          style={{
-            border: '2px dashed #ddd',
-            borderRadius: 'var(--portal-radius)',
-            padding: '3rem 2rem',
-            textAlign: 'center',
-            color: '#999',
-          }}
-        >
+      <div className="max-w-2xl mx-auto">
+        <h2 className="text-2xl font-bold mb-4">{title}</h2>
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center text-gray-400">
           <p>Form not configured yet.</p>
-          <p style={{ fontSize: '0.85rem' }}>
-            Configure a form reference in the UI Flow editor.
-          </p>
+          <p className="text-sm mt-1">Configure a form reference in the UI Flow editor.</p>
         </div>
       </div>
     );
   }
 
+  // ── Render component tree ──
   return (
-    <div className="portal-form-container">
-      <h2 className="portal-page-title">{formTitle}</h2>
+    <div className="max-w-2xl mx-auto">
       {error && (
-        <div
-          style={{
-            background: '#fee',
-            border: '1px solid #fcc',
-            borderRadius: 'var(--portal-radius)',
-            padding: '0.75rem 1rem',
-            marginBottom: '1rem',
-            color: '#c33',
-            fontSize: '0.9rem',
-          }}
-        >
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4 text-red-700 text-sm">
           {error}
         </div>
       )}
-      <form onSubmit={handleSubmit}>
-        {fields.map((field) => (
-          <div key={field.id} style={{ marginBottom: '1.25rem' }}>
-            <label
-              htmlFor={field.id}
-              style={{ display: 'block', marginBottom: '0.35rem', fontWeight: 600, fontSize: '0.9rem' }}
-            >
-              {field.label}
-              {field.required && <span style={{ color: '#c33' }}> *</span>}
-            </label>
-            {field.type === 'textarea' ? (
-              <textarea
-                id={field.id}
-                name={field.id}
-                required={field.required}
-                placeholder={field.placeholder}
-                rows={4}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #ccc',
-                  borderRadius: 'var(--portal-radius)',
-                  fontFamily: 'inherit',
-                  fontSize: '0.9rem',
-                }}
-              />
-            ) : field.type === 'select' ? (
-              <select
-                id={field.id}
-                name={field.id}
-                required={field.required}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #ccc',
-                  borderRadius: 'var(--portal-radius)',
-                  fontFamily: 'inherit',
-                  fontSize: '0.9rem',
-                }}
-              >
-                <option value="">Select...</option>
-                {(field.options || []).map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                id={field.id}
-                name={field.id}
-                type={field.type || 'text'}
-                required={field.required}
-                placeholder={field.placeholder}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #ccc',
-                  borderRadius: 'var(--portal-radius)',
-                  fontFamily: 'inherit',
-                  fontSize: '0.9rem',
-                }}
-              />
-            )}
-          </div>
-        ))}
-        <button
-          type="submit"
-          style={{
-            padding: '0.65rem 2rem',
-            background: 'var(--portal-primary)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 'var(--portal-radius)',
-            fontWeight: 600,
-            fontSize: '0.95rem',
-            cursor: 'pointer',
-          }}
-        >
-          Submit
-        </button>
-      </form>
+      <FormProvider
+        definition={definition}
+        tenantSlug={tenantSlug}
+        onSubmit={handleSubmit}
+      >
+        {renderComponentTree(definition.components)}
+      </FormProvider>
     </div>
   );
 }

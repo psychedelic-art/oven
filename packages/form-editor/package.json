@@ -11,10 +11,11 @@
   "dependencies": {},
   "peerDependencies": {
     "grapesjs": ">=0.21.0",
-    "grapesjs-react": ">=0.6.0",
+    "grapesjs-react": ">=4.0.0",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0",
     "@mui/material": ">=6.0.0",
-    "@mui/icons-material": ">=6.0.0"
+    "@mui/icons-material": ">=6.0.0",
+    "@oven/oven-ui": "workspace:*"
   }
 }

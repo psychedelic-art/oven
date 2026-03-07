@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useMemo } from 'react';
+import React, { useCallback, useRef, useMemo, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
@@ -6,11 +6,12 @@ import {
   MiniMap,
   Panel,
   addEdge,
-  useNodesState,
-  useEdgesState,
+  applyNodeChanges,
+  applyEdgeChanges,
   type Connection,
   type Node,
-  type Edge,
+  type NodeChange,
+  type EdgeChange,
   ReactFlowProvider,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -19,6 +20,10 @@ import SaveIcon from '@mui/icons-material/Save';
 import PublishIcon from '@mui/icons-material/Publish';
 import PaletteIcon from '@mui/icons-material/Palette';
 import MenuIcon from '@mui/icons-material/Menu';
+import UndoIcon from '@mui/icons-material/Undo';
+import RedoIcon from '@mui/icons-material/Redo';
+import HistoryIcon from '@mui/icons-material/History';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 import { HomeNode } from './nodes/HomeNode';
 import { LandingPageNode } from './nodes/LandingPageNode';
@@ -30,13 +35,11 @@ import { PagePalette } from './panels/PagePalette';
 import { PageInspector } from './panels/PageInspector';
 import { ThemePanel } from './panels/ThemePanel';
 import { NavigationPanel } from './panels/NavigationPanel';
+import { PreviewPanel } from './panels/PreviewPanel';
+import { VersionHistoryPanel } from './panels/VersionHistoryPanel';
 import { PublishDialog } from './components/PublishDialog';
-import type {
-  UiFlowDefinition,
-  UiFlowPageDefinition,
-  ThemeConfig,
-  NavigationConfig,
-} from '@oven/module-ui-flows/types';
+import { useUiFlowEditorStore, definitionToNodes } from './store';
+import type { UiFlowPageDefinition } from '@oven/module-ui-flows/types';
 
 // Register custom node types
 const nodeTypes = {
@@ -48,167 +51,129 @@ const nodeTypes = {
   custom: CustomPageNode,
 };
 
-interface UiFlowCanvasProps {
-  flowId: number;
-  flowSlug: string;
-  flowName: string;
-  initialDefinition?: UiFlowDefinition;
-  initialTheme?: ThemeConfig;
-  onSave?: (definition: UiFlowDefinition, themeConfig: ThemeConfig) => Promise<void>;
-  onPublish?: () => Promise<void>;
-}
-
 let nodeIdCounter = 0;
 function generateNodeId(prefix: string = 'page'): string {
   nodeIdCounter++;
   return `${prefix}_${nodeIdCounter}_${Date.now().toString(36)}`;
 }
 
-/** Convert definition pages to ReactFlow nodes */
-function definitionToNodes(definition?: UiFlowDefinition): { nodes: Node[]; edges: Edge[] } {
-  if (!definition?.pages?.length) {
-    return {
-      nodes: [
-        {
-          id: 'home',
-          type: 'home',
-          position: { x: 300, y: 50 },
-          data: { title: 'Home', slug: 'home' },
-        },
-      ],
-      edges: [],
-    };
-  }
+function UiFlowCanvasInner() {
+  // ── Store selectors ──
+  const nodes = useUiFlowEditorStore((s) => s.nodes);
+  const edges = useUiFlowEditorStore((s) => s.edges);
+  const setNodes = useUiFlowEditorStore((s) => s.setNodes);
+  const setEdges = useUiFlowEditorStore((s) => s.setEdges);
+  const selectedNode = useUiFlowEditorStore((s) => s.selectedNode);
+  const setSelectedNode = useUiFlowEditorStore((s) => s.setSelectedNode);
+  const updateNodeData = useUiFlowEditorStore((s) => s.updateNodeData);
+  const rightPanel = useUiFlowEditorStore((s) => s.rightPanel);
+  const setRightPanel = useUiFlowEditorStore((s) => s.setRightPanel);
+  const saving = useUiFlowEditorStore((s) => s.saving);
+  const theme = useUiFlowEditorStore((s) => s.theme);
+  const setTheme = useUiFlowEditorStore((s) => s.setTheme);
+  const navigation = useUiFlowEditorStore((s) => s.navigation);
+  const setNavigation = useUiFlowEditorStore((s) => s.setNavigation);
+  const flowName = useUiFlowEditorStore((s) => s.flowName);
+  const publishDialogOpen = useUiFlowEditorStore((s) => s.publishDialogOpen);
+  const setPublishDialogOpen = useUiFlowEditorStore((s) => s.setPublishDialogOpen);
+  const snackbar = useUiFlowEditorStore((s) => s.snackbar);
+  const hideSnackbar = useUiFlowEditorStore((s) => s.hideSnackbar);
+  const save = useUiFlowEditorStore((s) => s.save);
+  const publish = useUiFlowEditorStore((s) => s.publish);
+  const flowId = useUiFlowEditorStore((s) => s.flowId);
+  const flowSlug = useUiFlowEditorStore((s) => s.flowSlug);
+  const adapter = useUiFlowEditorStore((s) => s.adapter);
+  const settings = useUiFlowEditorStore((s) => s.settings);
+  const setSettings = useUiFlowEditorStore((s) => s.setSettings);
+  const undo = useUiFlowEditorStore((s) => s.undo);
+  const redo = useUiFlowEditorStore((s) => s.redo);
+  const canUndo = useUiFlowEditorStore((s) => s.canUndo);
+  const canRedo = useUiFlowEditorStore((s) => s.canRedo);
+  const pushHistory = useUiFlowEditorStore((s) => s.pushHistory);
 
-  const nodes: Node[] = definition.pages.map((page, index) => ({
-    id: page.id,
-    type: page.type === 'landing' || page.type === 'form' || page.type === 'faq' ||
-          page.type === 'chat' || page.type === 'custom' ? page.type : 'landing',
-    position: page.position ?? { x: 300, y: 50 + index * 150 },
-    data: {
-      title: page.title,
-      slug: page.slug,
-      formRef: page.formRef,
-      ...page.config,
-    },
-  }));
-
-  // Create edges from navigation items
-  const edges: Edge[] = [];
-  if (definition.navigation?.items) {
-    for (let i = 0; i < definition.navigation.items.length - 1; i++) {
-      const from = definition.navigation.items[i];
-      const to = definition.navigation.items[i + 1];
-      edges.push({
-        id: `nav-${from.pageId}-${to.pageId}`,
-        source: from.pageId,
-        target: to.pageId,
-        sourceHandle: 'output',
-        targetHandle: 'input',
-      });
-    }
-  }
-
-  return { nodes, edges };
-}
-
-/** Convert ReactFlow nodes back to definition */
-function nodesToDefinition(
-  nodes: Node[],
-  edges: Edge[],
-  navigation: NavigationConfig,
-  settings: UiFlowDefinition['settings'],
-): UiFlowDefinition {
-  const pages: UiFlowPageDefinition[] = nodes.map((node) => ({
-    id: node.id,
-    slug: (node.data as any)?.slug || node.id,
-    title: (node.data as any)?.title || '',
-    type: (node.type as any) || 'landing',
-    formRef: (node.data as any)?.formRef,
-    config: extractConfig(node),
-    position: node.position,
-  }));
-
-  return { pages, navigation, settings };
-}
-
-function extractConfig(node: Node): Record<string, unknown> {
-  const data = node.data as any;
-  const config: Record<string, unknown> = {};
-  // Copy non-standard fields as config
-  const standardKeys = ['title', 'slug', 'formRef', 'label'];
-  for (const [key, value] of Object.entries(data ?? {})) {
-    if (!standardKeys.includes(key) && value !== undefined && value !== '') {
-      config[key] = value;
-    }
-  }
-  return Object.keys(config).length > 0 ? config : {};
-}
-
-function UiFlowCanvasInner({
-  flowId,
-  flowSlug,
-  flowName,
-  initialDefinition,
-  initialTheme,
-  onSave,
-  onPublish,
-}: UiFlowCanvasProps) {
-  // Initialize from definition
-  const initial = useMemo(() => definitionToNodes(initialDefinition), [initialDefinition]);
-
-  const [nodes, setNodes, onNodesChange] = useNodesState(initial.nodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initial.edges);
-  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
-  const [rightPanel, setRightPanel] = useState<'inspector' | 'theme' | 'navigation' | null>(null);
-  const [theme, setTheme] = useState<ThemeConfig>(
-    initialTheme ?? { primaryColor: '#1976D2' }
-  );
-  const [navigation, setNavigation] = useState<NavigationConfig>(
-    initialDefinition?.navigation ?? { type: 'sidebar', items: [] }
-  );
-  const [settings] = useState(initialDefinition?.settings ?? {});
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
-    open: false, message: '', severity: 'success',
-  });
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const historyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced history push — avoids flooding stack during drags
+  const debouncedPushHistory = useCallback(() => {
+    if (historyTimeoutRef.current) clearTimeout(historyTimeoutRef.current);
+    historyTimeoutRef.current = setTimeout(() => {
+      pushHistory();
+    }, 500);
+  }, [pushHistory]);
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if (
+        ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) ||
+        ((e.ctrlKey || e.metaKey) && e.key === 'y')
+      ) {
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undo, redo]);
+
+  // ReactFlow change handlers — apply changes via zustand
+  const onNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      setNodes((nds) => applyNodeChanges(changes, nds));
+      debouncedPushHistory();
+    },
+    [setNodes, debouncedPushHistory],
+  );
+
+  const onEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      setEdges((eds) => applyEdgeChanges(changes, eds));
+      debouncedPushHistory();
+    },
+    [setEdges, debouncedPushHistory],
+  );
 
   // Get pages list for navigation panel
-  const currentPages = useMemo<UiFlowPageDefinition[]>(() =>
-    nodes.map((n) => ({
-      id: n.id,
-      slug: (n.data as any)?.slug || n.id,
-      title: (n.data as any)?.title || '',
-      type: (n.type as any) || 'landing',
-      position: n.position,
-    })),
-    [nodes]
+  const currentPages = useMemo<UiFlowPageDefinition[]>(
+    () =>
+      nodes.map((n) => ({
+        id: n.id,
+        slug: (n.data as Record<string, unknown>)?.slug as string || n.id,
+        title: (n.data as Record<string, unknown>)?.title as string || '',
+        type: (n.type as UiFlowPageDefinition['type']) || 'landing',
+        position: n.position,
+      })),
+    [nodes],
   );
 
   // Handle new connections
   const onConnect = useCallback(
     (connection: Connection) => setEdges((eds) => addEdge(connection, eds)),
-    [setEdges]
+    [setEdges],
   );
 
-  const onNodeClick = useCallback((_: any, node: Node) => {
-    setSelectedNode(node);
-    setRightPanel('inspector');
-  }, []);
+  const onNodeClick = useCallback(
+    (_: React.MouseEvent, node: Node) => {
+      setSelectedNode(node);
+      setRightPanel('inspector');
+    },
+    [setSelectedNode, setRightPanel],
+  );
 
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
     if (rightPanel === 'inspector') setRightPanel(null);
-  }, [rightPanel]);
+  }, [rightPanel, setSelectedNode, setRightPanel]);
 
   const onUpdateNode = useCallback(
-    (nodeId: string, data: Record<string, any>) => {
-      setNodes((nds) => nds.map((n) => (n.id === nodeId ? { ...n, data } : n)));
-      setSelectedNode((prev) => (prev && prev.id === nodeId ? { ...prev, data } : prev));
+    (nodeId: string, data: Record<string, unknown>) => {
+      updateNodeData(nodeId, data);
     },
-    [setNodes]
+    [updateNodeData],
   );
 
   // Handle drop from palette
@@ -241,27 +206,8 @@ function UiFlowCanvasInner({
 
       setNodes((nds) => [...nds, newNode]);
     },
-    [setNodes]
+    [setNodes],
   );
-
-  // Save
-  const handleSave = useCallback(async () => {
-    if (!onSave) return;
-    setSaving(true);
-    try {
-      const definition = nodesToDefinition(nodes, edges, navigation, settings);
-      await onSave(definition, theme);
-      setSnackbar({ open: true, message: 'UI Flow saved!', severity: 'success' });
-    } catch (err) {
-      setSnackbar({
-        open: true,
-        message: `Save failed: ${err instanceof Error ? err.message : String(err)}`,
-        severity: 'error',
-      });
-    } finally {
-      setSaving(false);
-    }
-  }, [nodes, edges, navigation, settings, theme, onSave]);
 
   return (
     <Box sx={{ display: 'flex', height: '100%', width: '100%' }}>
@@ -308,22 +254,20 @@ function UiFlowCanvasInner({
                 variant="contained"
                 size="small"
                 startIcon={<SaveIcon />}
-                onClick={handleSave}
+                onClick={save}
                 disabled={saving}
               >
                 {saving ? 'Saving...' : 'Save'}
               </Button>
-              {onPublish && (
-                <Button
-                  variant="contained"
-                  size="small"
-                  color="success"
-                  startIcon={<PublishIcon />}
-                  onClick={() => setPublishDialogOpen(true)}
-                >
-                  Publish
-                </Button>
-              )}
+              <Button
+                variant="contained"
+                size="small"
+                color="success"
+                startIcon={<PublishIcon />}
+                onClick={() => setPublishDialogOpen(true)}
+              >
+                Publish
+              </Button>
               <Tooltip title="Theme">
                 <IconButton
                   size="small"
@@ -351,6 +295,59 @@ function UiFlowCanvasInner({
                 >
                   <MenuIcon fontSize="small" />
                 </IconButton>
+              </Tooltip>
+              <Tooltip title="Preview">
+                <IconButton
+                  size="small"
+                  onClick={() => setRightPanel(rightPanel === 'preview' ? null : 'preview')}
+                  sx={{
+                    bgcolor: rightPanel === 'preview' ? 'primary.main' : 'background.paper',
+                    color: rightPanel === 'preview' ? 'white' : 'text.secondary',
+                    '&:hover': { bgcolor: rightPanel === 'preview' ? 'primary.dark' : 'action.hover' },
+                    boxShadow: 1,
+                  }}
+                >
+                  <VisibilityIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Version History">
+                <IconButton
+                  size="small"
+                  onClick={() => setRightPanel(rightPanel === 'versions' ? null : 'versions')}
+                  sx={{
+                    bgcolor: rightPanel === 'versions' ? 'primary.main' : 'background.paper',
+                    color: rightPanel === 'versions' ? 'white' : 'text.secondary',
+                    '&:hover': { bgcolor: rightPanel === 'versions' ? 'primary.dark' : 'action.hover' },
+                    boxShadow: 1,
+                  }}
+                >
+                  <HistoryIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Box sx={{ width: '1px', height: 24, bgcolor: 'divider', mx: 0.5 }} />
+              <Tooltip title="Undo (Ctrl+Z)">
+                <span>
+                  <IconButton
+                    size="small"
+                    onClick={undo}
+                    disabled={!canUndo()}
+                    sx={{ bgcolor: 'background.paper', boxShadow: 1 }}
+                  >
+                    <UndoIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Redo (Ctrl+Shift+Z)">
+                <span>
+                  <IconButton
+                    size="small"
+                    onClick={redo}
+                    disabled={!canRedo()}
+                    sx={{ bgcolor: 'background.paper', boxShadow: 1 }}
+                  >
+                    <RedoIcon fontSize="small" />
+                  </IconButton>
+                </span>
               </Tooltip>
             </Box>
           </Panel>
@@ -389,20 +386,45 @@ function UiFlowCanvasInner({
         />
       )}
 
-      {/* Publish Dialog */}
-      {onPublish && (
-        <PublishDialog
-          open={publishDialogOpen}
-          onClose={() => setPublishDialogOpen(false)}
-          onPublish={onPublish}
-          flowName={flowName}
+      {rightPanel === 'preview' && (
+        <PreviewPanel
+          flowSlug={flowSlug}
+          pageSlug={selectedNode ? ((selectedNode.data as Record<string, unknown>)?.slug as string) ?? null : null}
+          onClose={() => setRightPanel(null)}
         />
       )}
+
+      {rightPanel === 'versions' && (
+        <VersionHistoryPanel
+          flowId={flowId}
+          adapter={adapter}
+          onRestore={() => {
+            adapter.load(flowId).then(({ definition, theme: loadedTheme }) => {
+              const result = definitionToNodes(definition);
+              setNodes(result.nodes);
+              setEdges(result.edges);
+              setNavigation(definition.navigation ?? { type: 'sidebar' as const, items: [] });
+              setSettings(definition.settings ?? {});
+              setTheme(loadedTheme);
+              pushHistory();
+            });
+          }}
+          onClose={() => setRightPanel(null)}
+        />
+      )}
+
+      {/* Publish Dialog */}
+      <PublishDialog
+        open={publishDialogOpen}
+        onClose={() => setPublishDialogOpen(false)}
+        onPublish={publish}
+        flowName={flowName}
+      />
 
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
-        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        onClose={hideSnackbar}
       >
         <Alert severity={snackbar.severity} variant="filled">
           {snackbar.message}
@@ -414,12 +436,13 @@ function UiFlowCanvasInner({
 
 /**
  * UiFlowCanvas — The main visual portal editor component.
+ * Must be used within a <UiFlowEditorProvider>.
  * Wraps ReactFlow with custom page nodes, palette, and inspector.
  */
-export function UiFlowCanvas(props: UiFlowCanvasProps) {
+export function UiFlowCanvas() {
   return (
     <ReactFlowProvider>
-      <UiFlowCanvasInner {...props} />
+      <UiFlowCanvasInner />
     </ReactFlowProvider>
   );
 }

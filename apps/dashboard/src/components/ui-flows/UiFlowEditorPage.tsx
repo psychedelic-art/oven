@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, CircularProgress, Button, IconButton } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { UiFlowCanvas } from '@oven/ui-flows-editor';
+import { UiFlowCanvas, UiFlowEditorProvider } from '@oven/ui-flows-editor';
+import type { PersistenceAdapter } from '@oven/ui-flows-editor';
 import type { UiFlowDefinition, ThemeConfig } from '@oven/module-ui-flows/types';
 
 /**
@@ -14,7 +15,7 @@ import type { UiFlowDefinition, ThemeConfig } from '@oven/module-ui-flows/types'
 export default function UiFlowEditorPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [flow, setFlow] = useState<any>(null);
+  const [flow, setFlow] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,37 +36,60 @@ export default function UiFlowEditorPage() {
     load();
   }, [id]);
 
-  // Save handler — updates definition + theme
-  const handleSave = async (definition: UiFlowDefinition, themeConfig: ThemeConfig) => {
-    const response = await fetch(`/api/ui-flows/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ definition, themeConfig }),
-    });
+  // Persistence adapter — delegates save/load/publish to API
+  const adapter: PersistenceAdapter = useMemo(
+    () => ({
+      save: async (definition: UiFlowDefinition, themeConfig: ThemeConfig) => {
+        const response = await fetch(`/api/ui-flows/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ definition, themeConfig }),
+        });
+        if (!response.ok) {
+          const err = await response.text();
+          throw new Error(err);
+        }
+        const updated = await response.json();
+        setFlow(updated);
+      },
 
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(err);
-    }
+      load: async (flowId: number) => {
+        const res = await fetch(`/api/ui-flows/${flowId}`);
+        if (!res.ok) throw new Error('Failed to load UI flow');
+        const data = await res.json();
+        return {
+          definition: data.definition as UiFlowDefinition,
+          theme: data.themeConfig as ThemeConfig,
+        };
+      },
 
-    const updated = await response.json();
-    setFlow(updated);
-  };
+      publish: async () => {
+        const response = await fetch(`/api/ui-flows/${id}/publish`, {
+          method: 'POST',
+        });
+        if (!response.ok) {
+          const err = await response.text();
+          throw new Error(err || 'Publish failed');
+        }
+        const updated = await response.json();
+        setFlow(updated);
+      },
 
-  // Publish handler
-  const handlePublish = async () => {
-    const response = await fetch(`/api/ui-flows/${id}/publish`, {
-      method: 'POST',
-    });
+      listVersions: async (flowId: number) => {
+        const res = await fetch(`/api/ui-flows/${flowId}/versions`);
+        if (!res.ok) throw new Error('Failed to load versions');
+        return res.json();
+      },
 
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(err || 'Publish failed');
-    }
-
-    const updated = await response.json();
-    setFlow(updated);
-  };
+      restoreVersion: async (flowId: number, versionId: number) => {
+        const res = await fetch(`/api/ui-flows/${flowId}/versions/${versionId}/restore`, {
+          method: 'POST',
+        });
+        if (!res.ok) throw new Error('Restore failed');
+      },
+    }),
+    [id],
+  );
 
   if (loading) {
     return (
@@ -102,24 +126,25 @@ export default function UiFlowEditorPage() {
           <ArrowBackIcon />
         </IconButton>
         <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-          {flow?.name ?? 'UI Flow Editor'}
+          {(flow?.name as string) ?? 'UI Flow Editor'}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          v{flow?.version ?? 1}
+          v{(flow?.version as number) ?? 1}
         </Typography>
       </Box>
 
-      {/* Editor canvas */}
+      {/* Editor canvas — wrapped in provider with adapter */}
       <Box sx={{ flex: 1 }}>
-        <UiFlowCanvas
-          flowId={flow?.id ?? 0}
-          flowSlug={flow?.slug ?? 'flow'}
-          flowName={flow?.name ?? 'Untitled'}
+        <UiFlowEditorProvider
+          flowId={(flow?.id as number) ?? 0}
+          flowSlug={(flow?.slug as string) ?? 'flow'}
+          flowName={(flow?.name as string) ?? 'Untitled'}
           initialDefinition={flow?.definition as UiFlowDefinition}
           initialTheme={flow?.themeConfig as ThemeConfig}
-          onSave={handleSave}
-          onPublish={handlePublish}
-        />
+          adapter={adapter}
+        >
+          <UiFlowCanvas />
+        </UiFlowEditorProvider>
       </Box>
     </Box>
   );

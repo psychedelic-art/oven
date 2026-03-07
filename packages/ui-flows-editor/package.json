@@ -8,8 +8,16 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@xyflow/react": "^12.6.0",
-    "@oven/module-ui-flows": "workspace:*"
+    "@oven/module-ui-flows": "workspace:*",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0"
   },
   "peerDependencies": {
     "react": ">=19.0.0",

@@ -9,4 +9,27 @@ export { PagePalette } from './panels/PagePalette';
 export { PageInspector } from './panels/PageInspector';
 export { ThemePanel } from './panels/ThemePanel';
 export { NavigationPanel } from './panels/NavigationPanel';
+export { PreviewPanel } from './panels/PreviewPanel';
+export { VersionHistoryPanel } from './panels/VersionHistoryPanel';
 export { PublishDialog } from './components/PublishDialog';
+
+// Store exports
+export type {
+  PersistenceAdapter,
+  UiFlowEditorStore,
+  UiFlowEditorState,
+  UiFlowEditorActions,
+  SnackbarState,
+  RightPanelType,
+  FlowVersion,
+  HistorySnapshot,
+} from './store';
+export {
+  createUiFlowEditorStore,
+  definitionToNodes,
+  nodesToDefinition,
+} from './store';
+export {
+  UiFlowEditorProvider,
+  useUiFlowEditorStore,
+} from './store';

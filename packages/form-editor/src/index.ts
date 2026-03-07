@@ -2,12 +2,13 @@
 
 // ─── Form Editor ────────────────────────────────────────────────
 // GrapeJS-based visual editor for building forms, pages, and
-// application interfaces. This is a scaffold — the full editor
-// implementation will be built incrementally.
+// application interfaces. Saves/loads component trees as JSON,
+// which the oven-ui ComponentRenderer renders at runtime.
 //
 // Usage:
 //   import { FormEditor } from '@oven/form-editor';
 //   <FormEditor config={editorConfig} />
 
 export { default as FormEditor } from './FormEditor';
-export type { EditorConfig, BlockDefinition, EditorState } from './types';
+export { registerOvenComponents } from './registerOvenComponents';
+export type { EditorConfig, BlockDefinition, EditorState, FormDefinitionData } from './types';

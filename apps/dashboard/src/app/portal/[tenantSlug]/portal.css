@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 /* Portal CSS — uses CSS custom properties injected by layout.tsx */
 
 :root {

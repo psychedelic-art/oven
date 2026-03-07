@@ -1,12 +1,10 @@
+import type { ComponentNode } from '@oven/oven-ui/types';
+
 /** Configuration passed to the FormEditor component */
 export interface EditorConfig {
-  /** Initial GrapeJS editor state (components + styles JSON) */
-  definition?: Record<string, unknown>;
-  /** Data layer configuration (data sources, bindings) */
-  dataLayerConfig?: Record<string, unknown>;
-  /** Business layer configuration (transformations, validations) */
-  businessLayerConfig?: Record<string, unknown>;
-  /** Available component blocks for the sidebar */
+  /** Initial form definition (component tree JSON) */
+  definition?: FormDefinitionData;
+  /** Available component blocks for the sidebar (fetched from form_components API) */
   blocks?: BlockDefinition[];
   /** Callback when the editor state changes */
   onChange?: (state: EditorState) => void;
@@ -14,28 +12,47 @@ export interface EditorConfig {
   onSave?: (state: EditorState) => void;
   /** Read-only mode (preview) */
   readOnly?: boolean;
+  /** Base API URL for data sources / workflows */
+  apiBaseUrl?: string;
 }
 
 /** A custom block definition for the GrapeJS block manager */
 export interface BlockDefinition {
-  /** Unique block identifier */
+  /** Unique block identifier (slug from form_components, e.g. 'oven-text-input') */
   id: string;
   /** Display label in the sidebar */
   label: string;
-  /** Category for grouping (input, display, data, layout, action) */
+  /** Category for grouping (inputs, data-display, layout, actions, navigation, content) */
   category: string;
-  /** GrapeJS component definition */
+  /** GrapeJS component HTML/definition */
   content: string | Record<string, unknown>;
-  /** Optional icon (MUI icon name or SVG string) */
+  /** Optional icon (MUI icon name) */
   icon?: string;
+  /** Default props from form_components.default_props */
+  defaultProps?: Record<string, unknown>;
+  /** Data contract from form_components.data_contract */
+  dataContract?: {
+    inputs?: Array<{ name: string; type: string; required?: boolean; description?: string; defaultValue?: unknown }>;
+    outputs?: Array<{ name: string; type: string; description?: string }>;
+  };
 }
 
-/** State snapshot from the editor */
+/** State snapshot from the editor — stored in forms.definition */
 export interface EditorState {
-  /** GrapeJS component tree and styles */
-  definition: Record<string, unknown>;
-  /** Data layer configuration */
-  dataLayerConfig: Record<string, unknown>;
-  /** Business layer configuration */
-  businessLayerConfig: Record<string, unknown>;
+  /** Component tree (serialized from GrapeJS project data) */
+  components: ComponentNode[];
+  /** GrapeJS styles */
+  styles: Record<string, unknown>[];
+  /** GrapeJS project data (full state for reload) */
+  projectData?: Record<string, unknown>;
+}
+
+/** The form definition data stored in forms.definition JSONB */
+export interface FormDefinitionData {
+  /** Component tree */
+  components?: ComponentNode[];
+  /** Styles */
+  styles?: Record<string, unknown>[];
+  /** Full GrapeJS project data for re-loading */
+  projectData?: Record<string, unknown>;
 }
