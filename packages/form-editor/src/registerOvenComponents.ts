@@ -64,6 +64,7 @@ export function registerOvenComponents(editor: Editor, options: RegisterOptions)
 
     // Register component type
     componentManager.addType(block.id, {
+      isComponent: (el: HTMLElement) => el.getAttribute?.('data-oven-type') === block.id,
       model: {
         defaults: {
           tagName: 'div',

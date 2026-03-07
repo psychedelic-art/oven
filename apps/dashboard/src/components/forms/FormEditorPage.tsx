@@ -28,7 +28,7 @@ export default function FormEditorPage() {
       try {
         const [formRes, blocksRes] = await Promise.all([
           fetch(`/api/forms/${id}`),
-          fetch('/api/form-components'),
+          fetch('/api/form-components?range=[0,99]'),
         ]);
         if (!formRes.ok) throw new Error('Failed to load form');
         const formData = await formRes.json();
@@ -38,14 +38,17 @@ export default function FormEditorPage() {
           const blocksData = await blocksRes.json();
           // Map API form_components to BlockDefinition format
           const mapped: BlockDefinition[] = (blocksData.data || blocksData || []).map(
-            (c: Record<string, unknown>) => ({
-              id: c.slug as string,
-              label: c.name as string,
-              category: (c.category as string) || 'general',
-              content: (c.template as string) || `<div data-oven-type="${c.slug}"></div>`,
-              defaultProps: c.defaultProps as Record<string, unknown> | undefined,
-              dataContract: c.dataContract as BlockDefinition['dataContract'] | undefined,
-            }),
+            (c: Record<string, unknown>) => {
+              const def = c.definition as Record<string, unknown> | undefined;
+              return {
+                id: c.slug as string,
+                label: c.name as string,
+                category: (c.category as string) || 'general',
+                content: (def?.template as string) || `<div data-gjs-type="${c.slug}"></div>`,
+                defaultProps: c.defaultProps as Record<string, unknown> | undefined,
+                dataContract: c.dataContract as BlockDefinition['dataContract'] | undefined,
+              };
+            },
           );
           setBlocks(mapped);
         }
