@@ -1,7 +1,7 @@
 # Admin Use Cases
 
 > Cross-module workflow guide for platform operators.
-> Covers modules: [Config (20)](./modules/20-module-config.md), [Tenants (13)](./modules/13-tenants.md), [Subscriptions (21)](./modules/21-module-subscriptions.md).
+> Covers modules: [Config (20)](./modules/20-module-config.md), [Tenants (13)](./modules/13-tenants.md), [Subscriptions (21)](./modules/21-module-subscriptions.md), [UI Flows (22)](./modules/22-module-ui-flows.md), [Forms (19)](./modules/19-module-forms.md), [Flows (18)](./modules/18-module-flows.md).
 
 ---
 
@@ -248,3 +248,128 @@
 4. **Verify** — `GET /api/tenant-limits?tenantId=42` now shows the override with `source: "override"`.
 
 **Result**: The tenant gets higher limits for specific services without changing their billing plan. The override reason is documented for audit.
+
+---
+
+## 13. Create a Portal (UI Flow)
+
+**Goal**: Build a multi-page tenant portal using the visual drag-and-drop editor.
+
+**Modules**: UI Flows (module-ui-flows + ui-flows-editor)
+
+**Steps**:
+
+1. **Create a UI flow** — Dashboard → UI Flows → Create.
+   - `POST /api/ui-flows` — set name, slug, tenantId. A blank definition is auto-created.
+2. **Open the visual editor** — Dashboard → UI Flows → Show → "Open Editor".
+   - Route: `/#/ui-flows/:id/editor` — loads the ReactFlow canvas with PagePalette, toolbar, and panels.
+3. **Drag pages onto the canvas** — Drag page types from the left PagePalette: Home, Landing, Form, FAQ, Chat, Custom.
+   - Each page becomes a ReactFlow node with a slug, title, and type-specific content fields.
+4. **Connect pages** — Draw edges between nodes to define navigation links.
+5. **Configure each page** — Click a node → Inspector panel opens. Set page title, slug, content sections, and type-specific fields.
+6. **Save the flow** — Click "Save" in the toolbar.
+   - `PUT /api/ui-flows/:id` — persists the definition (pages, edges, navigation, settings) and theme config.
+
+**Result**: A multi-page portal definition is saved, ready for theme/navigation configuration and publishing.
+
+---
+
+## 14. Configure Portal Theme and Navigation
+
+**Goal**: Customize the look-and-feel and navigation structure of a tenant portal.
+
+**Modules**: UI Flows (ui-flows-editor)
+
+**Steps**:
+
+1. **Open Theme panel** — Click the Palette icon in the editor toolbar.
+   - Set primary/secondary/background colors, font family, border radius, logo URL.
+   - The ThemePreviewSwatch at the bottom shows a live mini-preview with current colors, fonts, and buttons.
+2. **Open Navigation panel** — Click the Menu icon in the editor toolbar.
+   - Choose navigation type (sidebar or topbar).
+   - Add/remove nav items, set labels and target pages.
+   - Drag to reorder nav items (uses @dnd-kit sortable).
+3. **Save** — Theme and navigation are persisted alongside the flow definition.
+
+**Result**: Portal has branded theme colors, custom fonts, a logo, and organized navigation.
+
+---
+
+## 15. Publish and Preview a Portal
+
+**Goal**: Make a portal live on a tenant subdomain and preview it before publishing.
+
+**Modules**: UI Flows (module-ui-flows, ui-flows-editor)
+
+**Steps**:
+
+1. **Preview** — Click the eye icon in the editor toolbar to open the Preview panel. Select a viewport (Desktop/Tablet/Mobile). The iframe loads the portal page at `{tenant-slug}.{domain}/{page-slug}`.
+2. **Publish** — Click "Publish" → confirm in the PublishDialog.
+   - `POST /api/ui-flows/:id/publish` — creates a versioned snapshot. Increments `version`, sets `publishedAt`.
+3. **Access the live portal** — Navigate to `{tenant-slug}.{domain}` — the subdomain middleware routes to the portal renderer.
+   - `GET /api/ui-flows/by-slug/:slug` — retrieves the published flow, renders pages via Landing/Form/FAQ/Chat/Custom renderers.
+
+**Result**: Portal is live at the tenant's subdomain. Pages render with the configured theme, navigation, and content.
+
+---
+
+## 16. Build a Form with the Visual Editor
+
+**Goal**: Create a data-collection form using the GrapeJS drag-and-drop form builder.
+
+**Modules**: Forms (module-forms + form-editor)
+
+**Steps**:
+
+1. **Create a form** — Dashboard → Forms → Create.
+   - `POST /api/forms` — set name, slug, tenantId, status.
+2. **Open the form editor** — Dashboard → Forms → Show → "Open Editor".
+   - Route: `/#/forms/:id/editor` — loads the GrapeJS visual editor with 40+ oven-ui components.
+3. **Drag form components** — Use the ShadCN/Tailwind component palette: text inputs, selects, checkboxes, date pickers, file uploads, radio groups, etc.
+4. **Configure component properties** — Click a component → set label, placeholder, validation rules, conditional visibility.
+5. **Save and version** — `PUT /api/forms/:id` — saves the GrapeJS definition. Versions are tracked in `form_versions`.
+6. **Embed in a portal** — Add a Form page node in the UI Flow editor, reference the form by slug.
+
+**Result**: A styled, validated form is ready for embedding in a portal page or standalone use.
+
+---
+
+## 17. Manage Flow Versions and Undo/Redo
+
+**Goal**: Use version history to track changes and restore previous portal states.
+
+**Modules**: UI Flows (ui-flows-editor)
+
+**Steps**:
+
+1. **Undo/Redo** — Use Ctrl+Z / Ctrl+Shift+Z (or toolbar buttons) to undo/redo canvas changes. The editor maintains a 50-entry history stack with debounced snapshots.
+2. **View version history** — Click the History icon in the toolbar to open the VersionHistoryPanel.
+   - `GET /api/ui-flows/:id/versions` — lists all published versions with timestamps.
+3. **Restore a version** — Click "Restore" on any version entry.
+   - `POST /api/ui-flows/:id/versions/:versionId/restore` — restores the flow definition to that version's state.
+   - The canvas reloads with the restored pages, edges, navigation, and settings.
+
+**Result**: Full audit trail of portal changes with ability to roll back to any published version.
+
+---
+
+## 18. Run a Content Approval Flow
+
+**Goal**: Use the content flow system to manage FAQ or content through a review/approval pipeline.
+
+**Modules**: Flows (module-flows)
+
+**Steps**:
+
+1. **Create a flow template** — Dashboard → Flow Templates → Create.
+   - `POST /api/flow-templates` — define stages (e.g., Draft → Review → Approved → Published) with transition rules.
+2. **Create a flow** — Dashboard → Flows → Create.
+   - `POST /api/flows` — select template, set name, assign reviewers.
+3. **Add items to the flow** — Dashboard → Flows → Show → Add Item.
+   - `POST /api/flow-items` — add content items (e.g., FAQ entries, page copy) to the flow.
+4. **Transition items** — Click stage buttons to move items through Draft → Review → Approved.
+   - `POST /api/flow-transitions` — records who transitioned, when, and any comments.
+5. **Add reviews** — Reviewers add comments and approvals.
+   - `POST /api/flow-reviews` — attach review notes, approve/reject items.
+
+**Result**: Content goes through a structured approval pipeline with full audit trail before going live.

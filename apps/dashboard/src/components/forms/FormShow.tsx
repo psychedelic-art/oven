@@ -9,12 +9,36 @@ import {
   FunctionField,
   ReferenceManyField,
   Datagrid,
+  TopToolbar,
+  EditButton,
+  useRecordContext,
 } from 'react-admin';
-import { Chip, Box, Typography } from '@mui/material';
+import { Chip, Box, Typography, Button } from '@mui/material';
+import EditNoteIcon from '@mui/icons-material/EditNote';
+import { Link } from 'react-router-dom';
+
+function FormShowActions() {
+  const record = useRecordContext();
+  return (
+    <TopToolbar>
+      <Button
+        component={Link}
+        to={`/forms/${record?.id}/editor`}
+        startIcon={<EditNoteIcon />}
+        size="small"
+        variant="contained"
+        sx={{ textTransform: 'none' }}
+      >
+        Open Editor
+      </Button>
+      <EditButton />
+    </TopToolbar>
+  );
+}
 
 export default function FormShow() {
   return (
-    <Show>
+    <Show actions={<FormShowActions />}>
       <SimpleShowLayout>
         <NumberField source="id" label="ID" />
         <TextField source="name" label="Name" />

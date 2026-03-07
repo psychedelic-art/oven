@@ -8,6 +8,7 @@ import MapEditorPage from './maps/MapEditorPage';
 import WorkflowEditorPage from './workflows/WorkflowEditorPage';
 import UiFlowEditorPage from './ui-flows/UiFlowEditorPage';
 import RlsEditorPage from './rls-policies/RlsEditorPage';
+import FormEditorPage from './forms/FormEditorPage';
 import CustomMenu from './CustomMenu';
 
 // Roles
@@ -554,6 +555,7 @@ export default function AdminApp() {
         <Route path="/workflows/:id/editor" element={<WorkflowEditorPage />} />
         <Route path="/ui-flows/:id/editor" element={<UiFlowEditorPage />} />
         <Route path="/rls-policies/:id/editor" element={<RlsEditorPage />} />
+        <Route path="/forms/:id/editor" element={<FormEditorPage />} />
         <Route path="/api-permissions" element={<ApiPermissionList />} />
         <Route path="/profile" element={<ProfilePage />} />
       </CustomRoutes>

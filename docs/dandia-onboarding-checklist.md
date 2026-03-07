@@ -6,6 +6,58 @@ Dandia is the first dental office client on the OVEN platform. This checklist co
 
 **Pricing:** Setup $450,000 COP | Monthly $125,000 COP | Annual $90,000 COP/month
 **Limits:** WhatsApp 300 msg/month | Web Chat 500/month | 40 FAQ entries | 1 WA number
+**Last updated**: 2026-03-06
+
+---
+
+## ⚡ WHAT YOU CAN DO RIGHT NOW (Sprint 1 modules are live)
+
+The following admin tasks are **fully actionable today** with the current codebase. No additional modules need to be built:
+
+### Immediate Actions — Admin Dashboard
+
+| # | Task | Where | Time Est. |
+|---|------|-------|-----------|
+| 1 | **Create Dandia tenant** — name, slug, enabled | Dashboard → Tenants → Create | 2 min |
+| 2 | **Configure 14+ tenant settings** — schedule, tone, contact info, messages, services | Dashboard → Module Configs → Create (×14) | 20 min |
+| 3 | **Create billing plans** — monthly, annual, setup fee with quotas | Dashboard → Billing Plans → Create + Plan Quotas | 10 min |
+| 4 | **Create subscription** — link Dandia to their billing plan | Dashboard → Tenant Subscriptions → Create | 2 min |
+| 5 | **Create admin user + API key** — login credentials for Dandia | Dashboard → Users → Create + API Keys → Create | 5 min |
+| 6 | **Set platform defaults** — timezone, locale, default plan | Dashboard → Module Configs → Create (tenantId empty) | 5 min |
+| 7 | **Create Dandia portal** — visual drag-and-drop portal builder | Dashboard → UI Flows → Create → Open Editor | 30 min |
+| 8 | **Add portal pages** — Landing, FAQ, Form, Contact pages | Editor → Drag from PagePalette → Configure in Inspector | 20 min |
+| 9 | **Configure portal theme** — colors, fonts, logo, border radius | Editor → Theme Panel → set values, see live preview swatch | 10 min |
+| 10 | **Set up portal navigation** — sidebar/topbar nav items, drag to reorder | Editor → Navigation Panel → add items, drag to sort | 5 min |
+| 11 | **Build contact form** — drag-and-drop form builder with 40+ components | Dashboard → Forms → Create → Open GrapeJS Editor | 15 min |
+| 12 | **Create FAQ review flow** — content approval pipeline (Draft→Review→Approved) | Dashboard → Flows → Create, add stages and items | 10 min |
+| 13 | **Publish the portal** — make it live on tenant subdomain | Editor → Publish button → confirm | 1 min |
+| 14 | **Test the portal** — visit `dandia.{domain}` to see live pages | Browser → navigate to subdomain | 5 min |
+
+**Total estimated time for all immediate tasks: ~2.5 hours**
+
+### What the Portal Can Include Today
+
+- ✅ **Landing page** — hero section, service highlights, call-to-action buttons
+- ✅ **FAQ page** — categorized questions and answers (static content defined in page config)
+- ✅ **Contact form page** — built with GrapeJS form editor, styled with oven-ui components
+- ✅ **Custom pages** — any static content (about us, services, policies)
+- ✅ **Chat page** — placeholder ready for when module-chat is built
+- ✅ **Theme** — branded colors, fonts, logo, consistent across all pages
+- ✅ **Navigation** — sidebar or topbar with drag-to-reorder items
+- ✅ **Mobile responsive** — oven-ui components are responsive by default
+- ✅ **Version history** — every published version saved, restorable
+- ✅ **Undo/Redo** — Ctrl+Z/Ctrl+Shift+Z in the visual editor
+
+### What's NOT Available Yet (needs more modules)
+
+| Feature | Blocked By | Sprint |
+|---------|-----------|--------|
+| AI-powered FAQ chatbot | `module-knowledge-base` + `module-ai` + `module-agent-core` | Sprint 2 |
+| Live web chat widget | `module-chat` + `agent-ui` | Sprint 3 |
+| WhatsApp bot integration | `module-notifications` + `notifications-twilio` | Sprint 4 |
+| Agent guardrails & safety rules | `module-workflow-agents` | Sprint 5 |
+| File uploads & media storage | `module-files` | Sprint 6 |
+| Stripe payment integration | External Stripe setup | Sprint 6 |
 
 ---
 
@@ -41,7 +93,7 @@ Dandia is the first dental office client on the OVEN platform. This checklist co
 
 ---
 
-## SPRINT 1 — Foundation (Implemented Modules)
+## SPRINT 1 — Foundation (Implemented Modules) — ✅ READY TO EXECUTE
 
 ### 1.1 Verify Seed Data
 
@@ -190,14 +242,65 @@ All at `Module Configs > Create`, tenantId = `{dandia_tenant_id}`, moduleName = 
 
 - [ ] **Create contact form** (optional) — `Forms > Create`
   - Name: `Formulario de Contacto Dandia` | Slug: `dandia-contacto` | Status: `active`
+  - Open GrapeJS editor → drag ShadCN components: Name, Email, Phone, Message textarea, Submit button
 
 - [ ] **Create FAQ review flow** (optional) — `Flow Templates > Create`
   - Name: `Revision Contenido FAQ` | Slug: `faq-content-review`
   - Stages: Draft → Review → Approved → Published
 
+### 1.11 Portal Setup (UI Flows)
+
+- [ ] **Create Dandia portal** — `UI Flows > Create`
+  - Name: `Portal Dandia` | Slug: `dandia` | Tenant: `{dandia_tenant_id}` | Status: `draft`
+
+- [ ] **Open visual editor** — `UI Flows > Show > Open Editor`
+
+- [ ] **Add pages** — Drag from PagePalette onto canvas:
+  - [ ] **Home page** (type: home) — slug: `home`, title: "Dandia — Consultorio Dental"
+  - [ ] **Services page** (type: landing) — slug: `servicios`, title: "Nuestros Servicios"
+  - [ ] **FAQ page** (type: faq) — slug: `preguntas-frecuentes`, title: "Preguntas Frecuentes"
+  - [ ] **Contact page** (type: form) — slug: `contacto`, title: "Contáctenos" — link to `dandia-contacto` form
+  - [ ] **About page** (type: custom) — slug: `sobre-nosotros`, title: "Sobre Nosotros"
+
+- [ ] **Connect pages** — Draw edges between nodes to define navigation links
+
+- [ ] **Configure page content** — Click each node → Inspector panel:
+  - Home: hero heading, subheading, CTA buttons (Agendar Cita, Ver Servicios)
+  - Services: service cards with descriptions from `AUTHORIZED_SERVICES` config
+  - FAQ: categories and Q&A pairs from Anexo 2
+  - Contact: link to the GrapeJS contact form
+  - About: clinic history, team, values
+
+### 1.12 Portal Theme & Navigation
+
+- [ ] **Configure theme** — Editor > Theme Panel (palette icon):
+  - Primary Color: `{Dandia brand color}` | Secondary Color: `{accent color}`
+  - Background Color: `#ffffff` | Font Family: `{brand font or Inter}`
+  - Border Radius: `8` | Logo URL: `{dandia_logo_url}`
+  - Verify in ThemePreviewSwatch at bottom of panel
+
+- [ ] **Configure navigation** — Editor > Navigation Panel (menu icon):
+  - Type: `sidebar` (or `topbar`)
+  - Items: Inicio → Servicios → Preguntas Frecuentes → Contáctenos → Sobre Nosotros
+  - Drag items to set desired order
+
+- [ ] **Save** — Click Save button in toolbar
+
+- [ ] **Preview** — Click eye icon → verify Desktop/Tablet/Mobile viewports
+
+- [ ] **Publish** — Click Publish → confirm in dialog
+  - Portal goes live at `dandia.{domain}`
+
+- [ ] **Test published portal** — Navigate to `dandia.{domain}` in browser
+  - [ ] Verify all 5 pages load correctly
+  - [ ] Verify theme colors and logo applied
+  - [ ] Verify navigation works on all pages
+  - [ ] Verify mobile responsive layout
+  - [ ] Verify contact form submits
+
 ---
 
-## SPRINT 2 — Knowledge Base + AI + Agent Core
+## SPRINT 2 — Knowledge Base + AI + Agent Core — 🔒 BLOCKED (modules not built)
 
 _(Modules not yet implemented — tasks for when they're built)_
 
@@ -291,7 +394,7 @@ All at `KB > Entries > Create`. Fields: tenantId, categoryId, question, answer, 
 
 ---
 
-## SPRINT 3 — Chat + Agent UI (Widget)
+## SPRINT 3 — Chat + Agent UI (Widget) — 🔒 BLOCKED (modules not built)
 
 ### 3.1 Web Chat Config
 
@@ -309,7 +412,7 @@ All at `KB > Entries > Create`. Fields: tenantId, categoryId, question, answer, 
 
 ---
 
-## SPRINT 4 — Notifications (WhatsApp via Meta)
+## SPRINT 4 — Notifications (WhatsApp via Meta) — 🔒 BLOCKED (modules not built)
 
 ### 4.1 Meta Business Setup (External)
 
@@ -335,7 +438,7 @@ All at `KB > Entries > Create`. Fields: tenantId, categoryId, question, answer, 
 
 ---
 
-## SPRINT 5 — Workflow Agents (Guardrails)
+## SPRINT 5 — Workflow Agents (Guardrails) — 🔒 BLOCKED (modules not built)
 
 ### 5.1 Agent Workflow
 
@@ -353,7 +456,7 @@ All at `KB > Entries > Create`. Fields: tenantId, categoryId, question, answer, 
 
 ---
 
-## SPRINT 6 — Stripe + Files + Full AI
+## SPRINT 6 — Stripe + Files + Full AI — 🔒 BLOCKED (modules not built)
 
 ### 6.1 Stripe Integration (External)
 
@@ -406,13 +509,21 @@ All at `KB > Entries > Create`. Fields: tenantId, categoryId, question, answer, 
 
 ## VERIFICATION CHECKLIST
 
-### After Sprint 1
+### After Sprint 1 — ✅ CAN VERIFY NOW
 - [ ] `GET /api/tenants` returns Dandia with correct slug
 - [ ] `GET /api/module-configs?filter[tenantId]={id}` returns 14+ config entries
 - [ ] `GET /api/tenant-subscriptions?tenantId={id}` returns active subscription
 - [ ] `GET /api/billing-plans/public` returns Dandia plans with quotas
 - [ ] Admin can log in and see all menu sections
 - [ ] Dandia user can log in with correct tenant context
+- [ ] Portal: `dandia.{domain}` loads published portal with correct theme
+- [ ] Portal: All 5 pages (home, services, FAQ, contact, about) render correctly
+- [ ] Portal: Navigation sidebar/topbar links work between pages
+- [ ] Portal: Contact form submits successfully
+- [ ] Portal: Mobile responsive layout works on phone viewport
+- [ ] Editor: Undo/Redo works (Ctrl+Z, Ctrl+Shift+Z)
+- [ ] Editor: Version history shows published versions with restore capability
+- [ ] Editor: Theme preview swatch updates live when changing colors
 
 ### After Sprint 2
 - [ ] KB search returns correct FAQ matches for sample Spanish questions
