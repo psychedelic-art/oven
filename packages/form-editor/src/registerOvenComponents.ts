@@ -1,10 +1,14 @@
 import type { Editor } from 'grapesjs';
 import type { BlockDefinition } from './types';
+import { renderToStaticMarkup } from 'react-dom/server';
+import React from 'react';
+import { componentRegistry } from '@oven/oven-ui';
 
 // ─── registerOvenComponents ────────────────────────────────────
 // Registers all oven-ui component types and blocks with a GrapeJS
-// editor instance. Each component type gets traits from its data
-// contract, enabling property editing in the GrapeJS sidebar.
+// editor instance. Leaf components render actual React output via
+// renderToStaticMarkup; containers use getChildrenContainer() for
+// proper nesting with header + children slot.
 
 interface RegisterOptions {
   /** Block definitions from the form_components API */
@@ -22,9 +26,47 @@ function contractTypeToTraitType(type: string): string {
   }
 }
 
+/** Layout components that are leaf nodes (not droppable containers) */
+const LEAF_LAYOUT_IDS = new Set(['oven-divider']);
+
+/** Check if a block should be treated as a container (accepts child drops) */
+function isContainerBlock(block: BlockDefinition): boolean {
+  return block.category === 'layout' && !LEAF_LAYOUT_IDS.has(block.id);
+}
+
+/** Build a fallback placeholder HTML for components without registry entries or render errors */
+function buildFallbackHtml(label: string, typeName: string): string {
+  return `<div class="oven-fallback-placeholder"><span>⬡</span> <strong>${label}</strong> <code>${typeName}</code></div>`;
+}
+
+/**
+ * Extract trait values from a GrapeJS model into a props object.
+ * Skips internal data/workflow traits that aren't component props.
+ */
+function extractTraitProps(model: any): Record<string, unknown> {
+  const props: Record<string, unknown> = {};
+  const traits = model.getTraits?.() || [];
+
+  for (const trait of traits) {
+    const name = trait.get?.('name') || trait.getName?.();
+    const value = trait.get?.('value') ?? trait.getValue?.();
+
+    // Skip internal traits and empty values
+    if (!name || value === undefined || value === null || value === '') continue;
+    if (name === 'dataSourceEndpoint' || name === 'dataSourceType' || name === 'workflowSlug') continue;
+
+    props[name] = value;
+  }
+
+  return props;
+}
+
 /**
  * Register all oven-ui component types and blocks with a GrapeJS editor.
  * Call this during editor initialization after the editor is ready.
+ *
+ * - Leaf components render via renderToStaticMarkup (actual React output)
+ * - Container components use header + children slot + getChildrenContainer()
  */
 export function registerOvenComponents(editor: Editor, options: RegisterOptions): void {
   const { blocks } = options;
@@ -62,13 +104,17 @@ export function registerOvenComponents(editor: Editor, options: RegisterOptions)
       { name: 'workflowSlug', label: 'Workflow Slug', type: 'text', category: 'Actions' },
     );
 
+    const isContainer = isContainerBlock(block);
+    const fallback = buildFallbackHtml(block.label, block.id);
+
     // Register component type
     componentManager.addType(block.id, {
       isComponent: (el: HTMLElement) => el.getAttribute?.('data-oven-type') === block.id,
+
       model: {
         defaults: {
           tagName: 'div',
-          droppable: block.category === 'layout',
+          droppable: isContainer,
           attributes: {
             'data-oven-type': block.id,
             class: `oven-component oven-${block.category}`,
@@ -76,33 +122,66 @@ export function registerOvenComponents(editor: Editor, options: RegisterOptions)
           traits,
           ...(block.defaultProps || {}),
         },
-      },
-      view: {
-        // Render a visible placeholder in the editor canvas
-        onRender({ el, model }: { el: HTMLElement; model: any }) {
-          const icon = block.icon || 'widgets';
-          const label = block.label;
-          const typeName = block.id;
-          el.innerHTML = `
-            <div style="
-              padding: 12px 16px;
-              border: 1px dashed #ccc;
-              border-radius: 6px;
-              background: #fafafa;
-              display: flex;
-              align-items: center;
-              gap: 8px;
-              min-height: 40px;
-              font-family: sans-serif;
-              font-size: 13px;
-              color: #666;
-            ">
-              <span style="font-size: 18px;">⬡</span>
-              <span><strong>${label}</strong> <code style="font-size: 11px; color: #999;">${typeName}</code></span>
-            </div>
-          `;
+        init() {
+          // Re-render the view when trait values change
+          this.on('change:attributes', () => {
+            if (this.view?.onRender) {
+              this.view.onRender({ el: this.view.el, model: this });
+            }
+          });
         },
       },
+
+      view: isContainer
+        ? {
+            // ── Container view ─────────────────────────────────────
+            // Adds a label header and a children slot; GrapeJS manages
+            // child components inside the slot via getChildrenContainer().
+            onRender({ el }: { el: HTMLElement }) {
+              if (!el.querySelector('.oven-container-header')) {
+                const header = document.createElement('div');
+                header.className = 'oven-container-header';
+                header.textContent = block.label;
+                el.insertBefore(header, el.firstChild);
+              }
+              if (!el.querySelector('.oven-children-slot')) {
+                const slot = document.createElement('div');
+                // CSS classes define the layout; styles injected in canvas iframe
+                slot.className = `oven-children-slot oven-slot-${block.id}`;
+                // Move existing child nodes into the slot
+                while (el.childNodes.length > 1) {
+                  slot.appendChild(el.childNodes[1]);
+                }
+                el.appendChild(slot);
+              }
+            },
+            getChildrenContainer() {
+              return this.el.querySelector('.oven-children-slot') || this.el;
+            },
+          }
+        : {
+            // ── Leaf view ──────────────────────────────────────────
+            // Renders the actual React component to static HTML via
+            // renderToStaticMarkup. Falls back to placeholder if the
+            // component uses hooks or context that aren't available.
+            onRender({ el, model }: { el: HTMLElement; model: any }) {
+              const entry = componentRegistry[block.id];
+              if (!entry) {
+                el.innerHTML = fallback;
+                return;
+              }
+
+              const props = extractTraitProps(model);
+              try {
+                el.innerHTML = renderToStaticMarkup(
+                  React.createElement(entry.component, props),
+                );
+              } catch {
+                // Components using hooks/context fail here → graceful fallback
+                el.innerHTML = fallback;
+              }
+            },
+          },
     });
 
     // Register block in the sidebar
@@ -110,7 +189,7 @@ export function registerOvenComponents(editor: Editor, options: RegisterOptions)
       label: block.label,
       category: formatCategory(block.category),
       content: { type: block.id },
-      media: `<span style="font-size: 28px;">⬡</span>`,
+      media: '<svg viewBox="0 0 24 24" width="28"><path fill="currentColor" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>',
       attributes: { class: `gjs-block-${block.id}` },
     });
   }
