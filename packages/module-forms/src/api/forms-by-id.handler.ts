@@ -37,9 +37,21 @@ export async function PUT(
 
   if (!current) return notFound('Form not found');
 
+  // Whitelist updatable fields — never spread raw body (avoids setting id,
+  // createdAt as string, or other non-editable columns)
+  const updateData: Record<string, unknown> = { updatedAt: new Date() };
+  if (body.name !== undefined) updateData.name = body.name;
+  if (body.slug !== undefined) updateData.slug = body.slug;
+  if (body.description !== undefined) updateData.description = body.description;
+  if (body.status !== undefined) updateData.status = body.status;
+  if (body.definition !== undefined) updateData.definition = body.definition;
+  if (body.dataLayerConfig !== undefined) updateData.dataLayerConfig = body.dataLayerConfig;
+  if (body.businessLayerConfig !== undefined) updateData.businessLayerConfig = body.businessLayerConfig;
+  if (body.version !== undefined) updateData.version = body.version;
+
   const [result] = await db
     .update(forms)
-    .set({ ...body, updatedAt: new Date() })
+    .set(updateData)
     .where(eq(forms.id, parseInt(id, 10)))
     .returning();
 

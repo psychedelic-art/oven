@@ -843,5 +843,220 @@ export async function seedForms(db: any): Promise<void> {
     },
   }).onConflictDoNothing();
 
-  console.log('[module-forms] Seeded 2 sample forms');
+  // 3. Login Form (enterprise login page)
+  await db.insert(forms).values({
+    tenantId: 1,
+    name: 'Login Form',
+    slug: 'login-form',
+    description: 'Enterprise login page with branding panel and authentication form',
+    status: 'published',
+    version: 1,
+    definition: {
+      components: [
+        {
+          id: 'login-root',
+          type: 'oven-grid-2col',
+          props: { gap: 'none', className: 'min-h-screen' },
+          children: [
+            // ── Left: Branding panel ──
+            {
+              id: 'login-branding',
+              type: 'oven-container',
+              props: {
+                padding: 'lg',
+                className: 'bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex flex-col justify-between min-h-screen relative overflow-hidden',
+              },
+              children: [
+                {
+                  id: 'login-logo',
+                  type: 'oven-image',
+                  props: {
+                    src: '/logo-white.svg',
+                    alt: 'Company Logo',
+                    width: 160,
+                    height: 40,
+                    className: 'mb-8',
+                  },
+                },
+                {
+                  id: 'login-brand-heading',
+                  type: 'oven-heading',
+                  props: {
+                    text: 'Supply Chain Dashboard',
+                    level: 'h1',
+                    className: 'text-4xl font-bold text-white mb-4',
+                  },
+                },
+                {
+                  id: 'login-brand-description',
+                  type: 'oven-paragraph',
+                  props: {
+                    text: 'Manage your entire supply chain from a single platform. Real-time tracking, analytics, and intelligent automation.',
+                    className: 'text-blue-100 text-lg mb-12',
+                  },
+                },
+                {
+                  id: 'login-stats-grid',
+                  type: 'oven-grid-3col',
+                  props: { gap: 'md', className: 'mt-auto' },
+                  children: [
+                    {
+                      id: 'login-stat-uptime',
+                      type: 'oven-stat-card',
+                      props: {
+                        label: 'Uptime',
+                        value: '99.9%',
+                        className: 'bg-white/10 border-white/20 text-white',
+                      },
+                    },
+                    {
+                      id: 'login-stat-support',
+                      type: 'oven-stat-card',
+                      props: {
+                        label: 'Support',
+                        value: '24/7',
+                        className: 'bg-white/10 border-white/20 text-white',
+                      },
+                    },
+                    {
+                      id: 'login-stat-ai',
+                      type: 'oven-stat-card',
+                      props: {
+                        label: 'Intelligence',
+                        value: 'AI',
+                        className: 'bg-white/10 border-white/20 text-white',
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+            // ── Right: Login form panel ──
+            {
+              id: 'login-form-panel',
+              type: 'oven-container',
+              props: {
+                padding: 'lg',
+                maxWidth: 'sm',
+                className: 'flex flex-col justify-center min-h-screen mx-auto w-full',
+              },
+              children: [
+                {
+                  id: 'login-form-heading',
+                  type: 'oven-heading',
+                  props: {
+                    text: 'Welcome Back',
+                    level: 'h2',
+                    className: 'text-2xl font-bold text-gray-900 mb-1',
+                  },
+                },
+                {
+                  id: 'login-form-subtitle',
+                  type: 'oven-paragraph',
+                  props: {
+                    text: 'Sign in to your account to continue',
+                    className: 'text-gray-500 mb-6',
+                  },
+                },
+                {
+                  id: 'login-error-alert',
+                  type: 'oven-alert',
+                  props: {
+                    message: 'Invalid credentials. Please try again.',
+                    variant: 'error',
+                    dismissible: true,
+                  },
+                },
+                {
+                  id: 'login-email',
+                  type: 'oven-email-input',
+                  props: {
+                    label: 'Email Address',
+                    name: 'email',
+                    placeholder: 'you@company.com',
+                    required: true,
+                  },
+                },
+                {
+                  id: 'login-password',
+                  type: 'oven-password-input',
+                  props: {
+                    label: 'Password',
+                    name: 'password',
+                    required: true,
+                    showToggle: true,
+                  },
+                },
+                {
+                  id: 'login-remember',
+                  type: 'oven-checkbox',
+                  props: {
+                    label: 'Remember me for 30 days',
+                    name: 'rememberMe',
+                  },
+                },
+                {
+                  id: 'login-submit',
+                  type: 'oven-submit-button',
+                  props: {
+                    label: 'Sign In',
+                    variant: 'primary',
+                    fullWidth: true,
+                    className: 'mt-4',
+                  },
+                },
+                {
+                  id: 'login-divider',
+                  type: 'oven-divider',
+                  props: { label: 'or continue with', className: 'my-6' },
+                },
+                {
+                  id: 'login-google-btn',
+                  type: 'oven-button',
+                  props: {
+                    label: 'Sign in with Google',
+                    variant: 'outline',
+                    className: 'w-full',
+                  },
+                },
+                {
+                  id: 'login-domains-grid',
+                  type: 'oven-grid-3col',
+                  props: { gap: 'sm', className: 'mt-6' },
+                  children: [
+                    {
+                      id: 'login-badge-1',
+                      type: 'oven-badge',
+                      props: { text: '@company.com', variant: 'info' },
+                    },
+                    {
+                      id: 'login-badge-2',
+                      type: 'oven-badge',
+                      props: { text: '@partner.org', variant: 'info' },
+                    },
+                    {
+                      id: 'login-badge-3',
+                      type: 'oven-badge',
+                      props: { text: '@corp.net', variant: 'info' },
+                    },
+                  ],
+                },
+                {
+                  id: 'login-footer',
+                  type: 'oven-paragraph',
+                  props: {
+                    text: 'By signing in, you agree to our Terms of Service and Privacy Policy.',
+                    className: 'text-xs text-gray-400 text-center mt-8',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      styles: [],
+    },
+  }).onConflictDoNothing();
+
+  console.log('[module-forms] Seeded 3 sample forms');
 }
