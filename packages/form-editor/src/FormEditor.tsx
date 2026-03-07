@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useCallback } from 'react';
 import grapesjs, { type Editor } from 'grapesjs';
+import 'grapesjs/dist/css/grapes.min.css';
 import type { EditorConfig, EditorState } from './types';
 import { registerOvenComponents } from './registerOvenComponents';
 import type { ComponentNode } from '@oven/oven-ui/types';
