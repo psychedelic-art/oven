@@ -7,9 +7,11 @@ import {
   SelectInput,
   NumberInput,
   TopToolbar,
-  EditButton,
-  Button,
+  useRecordContext,
 } from 'react-admin';
+import { Button } from '@mui/material';
+import EditNoteIcon from '@mui/icons-material/EditNote';
+import { Link } from 'react-router-dom';
 
 const statusChoices = [
   { id: 'draft', name: 'Draft' },
@@ -18,9 +20,19 @@ const statusChoices = [
 ];
 
 function FormEditActions() {
+  const record = useRecordContext();
   return (
     <TopToolbar>
-      <Button label="Open Editor" />
+      <Button
+        component={Link}
+        to={`/forms/${record?.id}/editor`}
+        startIcon={<EditNoteIcon />}
+        size="small"
+        variant="contained"
+        sx={{ textTransform: 'none' }}
+      >
+        Open Editor
+      </Button>
     </TopToolbar>
   );
 }

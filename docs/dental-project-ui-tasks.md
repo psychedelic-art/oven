@@ -8,22 +8,61 @@
 >
 > **Tenant scoping**: A global `<TenantSelector>` in the layout header sets the active tenant context.
 > All list views filter by `tenantId`. All create/edit forms associate records with the active tenant.
+>
+> **Updated**: 2026-03-06 — Reflects current implementation status.
+
+---
+
+## What's Already Built (as of 2026-03-06)
+
+The following modules have **complete dashboard UIs** with React Admin CRUD pages, API routes, and database schemas:
+
+| Module | Package | DB Tables | API Handlers | Dashboard Components | Status |
+|--------|---------|-----------|-------------|---------------------|--------|
+| Auth | `module-auth` + `auth-authjs` + `auth-firebase` | 5 | ~12 | LoginPage, UserList/Create/Edit/Show, ApiKeyList/Create/Show | **DONE** |
+| Tenants | `module-tenants` | 3 | ~8 | TenantList/Create/Edit/Show, TenantMemberList/Create | **DONE** |
+| Config | `module-config` | 2 | ~6 | ModuleConfigList/Create/Edit/Show | **DONE** |
+| Subscriptions | `module-subscriptions` | 9 | ~22 | BillingPlanList/Create/Edit/Show, PlanQuotaList/Create, ServiceCategoryList/Create/Edit, ServiceList/Create/Edit, ProviderList/Create/Edit, ProviderServiceList/Create/Edit/Show, TenantSubscriptionList/Create/Edit/Show, QuotaOverrideList/Create/Edit | **DONE** |
+| Roles & Permissions | `module-roles` | 8 | ~18 | RoleList/Create/Edit, PermissionList/Create/Edit, HierarchyNodeList/Create/Edit, RlsPolicyList/Create/Edit, ApiPermissionList/Create/Edit | **DONE** |
+| Forms | `module-forms` + `form-editor` | 6 | ~14 | FormList/Create/Edit/Show, FormSubmissionList/Show, GrapeJS visual editor | **DONE** |
+| Flows | `module-flows` | 8 | ~12 | FlowList/Create/Edit/Show, FlowItemList, FlowReviewList, FlowVersionList | **DONE** |
+| UI Flows | `module-ui-flows` + `ui-flows-editor` | 5 | ~12 | UiFlowList/Create/Edit/Show, ReactFlow visual editor, 6 page node types, PagePalette, PageInspector, ThemePanel, NavigationPanel (drag-to-reorder), PreviewPanel, VersionHistoryPanel, PublishDialog, Undo/Redo | **DONE** |
+| Maps | `module-maps` + `map-editor` | 6 | ~10 | MapList/Create/Edit/Show, Pixi.js tile-based map editor | **DONE** |
+| Workflows | `module-workflows` + `workflow-editor` | 5 | ~10 | WorkflowList/Create/Edit/Show, ReactFlow visual workflow editor | **DONE** |
+| Players | `module-players` | 2 | ~6 | PlayerList/Create/Edit/Show | **DONE** |
+| Sessions | `module-sessions` | 2 | ~6 | SessionList/Show | **DONE** |
+| Player Map Position | `module-player-map-position` | 4 | ~6 | PlayerPositionList/Show, MapAssignmentList/Create/Edit | **DONE** |
+| Registry | `module-registry` | 2 | ~4 | Module list (system page) | **DONE** |
+
+**Additional packages built (no dashboard UI needed):**
+- `oven-ui` — 40+ ShadCN/Tailwind portal components (Button, Card, Input, Select, Dialog, Sheet, Badge, etc.)
+- `rls-editor` — Row-Level Security policy editor (embedded in Roles module)
+- `module-workflow-compiler` — Workflow definition compiler
+
+**Totals**: 23 packages | 67 DB tables | ~150 API handlers | ~130 dashboard component files | 37 component directories
+
+### Portal Runtime (also built)
+
+- **Subdomain routing middleware** — `{tenant}.localhost:3000/{slug}` routes to portal renderer
+- **5 portal page renderers** — Landing, Form, FAQ, Chat, Custom pages
+- **Portal layout** — oven-ui based responsive layout with theme application
+- **Published flow serving** — `GET /api/ui-flows/by-slug/:slug` serves published portals
 
 ---
 
 ## Global: Tenant Context Provider
 
-**Before any module UI**, the dashboard needs a tenant context layer.
+**Status**: ⚠️ PARTIALLY DONE — Tenant CRUD exists but context-aware data provider filtering not yet implemented.
 
-| # | Task | Component | Details |
-|---|------|-----------|---------|
-| G.1 | Tenant selector in header | `TenantSelector.tsx` | Dropdown in the app bar showing available tenants. Sets `activeTenantId` in React context. Admin users see all tenants; tenant members see only theirs |
-| G.2 | Tenant context provider | `TenantProvider.tsx` | React context that wraps the Admin app. Provides `activeTenantId`, `activeTenant` config, and `isBusinessHours` to all child components |
-| G.3 | Tenant-aware data provider | `dataProvider.ts` (modify) | Extend existing data provider to inject `tenantId` filter on `getList` and `tenantId` field on `create` calls automatically when tenant context is set |
+| # | Task | Component | Details | Status |
+|---|------|-----------|---------|--------|
+| G.1 | Tenant selector in header | `TenantSelector.tsx` | Dropdown in the app bar showing available tenants. Sets `activeTenantId` in React context. Admin users see all tenants; tenant members see only theirs | TODO |
+| G.2 | Tenant context provider | `TenantProvider.tsx` | React context that wraps the Admin app. Provides `activeTenantId`, `activeTenant` config, and `isBusinessHours` to all child components | TODO |
+| G.3 | Tenant-aware data provider | `dataProvider.ts` (modify) | Extend existing data provider to inject `tenantId` filter on `getList` and `tenantId` field on `create` calls automatically when tenant context is set | TODO |
 
 ---
 
-## MODULE: module-auth
+## MODULE: module-auth — ✅ DONE
 
 **Menu section**: (no section — login is outside the admin layout)
 
@@ -63,7 +102,7 @@ apps/dashboard/src/components/auth/
 
 ---
 
-## MODULE: module-tenants
+## MODULE: module-tenants — ✅ DONE
 
 **Menu section**: `──── Tenants ────`
 
@@ -112,9 +151,10 @@ apps/dashboard/src/components/tenants/
 
 ---
 
-## MODULE: module-knowledge-base
+## MODULE: module-knowledge-base — 🔲 NOT BUILT
 
 **Menu section**: `──── Knowledge Base ────`
+**Blocked by**: Package `module-knowledge-base` does not exist yet. Required for Sprint 2.
 
 ### Resources
 
@@ -168,9 +208,10 @@ apps/dashboard/src/components/knowledge-base/
 
 ---
 
-## MODULE: module-ai
+## MODULE: module-ai — 🔲 NOT BUILT
 
 **Menu section**: `──── AI Services ────`
+**Blocked by**: Package `module-ai` does not exist yet. Required for Sprint 2.
 
 ### Resources
 
@@ -227,9 +268,10 @@ apps/dashboard/src/components/ai/
 
 ---
 
-## MODULE: module-agent-core
+## MODULE: module-agent-core — 🔲 NOT BUILT
 
 **Menu section**: `──── Agents ────`
+**Blocked by**: Package `module-agent-core` does not exist yet. Required for Sprint 2.
 
 ### Resources
 
@@ -288,9 +330,10 @@ apps/dashboard/src/components/agents/
 
 ---
 
-## MODULE: module-workflow-agents
+## MODULE: module-workflow-agents — 🔲 NOT BUILT
 
 **Menu section**: `──── Agent Workflows ────`
+**Blocked by**: Package `module-workflow-agents` does not exist yet. Required for Sprint 5.
 
 ### Resources
 
@@ -344,9 +387,10 @@ apps/dashboard/src/components/agent-workflows/
 
 ---
 
-## MODULE: module-chat
+## MODULE: module-chat — 🔲 NOT BUILT
 
 **Menu section**: `──── Chat ────`
+**Blocked by**: Package `module-chat` does not exist yet. Required for Sprint 3.
 
 ### Resources
 
@@ -382,9 +426,10 @@ apps/dashboard/src/components/chat/
 
 ---
 
-## MODULE: module-notifications
+## MODULE: module-notifications — 🔲 NOT BUILT
 
 **Menu section**: `──── Notifications ────`
+**Blocked by**: Package `module-notifications` + `notifications-twilio` do not exist yet. Required for Sprint 4.
 
 ### Resources
 
@@ -434,9 +479,10 @@ apps/dashboard/src/components/notifications/
 
 ---
 
-## MODULE: module-files
+## MODULE: module-files — 🔲 NOT BUILT
 
 **Menu section**: `──── Files ────`
+**Blocked by**: Package `module-files` does not exist yet. Required for Sprint 6.
 
 ### Resources
 
@@ -462,9 +508,10 @@ apps/dashboard/src/components/files/
 
 ---
 
-## MODULE: agent-ui (editor package)
+## MODULE: agent-ui (editor package) — 🔲 NOT BUILT
 
 **No menu section** — components are embedded in other modules' pages.
+**Blocked by**: Package `agent-ui` does not exist yet. Required for Sprint 3.
 
 ### Components
 
@@ -569,17 +616,47 @@ packages/agent-ui/src/
 
 ## Total Interface Component Count
 
-| Module | Resources | Custom Pages | Component Files | Manual Tasks |
+### Already Built (✅)
+
+| Module | Resources | Custom Pages | Component Files | Status |
+|--------|-----------|-------------|-----------------|--------|
+| module-auth | 2 | 2 | ~10 | ✅ DONE |
+| module-tenants | 1 (+inline) | — | ~8 | ✅ DONE |
+| module-config | 1 | — | ~4 | ✅ DONE |
+| module-subscriptions | 7 | — | ~22 | ✅ DONE |
+| module-roles | 5 | — | ~18 | ✅ DONE |
+| module-forms + form-editor | 2 | 1 (GrapeJS editor) | ~12 | ✅ DONE |
+| module-flows | 1 | — | ~8 | ✅ DONE |
+| module-ui-flows + ui-flows-editor | 1 | 1 (ReactFlow editor) | ~20 | ✅ DONE |
+| module-maps + map-editor | 1 | 1 (Pixi.js editor) | ~8 | ✅ DONE |
+| module-workflows + workflow-editor | 1 | 1 (ReactFlow editor) | ~8 | ✅ DONE |
+| module-players | 1 | — | ~4 | ✅ DONE |
+| module-sessions | 1 | — | ~3 | ✅ DONE |
+| module-player-map-position | 2 | — | ~6 | ✅ DONE |
+| module-registry | 1 | — | ~2 | ✅ DONE |
+| oven-ui (portal components) | — | — | 40+ | ✅ DONE |
+| **BUILT SUBTOTAL** | **27** | **6** | **~173** | |
+
+### Still To Build (🔲)
+
+| Module | Resources | Custom Pages | Component Files | Blocked Until |
 |--------|-----------|-------------|-----------------|--------------|
-| Global (tenant context) | — | — | 3 | — |
-| module-auth | 2 | 2 | 10 | 3 |
-| module-tenants | 1 (+inline members) | — | 12 | 5 |
-| module-knowledge-base | 2 | 2 | 12 | 6 |
-| module-ai | 5 | 4 | 22 | 6 |
-| module-agent-core | 4 | 1 | 15 | 6 |
-| module-workflow-agents | 4 | 1 | 13 | 6 |
-| module-chat | 1 | 2 | 5 | 4 |
-| module-notifications | 3 | 1 | 12 | 5 |
-| module-files | 1 | — | 5 | 3 |
-| agent-ui (package) | — | — | 14 | 3 |
-| **TOTAL** | **23** | **13** | **123** | **47** |
+| Global (tenant context) | — | — | 3 | Sprint 1 enhancement |
+| module-knowledge-base | 2 | 2 | 12 | Sprint 2 |
+| module-ai | 5 | 4 | 22 | Sprint 2 |
+| module-agent-core | 4 | 1 | 15 | Sprint 2 |
+| module-chat | 1 | 2 | 5 | Sprint 3 |
+| agent-ui (package) | — | — | 14 | Sprint 3 |
+| module-notifications | 3 | 1 | 12 | Sprint 4 |
+| module-workflow-agents | 4 | 1 | 13 | Sprint 5 |
+| module-files | 1 | — | 5 | Sprint 6 |
+| **REMAINING SUBTOTAL** | **20** | **11** | **101** | |
+
+### Grand Total
+
+| Category | Count |
+|----------|-------|
+| Built component files | ~173 |
+| Remaining component files | ~101 |
+| **Total planned** | **~274** |
+| **Completion** | **~63%** |

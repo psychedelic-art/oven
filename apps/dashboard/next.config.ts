@@ -17,11 +17,19 @@ const nextConfig: NextConfig = {
     '@oven/form-editor',
     '@oven/oven-ui',
   ],
-  serverExternalPackages: ['sharp'],
+  serverExternalPackages: ['sharp', 'handlebars'],
   typescript: {
     // Pre-existing: TypeScript can't resolve ./api/* wildcard exports across all modules.
     // Webpack resolves them fine. This needs a monorepo-wide fix for the exports pattern.
     ignoreBuildErrors: true,
+  },
+  webpack: (config) => {
+    // Suppress handlebars require.extensions warning (used server-side by module-workflow-compiler)
+    config.ignoreWarnings = [
+      ...(config.ignoreWarnings || []),
+      { module: /handlebars/ },
+    ];
+    return config;
   },
 };
 

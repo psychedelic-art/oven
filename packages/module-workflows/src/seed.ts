@@ -371,18 +371,7 @@ export async function seedWorkflows(db: any): Promise<void> {
     await db
       .insert(moduleConfigs)
       .values(cfg)
-      .onConflictDoUpdate({
-        target: [
-          moduleConfigs.moduleName,
-          moduleConfigs.scope,
-          moduleConfigs.scopeId,
-          moduleConfigs.key,
-        ],
-        set: {
-          value: sql`excluded.value`,
-          description: sql`excluded.description`,
-        },
-      });
+      .onConflictDoNothing();
   }
 
   console.log(
