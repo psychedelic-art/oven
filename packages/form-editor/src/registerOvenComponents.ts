@@ -137,7 +137,14 @@ export function registerOvenComponents(editor: Editor, options: RegisterOptions)
             // ── Container view ─────────────────────────────────────
             // Adds a label header and a children slot; GrapeJS manages
             // child components inside the slot via getChildrenContainer().
-            onRender({ el }: { el: HTMLElement }) {
+            onRender({ el, model }: { el: HTMLElement; model: any }) {
+              // Apply className trait to the container element for Tailwind styling
+              const traitProps = extractTraitProps(model);
+              if (traitProps.className && typeof traitProps.className === 'string') {
+                const baseClasses = `oven-component oven-${block.category}`;
+                el.setAttribute('class', `${baseClasses} ${traitProps.className}`);
+              }
+
               if (!el.querySelector('.oven-container-header')) {
                 const header = document.createElement('div');
                 header.className = 'oven-container-header';
