@@ -88,10 +88,12 @@ function nodeToHtml(node: ComponentNode): string {
   if (node.props) {
     for (const [key, value] of Object.entries(node.props)) {
       if (value === undefined || value === null) continue;
+      // Convert React className to HTML class attribute
+      const attrName = key === 'className' ? 'class' : key;
       if (typeof value === 'object') {
-        attrs.push(`data-prop-${key}="${encodeURIComponent(JSON.stringify(value))}"`);
+        attrs.push(`data-prop-${attrName}="${encodeURIComponent(JSON.stringify(value))}"`);
       } else {
-        attrs.push(`${key}="${String(value).replace(/"/g, '&quot;')}"`);
+        attrs.push(`${attrName}="${String(value).replace(/"/g, '&quot;')}"`);
       }
     }
   }
@@ -300,6 +302,15 @@ export default function FormEditor({ config }: FormEditorProps) {
     editor.on('canvas:frame:load', () => {
       const canvasDoc = editor.Canvas.getDocument();
       if (!canvasDoc) return;
+
+      // Tailwind v4 browser CDN requires an @import trigger style
+      if (!canvasDoc.getElementById('oven-tw-trigger')) {
+        const twStyle = canvasDoc.createElement('style');
+        twStyle.id = 'oven-tw-trigger';
+        twStyle.textContent = '@import "tailwindcss";';
+        canvasDoc.head.appendChild(twStyle);
+      }
+
       if (canvasDoc.getElementById('oven-canvas-styles')) return;
       const styleEl = canvasDoc.createElement('style');
       styleEl.id = 'oven-canvas-styles';
