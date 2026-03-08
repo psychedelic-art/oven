@@ -8,7 +8,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
 import { FormEditor } from '@oven/form-editor';
-import type { EditorConfig, EditorState, FormDefinitionData, BlockDefinition } from '@oven/form-editor';
+import type { EditorConfig, EditorState, FormDefinitionData, BlockDefinition, DiscoveryData } from '@oven/form-editor';
 import { renderComponentTree, FormProvider } from '@oven/oven-ui';
 import type { FormDefinition } from '@oven/oven-ui';
 import { TailwindPreviewFrame } from './TailwindPreviewFrame';
@@ -27,14 +27,17 @@ export default function FormEditorPage() {
   const [saving, setSaving] = useState(false);
   const [lastState, setLastState] = useState<EditorState | null>(null);
   const [preview, setPreview] = useState(false);
+  const [discovery, setDiscovery] = useState<DiscoveryData>({});
 
   // Load form + component blocks in parallel
   useEffect(() => {
     async function load() {
       try {
-        const [formRes, blocksRes] = await Promise.all([
+        const [formRes, blocksRes, workflowsRes, endpointsRes] = await Promise.all([
           fetch(`/api/forms/${id}`),
           fetch('/api/form-components?range=[0,99]'),
+          fetch('/api/form-discovery?type=workflows').catch(() => null),
+          fetch('/api/form-discovery?type=endpoints').catch(() => null),
         ]);
         if (!formRes.ok) throw new Error('Failed to load form');
         const formData = await formRes.json();
@@ -58,6 +61,16 @@ export default function FormEditorPage() {
           );
           setBlocks(mapped);
         }
+
+        // Load discovery data for trait dropdowns (workflows + API endpoints)
+        const discoveryData: DiscoveryData = {};
+        if (workflowsRes?.ok) {
+          discoveryData.workflows = await workflowsRes.json();
+        }
+        if (endpointsRes?.ok) {
+          discoveryData.apiEndpoints = await endpointsRes.json();
+        }
+        setDiscovery(discoveryData);
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
       } finally {
@@ -103,11 +116,12 @@ export default function FormEditorPage() {
     () => ({
       definition: form?.definition as FormDefinitionData | undefined,
       blocks,
+      discovery,
       onChange: (state: EditorState) => setLastState(state),
       onSave: handleSave,
       apiBaseUrl: '/api',
     }),
-    [form?.definition, blocks, handleSave],
+    [form?.definition, blocks, discovery, handleSave],
   );
 
   if (loading) {

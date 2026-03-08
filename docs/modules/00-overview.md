@@ -1,7 +1,7 @@
 # OVEN — Future Modules Architecture
 
-> **Last Updated**: 2026-03-03
-> **Status**: Specification (pre-implementation)
+> **Last Updated**: 2026-03-08
+> **Status**: Specification (pre-implementation, except Forms which is In Progress)
 > **Base Architecture**: Next.js 15 + React Admin 5 + Drizzle ORM + Neon Postgres + Turbo + pnpm
 > **Module Rules**: All modules must comply with [module-rules.md](../module-rules.md) — 12 hard requirements for registration, discoverability, pluggability, loose coupling, multi-tenancy, RLS, UX, and more.
 
@@ -17,7 +17,7 @@ Every module in this specification follows the same core principles that govern 
 
 3. **Loosely Coupled** — Modules communicate through the **EventBus** (pub/sub), **shared config** (3-tier cascade), and **REST API calls**. There are no direct imports between module business logic. Cross-module foreign keys use plain `integer()` columns, not Drizzle references.
 
-4. **Convention over Configuration** — Every module follows identical patterns: `schema.ts` for tables, `api/*.handler.ts` for endpoints, `index.ts` for the `ModuleDefinition`, and optionally a separate `packages/{name}-editor/` for visual builder UIs.
+4. **Convention over Configuration** — Every module follows identical patterns: `schema.ts` for tables, `api/*.handler.ts` for endpoints, `index.ts` for the `ModuleDefinition`, and optionally a separate `packages/{name}-editor/` for visual builder UIs. Editor packages use plain library APIs (e.g., `grapesjs.init()` in `form-editor`) rather than framework-specific wrappers, keeping them lightweight and framework-agnostic where possible.
 
 5. **JSON-First Definitions** — Complex structures (workflow definitions, RLS policies, form layouts, dashboard configs) are stored as JSONB in Postgres and versioned with snapshot tables. This enables visual builders to save/load/restore without schema migrations.
 
@@ -111,7 +111,7 @@ Each module has its own detailed specification:
 | # | Module | Package(s) | Spec File |
 |---|--------|-----------|-----------|
 | 1 | Flows | `module-flows` | [01-flows.md](./01-flows.md) |
-| 2 | Forms | `module-forms` + `form-editor` | [02-forms.md](./02-forms.md) |
+| 2 | Forms (**In Progress**) | `module-forms` + `form-editor` | [02-forms.md](./02-forms.md) |
 | 3 | Question Types | `module-question-types` | [03-question-types.md](./03-question-types.md) |
 | 4 | Questions | `module-questions` | [04-questions.md](./04-questions.md) |
 | 5 | Exams | `module-exams` | [05-exams.md](./05-exams.md) |

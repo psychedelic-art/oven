@@ -1,11 +1,19 @@
 import type { ComponentNode } from '@oven/oven-ui/types';
 
+/** Discovery data for populating dynamic trait dropdowns */
+export interface DiscoveryData {
+  workflows?: Array<{ id: number; name: string; slug: string }>;
+  apiEndpoints?: Array<{ module: string; route: string; method: string }>;
+}
+
 /** Configuration passed to the FormEditor component */
 export interface EditorConfig {
   /** Initial form definition (component tree JSON) */
   definition?: FormDefinitionData;
   /** Available component blocks for the sidebar (fetched from form_components API) */
   blocks?: BlockDefinition[];
+  /** Discovery data for trait dropdowns (workflows, API endpoints) */
+  discovery?: DiscoveryData;
   /** Callback when the editor state changes */
   onChange?: (state: EditorState) => void;
   /** Callback when save is triggered */

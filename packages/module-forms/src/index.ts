@@ -11,6 +11,7 @@ import * as formComponentsByIdHandler from './api/form-components-by-id.handler'
 import * as formDataSourcesHandler from './api/form-data-sources.handler';
 import * as formDataSourcesByIdHandler from './api/form-data-sources-by-id.handler';
 import * as formVersionsHandler from './api/form-versions.handler';
+import * as formDiscoveryHandler from './api/form-discovery.handler';
 
 const eventSchemas: EventSchemaMap = {
   'forms.form.created': {
@@ -112,6 +113,7 @@ export const formsModule: ModuleDefinition = {
       DELETE: formDataSourcesByIdHandler.DELETE,
     },
     'form-versions': { GET: formVersionsHandler.GET },
+    'form-discovery': { GET: formDiscoveryHandler.GET },
   },
   configSchema: [
     {
