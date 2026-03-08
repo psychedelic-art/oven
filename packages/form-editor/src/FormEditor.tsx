@@ -327,14 +327,22 @@ export default function FormEditor({ config }: FormEditorProps) {
           min-height: 60px;
         }
         .oven-slot-oven-grid-2col {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1rem;
+          display: flex !important;
+          flex-wrap: wrap !important;
+          gap: 1rem !important;
+        }
+        .oven-slot-oven-grid-2col > * {
+          flex: 1 1 calc(50% - 0.5rem) !important;
+          min-width: 0 !important;
         }
         .oven-slot-oven-grid-3col {
-          display: grid;
-          grid-template-columns: 1fr 1fr 1fr;
-          gap: 1rem;
+          display: flex !important;
+          flex-wrap: wrap !important;
+          gap: 1rem !important;
+        }
+        .oven-slot-oven-grid-3col > * {
+          flex: 1 1 calc(33.333% - 0.667rem) !important;
+          min-width: 0 !important;
         }
         .oven-children-slot:empty::after {
           content: 'Drop components here';
