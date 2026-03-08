@@ -7,6 +7,9 @@ export type { Grid2ColProps } from './Grid2Col';
 export { Grid3Col } from './Grid3Col';
 export type { Grid3ColProps } from './Grid3Col';
 
+export { GridCell } from './GridCell';
+export type { GridCellProps } from './GridCell';
+
 export { TabsContainer } from './TabsContainer';
 export type { TabsContainerProps, Tab } from './TabsContainer';
 

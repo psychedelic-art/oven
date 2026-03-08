@@ -326,24 +326,6 @@ export default function FormEditor({ config }: FormEditorProps) {
           padding: 8px;
           min-height: 60px;
         }
-        .oven-slot-oven-grid-2col {
-          display: flex !important;
-          flex-wrap: wrap !important;
-          gap: 1rem !important;
-        }
-        .oven-slot-oven-grid-2col > * {
-          flex: 1 1 calc(50% - 0.5rem) !important;
-          min-width: 0 !important;
-        }
-        .oven-slot-oven-grid-3col {
-          display: flex !important;
-          flex-wrap: wrap !important;
-          gap: 1rem !important;
-        }
-        .oven-slot-oven-grid-3col > * {
-          flex: 1 1 calc(33.333% - 0.667rem) !important;
-          min-width: 0 !important;
-        }
         .oven-children-slot:empty::after {
           content: 'Drop components here';
           display: block;
@@ -351,6 +333,46 @@ export default function FormEditor({ config }: FormEditorProps) {
           padding: 20px;
           color: #999;
           font: 13px sans-serif;
+          border: 2px dashed #ddd;
+          border-radius: 4px;
+        }
+        /* Grid rows use flex to distribute cells side by side */
+        [data-oven-type="oven-grid-2col"],
+        [data-oven-type="oven-grid-3col"] {
+          display: flex !important;
+          gap: 1rem !important;
+          min-height: 80px;
+        }
+        /* Row label (subtle, positioned at top) */
+        .oven-row-label {
+          position: absolute;
+          top: 0;
+          left: 0;
+          padding: 2px 6px;
+          background: rgba(0,0,0,0.05);
+          font: 10px sans-serif;
+          color: #999;
+          z-index: 1;
+          pointer-events: none;
+        }
+        /* Each cell takes equal space */
+        [data-oven-type="oven-grid-cell"] {
+          flex: 1 1 0% !important;
+          min-width: 0 !important;
+          min-height: 60px;
+          padding: 8px;
+          position: relative;
+        }
+        /* Empty cell drop indicator */
+        [data-oven-type="oven-grid-cell"]:empty::after {
+          content: 'Drop here';
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+          min-height: 50px;
+          color: #999;
+          font: 12px sans-serif;
           border: 2px dashed #ddd;
           border-radius: 4px;
         }

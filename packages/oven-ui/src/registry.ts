@@ -28,6 +28,7 @@ import { Avatar } from './components/data-display/Avatar';
 import { Container } from './components/layout/Container';
 import { Grid2Col } from './components/layout/Grid2Col';
 import { Grid3Col } from './components/layout/Grid3Col';
+import { GridCell } from './components/layout/GridCell';
 import { TabsContainer } from './components/layout/TabsContainer';
 import { Accordion } from './components/layout/Accordion';
 import { Divider } from './components/layout/Divider';
@@ -416,6 +417,18 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
       inputs: [
         { name: 'gap', type: 'string', defaultValue: 'md' },
         { name: 'responsive', type: 'boolean', defaultValue: true },
+      ],
+      outputs: [],
+    },
+  },
+  'oven-grid-cell': {
+    component: GridCell,
+    category: 'layout',
+    description: 'Droppable cell inside a grid row (2col / 3col)',
+    icon: 'ViewColumn',
+    dataContract: {
+      inputs: [
+        { name: 'className', type: 'string' },
       ],
       outputs: [],
     },
