@@ -5,8 +5,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, CircularProgress, Button, IconButton } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SaveIcon from '@mui/icons-material/Save';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import EditIcon from '@mui/icons-material/Edit';
 import { FormEditor } from '@oven/form-editor';
 import type { EditorConfig, EditorState, FormDefinitionData, BlockDefinition } from '@oven/form-editor';
+import { renderComponentTree, FormProvider } from '@oven/oven-ui';
+import type { FormDefinition } from '@oven/oven-ui';
 
 /**
  * Full-page visual form editor using GrapeJS.
@@ -21,6 +25,7 @@ export default function FormEditorPage() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [lastState, setLastState] = useState<EditorState | null>(null);
+  const [preview, setPreview] = useState(false);
 
   // Load form + component blocks in parallel
   useEffect(() => {
@@ -146,6 +151,15 @@ export default function FormEditorPage() {
         </Typography>
         <Box sx={{ flex: 1 }} />
         <Button
+          variant={preview ? 'contained' : 'outlined'}
+          size="small"
+          startIcon={preview ? <EditIcon /> : <VisibilityIcon />}
+          onClick={() => setPreview((p) => !p)}
+          sx={{ textTransform: 'none', mr: 1 }}
+        >
+          {preview ? 'Editor' : 'Preview'}
+        </Button>
+        <Button
           variant="contained"
           size="small"
           startIcon={<SaveIcon />}
@@ -157,10 +171,29 @@ export default function FormEditorPage() {
         </Button>
       </Box>
 
-      {/* GrapeJS editor canvas */}
-      <Box sx={{ flex: 1, overflow: 'hidden' }}>
+      {/* GrapeJS editor canvas — hidden during preview to preserve state */}
+      <Box sx={{ flex: 1, overflow: 'hidden', display: preview ? 'none' : 'block' }}>
         <FormEditor config={editorConfig} />
       </Box>
+
+      {/* Preview mode — renders actual React components */}
+      {preview && (
+        <Box sx={{ flex: 1, overflow: 'auto', bgcolor: 'grey.50' }}>
+          {lastState?.components?.length ? (
+            <FormProvider
+              definition={{ components: lastState.components } as FormDefinition}
+            >
+              {renderComponentTree(lastState.components)}
+            </FormProvider>
+          ) : (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <Typography color="text.secondary">
+                No components to preview. Add components in the editor first.
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      )}
     </Box>
   );
 }

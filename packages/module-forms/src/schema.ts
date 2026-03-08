@@ -37,6 +37,7 @@ export const forms = pgTable(
     index('forms_slug_idx').on(table.slug),
     index('forms_status_idx').on(table.status),
     index('forms_created_by_idx').on(table.createdBy),
+    unique('forms_tenant_slug_unique').on(table.tenantId, table.slug),
   ]
 );
 
@@ -83,6 +84,7 @@ export const formComponents = pgTable(
     index('fc_tenant_id_idx').on(table.tenantId),
     index('fc_slug_idx').on(table.slug),
     index('fc_category_idx').on(table.category),
+    unique('fc_slug_unique').on(table.slug),
   ]
 );
 

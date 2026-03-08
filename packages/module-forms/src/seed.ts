@@ -1,3 +1,4 @@
+import { inArray } from 'drizzle-orm';
 import { permissions } from '@oven/module-roles/schema';
 import { formComponents, forms } from './schema';
 
@@ -634,6 +635,10 @@ export async function seedForms(db: any): Promise<void> {
     },
   ];
 
+  // Delete existing seed components to avoid duplicates on re-run
+  const seedSlugs = components.map((c) => c.slug);
+  await db.delete(formComponents).where(inArray(formComponents.slug, seedSlugs));
+
   for (const comp of components) {
     await db.insert(formComponents).values({
       name: comp.name,
@@ -649,6 +654,9 @@ export async function seedForms(db: any): Promise<void> {
   console.log(`[module-forms] Seeded ${components.length} form components`);
 
   // ─── Sample Forms ─────────────────────────────────────────────
+  // Delete existing seed forms to avoid duplicates on re-run
+  const seedFormSlugs = ['contact-form', 'patient-intake', 'login-form'];
+  await db.delete(forms).where(inArray(forms.slug, seedFormSlugs));
 
   // 1. Contact Form
   await db.insert(forms).values({
