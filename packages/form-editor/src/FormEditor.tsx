@@ -36,6 +36,21 @@ function serializeComponent(component: any): ComponentNode {
     } else if (name === 'dataSourceType' && value !== 'none') {
       dataSource = dataSource || { type: 'api' };
       dataSource.type = value as 'api' | 'workflow' | 'static';
+    } else if (name === 'dataSourceMethod' && value && value !== 'GET') {
+      dataSource = dataSource || { type: 'api' };
+      dataSource.method = value as 'GET' | 'POST' | 'PUT' | 'DELETE';
+    } else if (name === 'dataSourceHeaders' && value) {
+      dataSource = dataSource || { type: 'api' };
+      try { dataSource.headers = JSON.parse(value as string); } catch { /* ignore invalid JSON */ }
+    } else if (name === 'dataSourceAuthType' && value && value !== 'none') {
+      dataSource = dataSource || { type: 'api' };
+      dataSource.authType = value as 'none' | 'bearer' | 'basic' | 'api-key';
+    } else if (name === 'dataSourceAuthValue' && value) {
+      dataSource = dataSource || { type: 'api' };
+      dataSource.authValue = value as string;
+    } else if (name === 'dataSourceBody' && value) {
+      dataSource = dataSource || { type: 'api' };
+      dataSource.body = value as string;
     } else if (name === 'workflowSlug' && value) {
       workflowSlug = value as string;
     } else {
@@ -250,6 +265,10 @@ export default function FormEditor({ config }: FormEditorProps) {
       height: '100%',
       width: 'auto',
       storageManager: false, // We handle persistence ourselves
+      selectorManager: {
+        // Prevent GrapeJS from escaping Tailwind class characters (/, [, ], :, !)
+        escapeName: (name: string) => `${name}`.trim().replace(/\s+/g, '-'),
+      },
       canvas: {
         scripts: [
           'https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4',
@@ -418,7 +437,10 @@ export default function FormEditor({ config }: FormEditorProps) {
 
     // Register oven-ui components as GrapeJS blocks
     if (config.blocks && config.blocks.length > 0) {
-      registerOvenComponents(editor, { blocks: config.blocks });
+      registerOvenComponents(editor, {
+        blocks: config.blocks,
+        discovery: config.discovery,
+      });
     }
 
     // Load existing definition if available

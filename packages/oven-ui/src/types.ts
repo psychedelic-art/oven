@@ -29,6 +29,14 @@ export interface DataSourceConfig {
   workflowSlug?: string;
   /** HTTP method */
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  /** Custom request headers (JSON object) */
+  headers?: Record<string, string>;
+  /** Authentication type */
+  authType?: 'none' | 'bearer' | 'basic' | 'api-key';
+  /** Authentication credential value (token, password, key) */
+  authValue?: string;
+  /** Request body (JSON string for POST/PUT) */
+  body?: string;
   /** $.path param mappings resolved from form context */
   params?: Record<string, string>;
   /** Pagination config */

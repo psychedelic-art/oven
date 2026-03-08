@@ -11,4 +11,4 @@
 
 export { default as FormEditor } from './FormEditor';
 export { registerOvenComponents } from './registerOvenComponents';
-export type { EditorConfig, BlockDefinition, EditorState, FormDefinitionData } from './types';
+export type { EditorConfig, BlockDefinition, EditorState, FormDefinitionData, DiscoveryData } from './types';
