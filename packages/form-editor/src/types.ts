@@ -32,7 +32,7 @@ export interface BlockDefinition {
   defaultProps?: Record<string, unknown>;
   /** Data contract from form_components.data_contract */
   dataContract?: {
-    inputs?: Array<{ name: string; type: string; required?: boolean; description?: string; defaultValue?: unknown }>;
+    inputs?: Array<{ name: string; type: string; required?: boolean; description?: string; defaultValue?: unknown; options?: Array<{ id: string; name: string }> }>;
     outputs?: Array<{ name: string; type: string; description?: string }>;
   };
 }

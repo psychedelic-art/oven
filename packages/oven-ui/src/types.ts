@@ -79,6 +79,8 @@ export interface ParamDefinition {
   required?: boolean;
   description?: string;
   defaultValue?: unknown;
+  /** When provided, the trait renders as a <select> dropdown in the editor */
+  options?: Array<{ id: string; name: string }>;
 }
 
 // ─── Component Registry Entry ───────────────────────────────────

@@ -4,3 +4,5 @@ export { LinkButton } from './LinkButton';
 export { IconButton } from './IconButton';
 export { WorkflowTrigger } from './WorkflowTrigger';
 export { ApiFetcher } from './ApiFetcher';
+export { OAuthButton } from './OAuthButton';
+export type { OAuthButtonProps } from './OAuthButton';

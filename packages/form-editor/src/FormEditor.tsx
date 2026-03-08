@@ -393,6 +393,13 @@ export default function FormEditor({ config }: FormEditorProps) {
           font-size: 11px;
           color: #999;
         }
+        .oven-hero-overlay {
+          position: absolute;
+          inset: 0;
+          z-index: 0;
+          pointer-events: none;
+          background: linear-gradient(to bottom right, rgba(220, 38, 38, 0.9), rgba(0, 0, 0, 0.8));
+        }
       `;
       canvasDoc.head.appendChild(styleEl);
     });
@@ -414,6 +421,13 @@ export default function FormEditor({ config }: FormEditorProps) {
       const html = componentNodesToHtml(config.definition.components);
       editor.setComponents(html);
     }
+
+    // Fire initial onChange so the host always has the current state.
+    // loadProjectData() may not trigger component:add events, so without
+    // this the host's lastState stays null and preview shows nothing.
+    setTimeout(() => {
+      config.onChange?.(getEditorState());
+    }, 0);
 
     // Set up change handler
     editor.on('component:update', () => {

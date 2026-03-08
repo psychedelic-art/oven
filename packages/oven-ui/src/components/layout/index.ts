@@ -18,3 +18,6 @@ export type { AccordionProps, AccordionItem } from './Accordion';
 
 export { Divider } from './Divider';
 export type { DividerProps } from './Divider';
+
+export { HeroPanel } from './HeroPanel';
+export type { HeroPanelProps } from './HeroPanel';
