@@ -6,9 +6,13 @@ import { componentRegistry } from '@oven/oven-ui';
 
 // ─── registerOvenComponents ────────────────────────────────────
 // Registers all oven-ui component types and blocks with a GrapeJS
-// editor instance. Leaf components render actual React output via
-// renderToStaticMarkup; containers use getChildrenContainer() for
-// proper nesting with header + children slot.
+// editor instance.
+//
+// Component categories in GrapeJS:
+// 1. Grid Rows  — flex containers that only accept oven-grid-cell children
+// 2. Grid Cells — droppable column slots inside grid rows
+// 3. Containers — generic layout wrappers with header + children slot
+// 4. Leaves     — static-rendered React components (inputs, cards, etc.)
 
 interface RegisterOptions {
   /** Block definitions from the form_components API */
@@ -26,12 +30,26 @@ function contractTypeToTraitType(type: string): string {
   }
 }
 
+/** Grid row components — these use the Row → Cell pattern */
+const GRID_ROW_IDS: Record<string, number> = {
+  'oven-grid-2col': 2,
+  'oven-grid-3col': 3,
+};
+
+/** Grid cell component ID */
+const GRID_CELL_ID = 'oven-grid-cell';
+
 /** Layout components that are leaf nodes (not droppable containers) */
 const LEAF_LAYOUT_IDS = new Set(['oven-divider']);
 
-/** Check if a block should be treated as a container (accepts child drops) */
+/** Check if a block should be treated as a regular container */
 function isContainerBlock(block: BlockDefinition): boolean {
-  return block.category === 'layout' && !LEAF_LAYOUT_IDS.has(block.id);
+  return (
+    block.category === 'layout' &&
+    !LEAF_LAYOUT_IDS.has(block.id) &&
+    !(block.id in GRID_ROW_IDS) &&
+    block.id !== GRID_CELL_ID
+  );
 }
 
 /** Build a fallback placeholder HTML for components without registry entries or render errors */
@@ -61,145 +79,319 @@ function extractTraitProps(model: any): Record<string, unknown> {
   return props;
 }
 
+/** Build traits array from a block's data contract */
+function buildTraits(block: BlockDefinition): Array<Record<string, unknown>> {
+  const traits: Array<Record<string, unknown>> = [];
+
+  if (block.dataContract?.inputs) {
+    for (const input of block.dataContract.inputs) {
+      // Skip complex types that need special handling
+      if (input.name === 'dataSource' || input.name === 'children') continue;
+
+      traits.push({
+        name: input.name,
+        label: input.name.replace(/([A-Z])/g, ' $1').replace(/^./, (s: string) => s.toUpperCase()),
+        type: contractTypeToTraitType(input.type),
+        ...(input.defaultValue !== undefined ? { default: input.defaultValue } : {}),
+        ...(input.description ? { placeholder: input.description } : {}),
+      });
+    }
+  }
+
+  // Add common traits for data source and workflow bindings
+  traits.push(
+    { name: 'dataSourceEndpoint', label: 'Data Source Endpoint', type: 'text', category: 'Data' },
+    { name: 'dataSourceType', label: 'Data Source Type', type: 'select', options: [
+      { id: 'none', name: 'None' },
+      { id: 'api', name: 'API Endpoint' },
+      { id: 'workflow', name: 'Workflow' },
+      { id: 'static', name: 'Static Data' },
+    ], default: 'none', category: 'Data' },
+    { name: 'workflowSlug', label: 'Workflow Slug', type: 'text', category: 'Actions' },
+  );
+
+  return traits;
+}
+
 /**
  * Register all oven-ui component types and blocks with a GrapeJS editor.
  * Call this during editor initialization after the editor is ready.
  *
+ * - Grid rows use the Row → Cell pattern (flex container + droppable cells)
+ * - Grid cells are individually droppable column slots
+ * - Regular containers use header + children slot + getChildrenContainer()
  * - Leaf components render via renderToStaticMarkup (actual React output)
- * - Container components use header + children slot + getChildrenContainer()
  */
 export function registerOvenComponents(editor: Editor, options: RegisterOptions): void {
   const { blocks } = options;
   const blockManager = editor.BlockManager;
   const componentManager = editor.Components;
 
+  // ── Register grid cell type first (rows reference it) ──────────
+  registerGridCell(componentManager);
+
   for (const block of blocks) {
-    // Build traits from data contract inputs
-    const traits: Array<Record<string, unknown>> = [];
-
-    if (block.dataContract?.inputs) {
-      for (const input of block.dataContract.inputs) {
-        // Skip complex types that need special handling
-        if (input.name === 'dataSource' || input.name === 'children') continue;
-
-        traits.push({
-          name: input.name,
-          label: input.name.replace(/([A-Z])/g, ' $1').replace(/^./, (s: string) => s.toUpperCase()),
-          type: contractTypeToTraitType(input.type),
-          ...(input.defaultValue !== undefined ? { default: input.defaultValue } : {}),
-          ...(input.description ? { placeholder: input.description } : {}),
-        });
-      }
-    }
-
-    // Add common traits for data source and workflow bindings
-    traits.push(
-      { name: 'dataSourceEndpoint', label: 'Data Source Endpoint', type: 'text', category: 'Data' },
-      { name: 'dataSourceType', label: 'Data Source Type', type: 'select', options: [
-        { id: 'none', name: 'None' },
-        { id: 'api', name: 'API Endpoint' },
-        { id: 'workflow', name: 'Workflow' },
-        { id: 'static', name: 'Static Data' },
-      ], default: 'none', category: 'Data' },
-      { name: 'workflowSlug', label: 'Workflow Slug', type: 'text', category: 'Actions' },
-    );
-
-    const isContainer = isContainerBlock(block);
+    const traits = buildTraits(block);
     const fallback = buildFallbackHtml(block.label, block.id);
+    const columnCount = GRID_ROW_IDS[block.id];
 
-    // Register component type
-    componentManager.addType(block.id, {
-      isComponent: (el: HTMLElement) => el.getAttribute?.('data-oven-type') === block.id,
+    if (columnCount) {
+      // ── Grid Row ─────────────────────────────────────────────
+      registerGridRow(componentManager, block, traits, columnCount);
 
-      model: {
-        defaults: {
-          tagName: 'div',
-          droppable: isContainer,
-          attributes: {
-            'data-oven-type': block.id,
-            class: `oven-component oven-${block.category}`,
-          },
-          traits,
-          ...(block.defaultProps || {}),
-        },
-        init() {
-          // Re-render the view when trait values change
-          this.on('change:attributes', () => {
-            if (this.view?.onRender) {
-              this.view.onRender({ el: this.view.el, model: this });
-            }
-          });
-        },
-      },
+      // Block content spawns row + N cells
+      const cellComponents = Array.from({ length: columnCount }, () => ({
+        type: GRID_CELL_ID,
+      }));
 
-      view: isContainer
-        ? {
-            // ── Container view ─────────────────────────────────────
-            // Adds a label header and a children slot; GrapeJS manages
-            // child components inside the slot via getChildrenContainer().
-            onRender({ el, model }: { el: HTMLElement; model: any }) {
-              // Apply className trait to the container element for Tailwind styling
-              const traitProps = extractTraitProps(model);
-              if (traitProps.className && typeof traitProps.className === 'string') {
-                const baseClasses = `oven-component oven-${block.category}`;
-                el.setAttribute('class', `${baseClasses} ${traitProps.className}`);
-              }
+      blockManager.add(block.id, {
+        label: block.label,
+        category: formatCategory(block.category),
+        content: { type: block.id, components: cellComponents },
+        media: columnCount === 2
+          ? '<svg viewBox="0 0 24 24" width="28"><path fill="currentColor" d="M3 3h8v18H3V3zm10 0h8v18h-8V3z"/></svg>'
+          : '<svg viewBox="0 0 24 24" width="28"><path fill="currentColor" d="M2 3h6v18H2V3zm7 0h6v18H9V3zm7 0h6v18h-6V3z"/></svg>',
+        attributes: { class: `gjs-block-${block.id}` },
+      });
+    } else if (block.id === GRID_CELL_ID) {
+      // Skip — cell is registered above, no sidebar block for it
+      continue;
+    } else if (isContainerBlock(block)) {
+      // ── Regular Container ────────────────────────────────────
+      registerContainer(componentManager, block, traits);
 
-              if (!el.querySelector('.oven-container-header')) {
-                const header = document.createElement('div');
-                header.className = 'oven-container-header';
-                header.textContent = block.label;
-                el.insertBefore(header, el.firstChild);
-              }
-              if (!el.querySelector('.oven-children-slot')) {
-                const slot = document.createElement('div');
-                // CSS classes define the layout; styles injected in canvas iframe
-                slot.className = `oven-children-slot oven-slot-${block.id}`;
-                // Move existing child nodes into the slot
-                while (el.childNodes.length > 1) {
-                  slot.appendChild(el.childNodes[1]);
-                }
-                el.appendChild(slot);
-              }
-            },
-            getChildrenContainer() {
-              return this.el.querySelector('.oven-children-slot') || this.el;
-            },
-          }
-        : {
-            // ── Leaf view ──────────────────────────────────────────
-            // Renders the actual React component to static HTML via
-            // renderToStaticMarkup. Falls back to placeholder if the
-            // component uses hooks or context that aren't available.
-            onRender({ el, model }: { el: HTMLElement; model: any }) {
-              const entry = componentRegistry[block.id];
-              if (!entry) {
-                el.innerHTML = fallback;
-                return;
-              }
+      blockManager.add(block.id, {
+        label: block.label,
+        category: formatCategory(block.category),
+        content: { type: block.id },
+        media: '<svg viewBox="0 0 24 24" width="28"><path fill="currentColor" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>',
+        attributes: { class: `gjs-block-${block.id}` },
+      });
+    } else {
+      // ── Leaf Component ───────────────────────────────────────
+      registerLeaf(componentManager, block, traits, fallback);
 
-              const props = extractTraitProps(model);
-              try {
-                el.innerHTML = renderToStaticMarkup(
-                  React.createElement(entry.component, props),
-                );
-              } catch {
-                // Components using hooks/context fail here → graceful fallback
-                el.innerHTML = fallback;
-              }
-            },
-          },
-    });
-
-    // Register block in the sidebar
-    blockManager.add(block.id, {
-      label: block.label,
-      category: formatCategory(block.category),
-      content: { type: block.id },
-      media: '<svg viewBox="0 0 24 24" width="28"><path fill="currentColor" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>',
-      attributes: { class: `gjs-block-${block.id}` },
-    });
+      blockManager.add(block.id, {
+        label: block.label,
+        category: formatCategory(block.category),
+        content: { type: block.id },
+        media: '<svg viewBox="0 0 24 24" width="28"><path fill="currentColor" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>',
+        attributes: { class: `gjs-block-${block.id}` },
+      });
+    }
   }
+}
+
+// ─── Grid Cell Registration ──────────────────────────────────────
+// Each cell is a droppable slot inside a grid row. Users drop their
+// components into cells. Cells can't be dragged out or deleted.
+
+function registerGridCell(componentManager: any): void {
+  componentManager.addType(GRID_CELL_ID, {
+    isComponent: (el: HTMLElement) => el.getAttribute?.('data-oven-type') === GRID_CELL_ID,
+
+    model: {
+      defaults: {
+        tagName: 'div',
+        droppable: true,       // Accepts any component
+        draggable: false,      // Can't be dragged out of the row
+        removable: false,      // Can't be deleted
+        copyable: false,       // Can't be duplicated
+        selectable: true,
+        hoverable: true,
+        attributes: {
+          'data-oven-type': GRID_CELL_ID,
+          class: 'oven-grid-cell',
+        },
+        traits: [
+          { name: 'className', label: 'Class Name', type: 'text' },
+        ],
+      },
+    },
+
+    view: {
+      onRender({ el, model }: { el: HTMLElement; model: any }) {
+        // Apply className trait
+        const traitProps = extractTraitProps(model);
+        if (traitProps.className && typeof traitProps.className === 'string') {
+          el.setAttribute('class', `oven-grid-cell ${traitProps.className}`);
+        }
+      },
+    },
+  });
+}
+
+// ─── Grid Row Registration ───────────────────────────────────────
+// Grid rows are flex containers that only accept oven-grid-cell children.
+// They auto-create the correct number of cells when dropped from sidebar.
+
+function registerGridRow(
+  componentManager: any,
+  block: BlockDefinition,
+  traits: Array<Record<string, unknown>>,
+  _columnCount: number,
+): void {
+  componentManager.addType(block.id, {
+    isComponent: (el: HTMLElement) => el.getAttribute?.('data-oven-type') === block.id,
+
+    model: {
+      defaults: {
+        tagName: 'div',
+        // Only accept grid cells as direct children
+        droppable: `[data-oven-type="${GRID_CELL_ID}"]`,
+        attributes: {
+          'data-oven-type': block.id,
+          class: `oven-component oven-${block.category}`,
+        },
+        traits,
+        ...(block.defaultProps || {}),
+      },
+      init() {
+        // Re-render the view when trait values change
+        this.on('change:attributes', () => {
+          if (this.view?.onRender) {
+            this.view.onRender({ el: this.view.el, model: this });
+          }
+        });
+      },
+    },
+
+    view: {
+      onRender({ el, model }: { el: HTMLElement; model: any }) {
+        // Apply className trait to the row element
+        const traitProps = extractTraitProps(model);
+        if (traitProps.className && typeof traitProps.className === 'string') {
+          const baseClasses = `oven-component oven-${block.category}`;
+          el.setAttribute('class', `${baseClasses} ${traitProps.className}`);
+        }
+
+        // Add a subtle label in the top-left corner
+        if (!el.querySelector('.oven-row-label')) {
+          const label = document.createElement('div');
+          label.className = 'oven-row-label';
+          label.textContent = block.label;
+          el.insertBefore(label, el.firstChild);
+        }
+      },
+    },
+  });
+}
+
+// ─── Regular Container Registration ──────────────────────────────
+// Containers like oven-container, oven-tabs-container, oven-accordion
+
+function registerContainer(
+  componentManager: any,
+  block: BlockDefinition,
+  traits: Array<Record<string, unknown>>,
+): void {
+  componentManager.addType(block.id, {
+    isComponent: (el: HTMLElement) => el.getAttribute?.('data-oven-type') === block.id,
+
+    model: {
+      defaults: {
+        tagName: 'div',
+        droppable: true,
+        attributes: {
+          'data-oven-type': block.id,
+          class: `oven-component oven-${block.category}`,
+        },
+        traits,
+        ...(block.defaultProps || {}),
+      },
+      init() {
+        this.on('change:attributes', () => {
+          if (this.view?.onRender) {
+            this.view.onRender({ el: this.view.el, model: this });
+          }
+        });
+      },
+    },
+
+    view: {
+      onRender({ el, model }: { el: HTMLElement; model: any }) {
+        // Apply className trait to the container element for Tailwind styling
+        const traitProps = extractTraitProps(model);
+        if (traitProps.className && typeof traitProps.className === 'string') {
+          const baseClasses = `oven-component oven-${block.category}`;
+          el.setAttribute('class', `${baseClasses} ${traitProps.className}`);
+        }
+
+        if (!el.querySelector('.oven-container-header')) {
+          const header = document.createElement('div');
+          header.className = 'oven-container-header';
+          header.textContent = block.label;
+          el.insertBefore(header, el.firstChild);
+        }
+        if (!el.querySelector('.oven-children-slot')) {
+          const slot = document.createElement('div');
+          slot.className = `oven-children-slot oven-slot-${block.id}`;
+          // Move existing child nodes into the slot
+          while (el.childNodes.length > 1) {
+            slot.appendChild(el.childNodes[1]);
+          }
+          el.appendChild(slot);
+        }
+      },
+      getChildrenContainer() {
+        return this.el.querySelector('.oven-children-slot') || this.el;
+      },
+    },
+  });
+}
+
+// ─── Leaf Component Registration ─────────────────────────────────
+// Renders the actual React component to static HTML via renderToStaticMarkup
+
+function registerLeaf(
+  componentManager: any,
+  block: BlockDefinition,
+  traits: Array<Record<string, unknown>>,
+  fallback: string,
+): void {
+  componentManager.addType(block.id, {
+    isComponent: (el: HTMLElement) => el.getAttribute?.('data-oven-type') === block.id,
+
+    model: {
+      defaults: {
+        tagName: 'div',
+        droppable: false,
+        attributes: {
+          'data-oven-type': block.id,
+          class: `oven-component oven-${block.category}`,
+        },
+        traits,
+        ...(block.defaultProps || {}),
+      },
+      init() {
+        this.on('change:attributes', () => {
+          if (this.view?.onRender) {
+            this.view.onRender({ el: this.view.el, model: this });
+          }
+        });
+      },
+    },
+
+    view: {
+      onRender({ el, model }: { el: HTMLElement; model: any }) {
+        const entry = componentRegistry[block.id];
+        if (!entry) {
+          el.innerHTML = fallback;
+          return;
+        }
+
+        const props = extractTraitProps(model);
+        try {
+          el.innerHTML = renderToStaticMarkup(
+            React.createElement(entry.component, props),
+          );
+        } catch {
+          // Components using hooks/context fail here → graceful fallback
+          el.innerHTML = fallback;
+        }
+      },
+    },
+  });
 }
 
 /** Format category slug to display label */

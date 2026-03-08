@@ -378,6 +378,16 @@ export async function seedForms(db: any): Promise<void> {
       },
     },
     {
+      name: 'Grid Cell', slug: 'oven-grid-cell', category: 'layout',
+      description: 'Droppable column cell inside a grid row',
+      definition: { type: 'oven-grid-cell', template: '<div data-gjs-type="oven-grid-cell"></div>' },
+      defaultProps: {},
+      dataContract: {
+        inputs: [{ name: 'className', type: 'string' }],
+        outputs: [],
+      },
+    },
+    {
       name: 'Tabs Container', slug: 'oven-tabs-container', category: 'layout',
       description: 'Tabbed content container',
       definition: { type: 'oven-tabs-container', template: '<div data-gjs-type="oven-tabs-container"></div>' },
@@ -684,14 +694,28 @@ export async function seedForms(db: any): Promise<void> {
           props: { gap: '1rem' },
           children: [
             {
-              id: 'contact-name',
-              type: 'oven-text-input',
-              props: { label: 'Full Name', name: 'fullName', placeholder: 'John Doe', required: true },
+              id: 'contact-cell-1',
+              type: 'oven-grid-cell',
+              props: {},
+              children: [
+                {
+                  id: 'contact-name',
+                  type: 'oven-text-input',
+                  props: { label: 'Full Name', name: 'fullName', placeholder: 'John Doe', required: true },
+                },
+              ],
             },
             {
-              id: 'contact-email',
-              type: 'oven-email-input',
-              props: { label: 'Email Address', name: 'email', placeholder: 'john@example.com', required: true },
+              id: 'contact-cell-2',
+              type: 'oven-grid-cell',
+              props: {},
+              children: [
+                {
+                  id: 'contact-email',
+                  type: 'oven-email-input',
+                  props: { label: 'Email Address', name: 'email', placeholder: 'john@example.com', required: true },
+                },
+              ],
             },
           ],
         },
@@ -771,8 +795,12 @@ export async function seedForms(db: any): Promise<void> {
                   type: 'oven-grid-2col',
                   props: { gap: '1rem' },
                   children: [
-                    { id: 'intake-first', type: 'oven-text-input', props: { label: 'First Name', name: 'firstName', required: true } },
-                    { id: 'intake-last', type: 'oven-text-input', props: { label: 'Last Name', name: 'lastName', required: true } },
+                    { id: 'intake-name-cell-1', type: 'oven-grid-cell', props: {}, children: [
+                      { id: 'intake-first', type: 'oven-text-input', props: { label: 'First Name', name: 'firstName', required: true } },
+                    ]},
+                    { id: 'intake-name-cell-2', type: 'oven-grid-cell', props: {}, children: [
+                      { id: 'intake-last', type: 'oven-text-input', props: { label: 'Last Name', name: 'lastName', required: true } },
+                    ]},
                   ],
                 },
                 {
@@ -780,8 +808,12 @@ export async function seedForms(db: any): Promise<void> {
                   type: 'oven-grid-2col',
                   props: { gap: '1rem' },
                   children: [
-                    { id: 'intake-dob', type: 'oven-date-picker', props: { label: 'Date of Birth', name: 'dob', required: true } },
-                    { id: 'intake-phone2', type: 'oven-phone-input', props: { label: 'Phone', name: 'phone', required: true } },
+                    { id: 'intake-contact-cell-1', type: 'oven-grid-cell', props: {}, children: [
+                      { id: 'intake-dob', type: 'oven-date-picker', props: { label: 'Date of Birth', name: 'dob', required: true } },
+                    ]},
+                    { id: 'intake-contact-cell-2', type: 'oven-grid-cell', props: {}, children: [
+                      { id: 'intake-phone2', type: 'oven-phone-input', props: { label: 'Phone', name: 'phone', required: true } },
+                    ]},
                   ],
                 },
                 { id: 'intake-email2', type: 'oven-email-input', props: { label: 'Email', name: 'email', required: true } },
@@ -866,8 +898,12 @@ export async function seedForms(db: any): Promise<void> {
           type: 'oven-grid-2col',
           props: { gap: 'none', className: 'min-h-screen' },
           children: [
-            // ── Left: Branding panel ──
+            // ── Left cell: Branding panel ──
             {
+              id: 'login-cell-left',
+              type: 'oven-grid-cell',
+              props: {},
+              children: [{
               id: 'login-branding',
               type: 'oven-container',
               props: {
@@ -909,38 +945,58 @@ export async function seedForms(db: any): Promise<void> {
                   props: { gap: 'md', className: 'mt-auto' },
                   children: [
                     {
-                      id: 'login-stat-uptime',
-                      type: 'oven-stat-card',
-                      props: {
-                        label: 'Uptime',
-                        value: '99.9%',
-                        className: 'bg-white/10 border-white/20 text-white',
-                      },
+                      id: 'login-stats-cell-1',
+                      type: 'oven-grid-cell',
+                      props: {},
+                      children: [{
+                        id: 'login-stat-uptime',
+                        type: 'oven-stat-card',
+                        props: {
+                          label: 'Uptime',
+                          value: '99.9%',
+                          className: 'bg-white/10 border-white/20 text-white',
+                        },
+                      }],
                     },
                     {
-                      id: 'login-stat-support',
-                      type: 'oven-stat-card',
-                      props: {
-                        label: 'Support',
-                        value: '24/7',
-                        className: 'bg-white/10 border-white/20 text-white',
-                      },
+                      id: 'login-stats-cell-2',
+                      type: 'oven-grid-cell',
+                      props: {},
+                      children: [{
+                        id: 'login-stat-support',
+                        type: 'oven-stat-card',
+                        props: {
+                          label: 'Support',
+                          value: '24/7',
+                          className: 'bg-white/10 border-white/20 text-white',
+                        },
+                      }],
                     },
                     {
-                      id: 'login-stat-ai',
-                      type: 'oven-stat-card',
-                      props: {
-                        label: 'Intelligence',
-                        value: 'AI',
-                        className: 'bg-white/10 border-white/20 text-white',
-                      },
+                      id: 'login-stats-cell-3',
+                      type: 'oven-grid-cell',
+                      props: {},
+                      children: [{
+                        id: 'login-stat-ai',
+                        type: 'oven-stat-card',
+                        props: {
+                          label: 'Intelligence',
+                          value: 'AI',
+                          className: 'bg-white/10 border-white/20 text-white',
+                        },
+                      }],
                     },
                   ],
                 },
               ],
+            }],
             },
-            // ── Right: Login form panel ──
+            // ── Right cell: Login form panel ──
             {
+              id: 'login-cell-right',
+              type: 'oven-grid-cell',
+              props: {},
+              children: [{
               id: 'login-form-panel',
               type: 'oven-container',
               props: {
@@ -1033,19 +1089,34 @@ export async function seedForms(db: any): Promise<void> {
                   props: { gap: 'sm', className: 'mt-6' },
                   children: [
                     {
-                      id: 'login-badge-1',
-                      type: 'oven-badge',
-                      props: { text: '@company.com', variant: 'info' },
+                      id: 'login-domains-cell-1',
+                      type: 'oven-grid-cell',
+                      props: {},
+                      children: [{
+                        id: 'login-badge-1',
+                        type: 'oven-badge',
+                        props: { text: '@company.com', variant: 'info' },
+                      }],
                     },
                     {
-                      id: 'login-badge-2',
-                      type: 'oven-badge',
-                      props: { text: '@partner.org', variant: 'info' },
+                      id: 'login-domains-cell-2',
+                      type: 'oven-grid-cell',
+                      props: {},
+                      children: [{
+                        id: 'login-badge-2',
+                        type: 'oven-badge',
+                        props: { text: '@partner.org', variant: 'info' },
+                      }],
                     },
                     {
-                      id: 'login-badge-3',
-                      type: 'oven-badge',
-                      props: { text: '@corp.net', variant: 'info' },
+                      id: 'login-domains-cell-3',
+                      type: 'oven-grid-cell',
+                      props: {},
+                      children: [{
+                        id: 'login-badge-3',
+                        type: 'oven-badge',
+                        props: { text: '@corp.net', variant: 'info' },
+                      }],
                     },
                   ],
                 },
@@ -1058,6 +1129,7 @@ export async function seedForms(db: any): Promise<void> {
                   },
                 },
               ],
+            }],
             },
           ],
         },

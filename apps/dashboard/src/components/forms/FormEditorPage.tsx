@@ -11,6 +11,7 @@ import { FormEditor } from '@oven/form-editor';
 import type { EditorConfig, EditorState, FormDefinitionData, BlockDefinition } from '@oven/form-editor';
 import { renderComponentTree, FormProvider } from '@oven/oven-ui';
 import type { FormDefinition } from '@oven/oven-ui';
+import { TailwindPreviewFrame } from './TailwindPreviewFrame';
 
 /**
  * Full-page visual form editor using GrapeJS.
@@ -176,24 +177,22 @@ export default function FormEditorPage() {
         <FormEditor config={editorConfig} />
       </Box>
 
-      {/* Preview mode — renders actual React components */}
-      {preview && (
-        <Box sx={{ flex: 1, overflow: 'auto', bgcolor: 'grey.50' }}>
-          {lastState?.components?.length ? (
-            <FormProvider
-              definition={{ components: lastState.components } as FormDefinition}
-            >
-              {renderComponentTree(lastState.components)}
-            </FormProvider>
-          ) : (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-              <Typography color="text.secondary">
-                No components to preview. Add components in the editor first.
-              </Typography>
-            </Box>
-          )}
+      {/* Preview mode — renders actual React components inside a Tailwind iframe */}
+      {preview && lastState?.components?.length ? (
+        <TailwindPreviewFrame>
+          <FormProvider
+            definition={{ components: lastState.components } as FormDefinition}
+          >
+            {renderComponentTree(lastState.components)}
+          </FormProvider>
+        </TailwindPreviewFrame>
+      ) : preview ? (
+        <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <Typography color="text.secondary">
+            No components to preview. Add components in the editor first.
+          </Typography>
         </Box>
-      )}
+      ) : null}
     </Box>
   );
 }
