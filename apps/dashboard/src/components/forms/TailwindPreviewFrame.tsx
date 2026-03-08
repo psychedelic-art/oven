@@ -20,6 +20,7 @@ interface TailwindPreviewFrameProps {
 
 export function TailwindPreviewFrame({ children }: TailwindPreviewFrameProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [mountNode, setMountNode] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -29,6 +30,12 @@ export function TailwindPreviewFrame({ children }: TailwindPreviewFrameProps) {
     function setupIframe() {
       const doc = iframe!.contentDocument;
       if (!doc) return;
+
+      // Clear any previous polling interval
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
 
       // Write a minimal HTML document
       doc.open();
@@ -45,16 +52,26 @@ export function TailwindPreviewFrame({ children }: TailwindPreviewFrameProps) {
 </html>`);
       doc.close();
 
-      // Wait for the script to load, then set mount node
-      const checkReady = () => {
+      // Poll for the preview-root node (retries up to 3 seconds)
+      let attempts = 0;
+      const maxAttempts = 30;
+      pollRef.current = setInterval(() => {
+        attempts++;
         const root = doc.getElementById('preview-root');
         if (root) {
           setMountNode(root);
+          if (pollRef.current) {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
+          }
+        } else if (attempts >= maxAttempts) {
+          if (pollRef.current) {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
+          }
+          console.warn('TailwindPreviewFrame: preview-root not found after 3s');
         }
-      };
-
-      // Give Tailwind CDN a moment to initialize
-      setTimeout(checkReady, 100);
+      }, 100);
     }
 
     iframe.addEventListener('load', setupIframe);
@@ -66,6 +83,10 @@ export function TailwindPreviewFrame({ children }: TailwindPreviewFrameProps) {
 
     return () => {
       iframe.removeEventListener('load', setupIframe);
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
     };
   }, []);
 

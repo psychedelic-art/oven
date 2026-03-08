@@ -91,7 +91,8 @@ function buildTraits(block: BlockDefinition): Array<Record<string, unknown>> {
       traits.push({
         name: input.name,
         label: input.name.replace(/([A-Z])/g, ' $1').replace(/^./, (s: string) => s.toUpperCase()),
-        type: contractTypeToTraitType(input.type),
+        type: input.options ? 'select' : contractTypeToTraitType(input.type),
+        ...(input.options ? { options: input.options } : {}),
         ...(input.defaultValue !== undefined ? { default: input.defaultValue } : {}),
         ...(input.description ? { placeholder: input.description } : {}),
       });
@@ -315,6 +316,28 @@ function registerContainer(
         if (traitProps.className && typeof traitProps.className === 'string') {
           const baseClasses = `oven-component oven-${block.category}`;
           el.setAttribute('class', `${baseClasses} ${traitProps.className}`);
+        }
+
+        // Hero panel: apply background image and overlay in editor canvas
+        if (block.id === 'oven-hero-panel') {
+          const bgImage = traitProps.backgroundImage;
+          if (bgImage && typeof bgImage === 'string') {
+            el.style.setProperty('--hero-bg-image', `url(${bgImage})`);
+            el.style.backgroundImage = 'var(--hero-bg-image)';
+            el.style.backgroundSize = 'cover';
+            el.style.backgroundPosition = 'center';
+          }
+          const overlay = traitProps.overlay as string;
+          if (overlay && overlay !== 'none') {
+            if (!el.querySelector('.oven-hero-overlay')) {
+              const overlayEl = document.createElement('div');
+              overlayEl.className = 'oven-hero-overlay';
+              el.insertBefore(overlayEl, el.firstChild);
+            }
+          } else {
+            const existingOverlay = el.querySelector('.oven-hero-overlay');
+            if (existingOverlay) existingOverlay.remove();
+          }
         }
 
         if (!el.querySelector('.oven-container-header')) {

@@ -32,6 +32,7 @@ import { GridCell } from './components/layout/GridCell';
 import { TabsContainer } from './components/layout/TabsContainer';
 import { Accordion } from './components/layout/Accordion';
 import { Divider } from './components/layout/Divider';
+import { HeroPanel } from './components/layout/HeroPanel';
 
 // ─── Action Components ─────────────────────────────────────────
 import { SubmitButton } from './components/actions/SubmitButton';
@@ -40,6 +41,7 @@ import { LinkButton } from './components/actions/LinkButton';
 import { IconButton } from './components/actions/IconButton';
 import { WorkflowTrigger } from './components/actions/WorkflowTrigger';
 import { ApiFetcher } from './components/actions/ApiFetcher';
+import { OAuthButton } from './components/actions/OAuthButton';
 
 // ─── Navigation Components ─────────────────────────────────────
 import { Breadcrumb } from './components/navigation/Breadcrumb';
@@ -230,7 +232,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
         { name: 'label', type: 'string' },
         { name: 'name', type: 'string', required: true },
         { name: 'options', type: 'array', required: true, description: 'Array of {value, label}' },
-        { name: 'orientation', type: 'string', defaultValue: 'vertical' },
+        { name: 'orientation', type: 'string', defaultValue: 'vertical', options: [{ id: 'horizontal', name: 'Horizontal' }, { id: 'vertical', name: 'Vertical' }] },
         { name: 'required', type: 'boolean', defaultValue: false },
       ],
       outputs: [{ name: 'value', type: 'string' }],
@@ -312,7 +314,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     dataContract: {
       inputs: [
         { name: 'columns', type: 'number', defaultValue: 3 },
-        { name: 'gap', type: 'string', defaultValue: 'md' },
+        { name: 'gap', type: 'string', defaultValue: 'md', options: [{ id: 'sm', name: 'Small' }, { id: 'md', name: 'Medium' }, { id: 'lg', name: 'Large' }] },
       ],
       outputs: [
         { name: 'selectedCard', type: 'object' },
@@ -342,8 +344,8 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     dataContract: {
       inputs: [
         { name: 'text', type: 'string', required: true },
-        { name: 'variant', type: 'string', defaultValue: 'default' },
-        { name: 'size', type: 'string', defaultValue: 'md' },
+        { name: 'variant', type: 'string', defaultValue: 'default', options: [{ id: 'default', name: 'Default' }, { id: 'success', name: 'Success' }, { id: 'warning', name: 'Warning' }, { id: 'error', name: 'Error' }, { id: 'info', name: 'Info' }] },
+        { name: 'size', type: 'string', defaultValue: 'sm', options: [{ id: 'sm', name: 'Small' }, { id: 'md', name: 'Medium' }] },
       ],
       outputs: [],
     },
@@ -359,8 +361,8 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
         { name: 'max', type: 'number', defaultValue: 100 },
         { name: 'label', type: 'string' },
         { name: 'showValue', type: 'boolean', defaultValue: true },
-        { name: 'color', type: 'string', defaultValue: 'blue' },
-        { name: 'size', type: 'string', defaultValue: 'md' },
+        { name: 'color', type: 'string', defaultValue: 'blue', options: [{ id: 'blue', name: 'Blue' }, { id: 'green', name: 'Green' }, { id: 'red', name: 'Red' }, { id: 'yellow', name: 'Yellow' }] },
+        { name: 'size', type: 'string', defaultValue: 'md', options: [{ id: 'sm', name: 'Small' }, { id: 'md', name: 'Medium' }, { id: 'lg', name: 'Large' }] },
       ],
       outputs: [],
     },
@@ -374,7 +376,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
       inputs: [
         { name: 'src', type: 'string' },
         { name: 'name', type: 'string' },
-        { name: 'size', type: 'string', defaultValue: 'md' },
+        { name: 'size', type: 'string', defaultValue: 'md', options: [{ id: 'sm', name: 'Small' }, { id: 'md', name: 'Medium' }, { id: 'lg', name: 'Large' }] },
         { name: 'fallback', type: 'string' },
       ],
       outputs: [],
@@ -389,8 +391,8 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     icon: 'CropFree',
     dataContract: {
       inputs: [
-        { name: 'maxWidth', type: 'string', defaultValue: 'lg' },
-        { name: 'padding', type: 'string', defaultValue: 'md' },
+        { name: 'maxWidth', type: 'string', defaultValue: 'lg', options: [{ id: 'sm', name: 'Small' }, { id: 'md', name: 'Medium' }, { id: 'lg', name: 'Large' }, { id: 'xl', name: 'Extra Large' }, { id: 'full', name: 'Full Width' }] },
+        { name: 'padding', type: 'string', defaultValue: 'md', options: [{ id: 'none', name: 'None' }, { id: 'sm', name: 'Small' }, { id: 'md', name: 'Medium' }, { id: 'lg', name: 'Large' }] },
       ],
       outputs: [],
     },
@@ -402,7 +404,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     icon: 'ViewColumn',
     dataContract: {
       inputs: [
-        { name: 'gap', type: 'string', defaultValue: 'md' },
+        { name: 'gap', type: 'string', defaultValue: 'md', options: [{ id: 'none', name: 'None' }, { id: 'sm', name: 'Small' }, { id: 'md', name: 'Medium' }, { id: 'lg', name: 'Large' }] },
         { name: 'responsive', type: 'boolean', defaultValue: true },
       ],
       outputs: [],
@@ -415,7 +417,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     icon: 'ViewModule',
     dataContract: {
       inputs: [
-        { name: 'gap', type: 'string', defaultValue: 'md' },
+        { name: 'gap', type: 'string', defaultValue: 'md', options: [{ id: 'none', name: 'None' }, { id: 'sm', name: 'Small' }, { id: 'md', name: 'Medium' }, { id: 'lg', name: 'Large' }] },
         { name: 'responsive', type: 'boolean', defaultValue: true },
       ],
       outputs: [],
@@ -468,7 +470,24 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     dataContract: {
       inputs: [
         { name: 'label', type: 'string' },
-        { name: 'orientation', type: 'string', defaultValue: 'horizontal' },
+        { name: 'orientation', type: 'string', defaultValue: 'horizontal', options: [{ id: 'horizontal', name: 'Horizontal' }, { id: 'vertical', name: 'Vertical' }] },
+      ],
+      outputs: [],
+    },
+  },
+  'oven-hero-panel': {
+    component: HeroPanel,
+    category: 'layout',
+    description: 'Full-bleed panel with background image, gradient overlay, and content',
+    icon: 'Wallpaper',
+    dataContract: {
+      inputs: [
+        { name: 'backgroundImage', type: 'string', description: 'Background image URL' },
+        { name: 'overlay', type: 'string', defaultValue: 'none', options: [{ id: 'none', name: 'None' }, { id: 'dark', name: 'Dark' }, { id: 'brand-red', name: 'Brand Red' }, { id: 'brand-blue', name: 'Brand Blue' }, { id: 'custom', name: 'Custom' }] },
+        { name: 'overlayGradient', type: 'string', description: 'Custom gradient classes (when overlay=custom)' },
+        { name: 'minHeight', type: 'string', defaultValue: 'auto', options: [{ id: 'auto', name: 'Auto' }, { id: 'screen', name: 'Full Screen' }, { id: 'half', name: 'Half Screen' }] },
+        { name: 'verticalAlign', type: 'string', defaultValue: 'start', options: [{ id: 'start', name: 'Top' }, { id: 'center', name: 'Center' }, { id: 'end', name: 'Bottom' }, { id: 'between', name: 'Space Between' }] },
+        { name: 'padding', type: 'string', defaultValue: 'md', options: [{ id: 'none', name: 'None' }, { id: 'sm', name: 'Small' }, { id: 'md', name: 'Medium' }, { id: 'lg', name: 'Large' }, { id: 'xl', name: 'Extra Large' }] },
       ],
       outputs: [],
     },
@@ -483,8 +502,8 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     dataContract: {
       inputs: [
         { name: 'label', type: 'string', defaultValue: 'Submit' },
-        { name: 'variant', type: 'string', defaultValue: 'primary' },
-        { name: 'size', type: 'string', defaultValue: 'md' },
+        { name: 'variant', type: 'string', defaultValue: 'primary', options: [{ id: 'primary', name: 'Primary' }, { id: 'secondary', name: 'Secondary' }, { id: 'outline', name: 'Outline' }, { id: 'ghost', name: 'Ghost' }, { id: 'destructive', name: 'Destructive' }] },
+        { name: 'size', type: 'string', defaultValue: 'md', options: [{ id: 'sm', name: 'Small' }, { id: 'md', name: 'Medium' }, { id: 'lg', name: 'Large' }] },
         { name: 'fullWidth', type: 'boolean', defaultValue: false },
       ],
       outputs: [],
@@ -498,8 +517,8 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     dataContract: {
       inputs: [
         { name: 'label', type: 'string', required: true },
-        { name: 'variant', type: 'string', defaultValue: 'primary' },
-        { name: 'size', type: 'string', defaultValue: 'md' },
+        { name: 'variant', type: 'string', defaultValue: 'primary', options: [{ id: 'primary', name: 'Primary' }, { id: 'secondary', name: 'Secondary' }, { id: 'outline', name: 'Outline' }, { id: 'ghost', name: 'Ghost' }, { id: 'destructive', name: 'Destructive' }] },
+        { name: 'size', type: 'string', defaultValue: 'md', options: [{ id: 'sm', name: 'Small' }, { id: 'md', name: 'Medium' }, { id: 'lg', name: 'Large' }] },
       ],
       outputs: [],
     },
@@ -513,8 +532,8 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
       inputs: [
         { name: 'label', type: 'string', required: true },
         { name: 'href', type: 'string', required: true },
-        { name: 'target', type: 'string', defaultValue: '_self' },
-        { name: 'variant', type: 'string', defaultValue: 'primary' },
+        { name: 'target', type: 'string', defaultValue: '_self', options: [{ id: '_self', name: 'Same Tab' }, { id: '_blank', name: 'New Tab' }] },
+        { name: 'variant', type: 'string', defaultValue: 'primary', options: [{ id: 'primary', name: 'Primary' }, { id: 'secondary', name: 'Secondary' }, { id: 'outline', name: 'Outline' }, { id: 'ghost', name: 'Ghost' }, { id: 'destructive', name: 'Destructive' }] },
       ],
       outputs: [],
     },
@@ -527,8 +546,8 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     dataContract: {
       inputs: [
         { name: 'tooltip', type: 'string' },
-        { name: 'variant', type: 'string', defaultValue: 'ghost' },
-        { name: 'size', type: 'string', defaultValue: 'md' },
+        { name: 'variant', type: 'string', defaultValue: 'ghost', options: [{ id: 'ghost', name: 'Ghost' }, { id: 'outline', name: 'Outline' }] },
+        { name: 'size', type: 'string', defaultValue: 'md', options: [{ id: 'sm', name: 'Small' }, { id: 'md', name: 'Medium' }, { id: 'lg', name: 'Large' }] },
       ],
       outputs: [],
     },
@@ -543,7 +562,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
         { name: 'label', type: 'string', required: true },
         { name: 'workflowSlug', type: 'string', required: true, description: 'Workflow to invoke' },
         { name: 'inputMapping', type: 'object', description: '$.path mappings for workflow payload' },
-        { name: 'variant', type: 'string', defaultValue: 'primary' },
+        { name: 'variant', type: 'string', defaultValue: 'primary', options: [{ id: 'primary', name: 'Primary' }, { id: 'secondary', name: 'Secondary' }, { id: 'outline', name: 'Outline' }, { id: 'ghost', name: 'Ghost' }, { id: 'destructive', name: 'Destructive' }] },
       ],
       outputs: [
         { name: 'result', type: 'object', description: 'Workflow execution result' },
@@ -558,7 +577,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     dataContract: {
       inputs: [
         { name: 'endpoint', type: 'string', required: true },
-        { name: 'method', type: 'string', defaultValue: 'GET' },
+        { name: 'method', type: 'string', defaultValue: 'GET', options: [{ id: 'GET', name: 'GET' }, { id: 'POST', name: 'POST' }, { id: 'PUT', name: 'PUT' }, { id: 'DELETE', name: 'DELETE' }] },
         { name: 'params', type: 'object' },
         { name: 'autoFetch', type: 'boolean', defaultValue: true },
       ],
@@ -567,6 +586,22 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
         { name: 'loading', type: 'boolean' },
         { name: 'error', type: 'string' },
       ],
+    },
+  },
+  'oven-oauth-button': {
+    component: OAuthButton,
+    category: 'action',
+    description: 'OAuth sign-in button with provider icon (Google, Microsoft, Apple, GitHub)',
+    icon: 'Login',
+    dataContract: {
+      inputs: [
+        { name: 'provider', type: 'string', required: true, defaultValue: 'google', options: [{ id: 'google', name: 'Google' }, { id: 'microsoft', name: 'Microsoft' }, { id: 'apple', name: 'Apple' }, { id: 'github', name: 'GitHub' }] },
+        { name: 'label', type: 'string', description: 'Custom button label' },
+        { name: 'variant', type: 'string', defaultValue: 'filled', options: [{ id: 'filled', name: 'Filled' }, { id: 'outline', name: 'Outline' }] },
+        { name: 'fullWidth', type: 'boolean', defaultValue: false },
+        { name: 'size', type: 'string', defaultValue: 'md', options: [{ id: 'sm', name: 'Small' }, { id: 'md', name: 'Medium' }, { id: 'lg', name: 'Large' }] },
+      ],
+      outputs: [],
     },
   },
 
@@ -593,7 +628,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
       inputs: [
         { name: 'steps', type: 'array', required: true, description: 'Array of {label, description?}' },
         { name: 'currentStep', type: 'number', required: true },
-        { name: 'orientation', type: 'string', defaultValue: 'horizontal' },
+        { name: 'orientation', type: 'string', defaultValue: 'horizontal', options: [{ id: 'horizontal', name: 'Horizontal' }, { id: 'vertical', name: 'Vertical' }] },
       ],
       outputs: [],
     },
@@ -623,8 +658,8 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     dataContract: {
       inputs: [
         { name: 'text', type: 'string', required: true },
-        { name: 'level', type: 'string', defaultValue: 'h2' },
-        { name: 'align', type: 'string', defaultValue: 'left' },
+        { name: 'level', type: 'string', defaultValue: 'h2', options: [{ id: 'h1', name: 'H1' }, { id: 'h2', name: 'H2' }, { id: 'h3', name: 'H3' }, { id: 'h4', name: 'H4' }, { id: 'h5', name: 'H5' }, { id: 'h6', name: 'H6' }] },
+        { name: 'align', type: 'string', defaultValue: 'left', options: [{ id: 'left', name: 'Left' }, { id: 'center', name: 'Center' }, { id: 'right', name: 'Right' }] },
       ],
       outputs: [],
     },
@@ -637,9 +672,9 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
     dataContract: {
       inputs: [
         { name: 'text', type: 'string', required: true },
-        { name: 'size', type: 'string', defaultValue: 'md' },
-        { name: 'color', type: 'string', defaultValue: 'default' },
-        { name: 'align', type: 'string', defaultValue: 'left' },
+        { name: 'size', type: 'string', defaultValue: 'md', options: [{ id: 'sm', name: 'Small' }, { id: 'md', name: 'Medium' }, { id: 'lg', name: 'Large' }] },
+        { name: 'color', type: 'string', defaultValue: 'default', options: [{ id: 'default', name: 'Default' }, { id: 'muted', name: 'Muted' }, { id: 'primary', name: 'Primary' }] },
+        { name: 'align', type: 'string', defaultValue: 'left', options: [{ id: 'left', name: 'Left' }, { id: 'center', name: 'Center' }, { id: 'right', name: 'Right' }] },
       ],
       outputs: [],
     },
@@ -655,7 +690,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
         { name: 'alt', type: 'string', required: true },
         { name: 'width', type: 'number' },
         { name: 'height', type: 'number' },
-        { name: 'objectFit', type: 'string', defaultValue: 'cover' },
+        { name: 'objectFit', type: 'string', defaultValue: 'cover', options: [{ id: 'cover', name: 'Cover' }, { id: 'contain', name: 'Contain' }, { id: 'fill', name: 'Fill' }, { id: 'none', name: 'None' }] },
         { name: 'rounded', type: 'boolean', defaultValue: false },
         { name: 'shadow', type: 'boolean', defaultValue: false },
       ],
@@ -671,7 +706,7 @@ export const componentRegistry: Record<string, ComponentRegistryEntry> = {
       inputs: [
         { name: 'title', type: 'string' },
         { name: 'message', type: 'string', required: true },
-        { name: 'variant', type: 'string', defaultValue: 'info' },
+        { name: 'variant', type: 'string', defaultValue: 'info', options: [{ id: 'info', name: 'Info' }, { id: 'success', name: 'Success' }, { id: 'warning', name: 'Warning' }, { id: 'error', name: 'Error' }] },
         { name: 'dismissible', type: 'boolean', defaultValue: false },
       ],
       outputs: [],

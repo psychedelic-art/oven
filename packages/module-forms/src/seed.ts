@@ -643,6 +643,46 @@ export async function seedForms(db: any): Promise<void> {
         outputs: [],
       },
     },
+    // ── Hero & OAuth (2) ──
+    {
+      name: 'Hero Panel',
+      slug: 'oven-hero-panel',
+      category: 'layout',
+      description: 'Full-bleed panel with background image and gradient overlay',
+      definition: { type: 'oven-hero-panel', template: '<div data-gjs-type="oven-hero-panel"></div>' },
+      defaultProps: { overlay: 'none', minHeight: 'auto', verticalAlign: 'start', padding: 'md' },
+      dataContract: {
+        inputs: [
+          { name: 'backgroundImage', type: 'string', description: 'Background image URL' },
+          { name: 'overlay', type: 'string', defaultValue: 'none', options: [{ id: 'none', name: 'None' }, { id: 'dark', name: 'Dark' }, { id: 'brand-red', name: 'Brand Red' }, { id: 'brand-blue', name: 'Brand Blue' }, { id: 'custom', name: 'Custom' }] },
+          { name: 'overlayGradient', type: 'string', description: 'Custom gradient classes' },
+          { name: 'minHeight', type: 'string', defaultValue: 'auto', options: [{ id: 'auto', name: 'Auto' }, { id: 'screen', name: 'Full Screen' }, { id: 'half', name: 'Half Screen' }] },
+          { name: 'verticalAlign', type: 'string', defaultValue: 'start', options: [{ id: 'start', name: 'Top' }, { id: 'center', name: 'Center' }, { id: 'end', name: 'Bottom' }, { id: 'between', name: 'Space Between' }] },
+          { name: 'padding', type: 'string', defaultValue: 'md', options: [{ id: 'none', name: 'None' }, { id: 'sm', name: 'Small' }, { id: 'md', name: 'Medium' }, { id: 'lg', name: 'Large' }, { id: 'xl', name: 'Extra Large' }] },
+          { name: 'className', type: 'string' },
+        ],
+        outputs: [],
+      },
+    },
+    {
+      name: 'OAuth Button',
+      slug: 'oven-oauth-button',
+      category: 'actions',
+      description: 'OAuth sign-in button with provider icon',
+      definition: { type: 'oven-oauth-button', template: '<div data-gjs-type="oven-oauth-button"></div>' },
+      defaultProps: { provider: 'google', variant: 'filled', size: 'md', fullWidth: false },
+      dataContract: {
+        inputs: [
+          { name: 'provider', type: 'string', required: true, defaultValue: 'google', options: [{ id: 'google', name: 'Google' }, { id: 'microsoft', name: 'Microsoft' }, { id: 'apple', name: 'Apple' }, { id: 'github', name: 'GitHub' }] },
+          { name: 'label', type: 'string', description: 'Custom button label' },
+          { name: 'variant', type: 'string', defaultValue: 'filled', options: [{ id: 'filled', name: 'Filled' }, { id: 'outline', name: 'Outline' }] },
+          { name: 'fullWidth', type: 'boolean', defaultValue: false },
+          { name: 'size', type: 'string', defaultValue: 'md', options: [{ id: 'sm', name: 'Small' }, { id: 'md', name: 'Medium' }, { id: 'lg', name: 'Large' }] },
+          { name: 'className', type: 'string' },
+        ],
+        outputs: [],
+      },
+    },
   ];
 
   // Delete existing seed components to avoid duplicates on re-run
@@ -883,12 +923,12 @@ export async function seedForms(db: any): Promise<void> {
     },
   }).onConflictDoNothing();
 
-  // 3. Login Form (enterprise login page)
+  // 3. Login Form (Newsan enterprise login page)
   await db.insert(forms).values({
     tenantId: 1,
     name: 'Login Form',
     slug: 'login-form',
-    description: 'Enterprise login page with branding panel and authentication form',
+    description: 'Enterprise login page with hero branding panel and SSO authentication',
     status: 'published',
     version: 1,
     definition: {
@@ -898,238 +938,202 @@ export async function seedForms(db: any): Promise<void> {
           type: 'oven-grid-2col',
           props: { gap: 'none', className: 'min-h-screen' },
           children: [
-            // ── Left cell: Branding panel ──
+            // ── Left cell: Hero branding panel ──
             {
               id: 'login-cell-left',
               type: 'oven-grid-cell',
               props: {},
               children: [{
-              id: 'login-branding',
-              type: 'oven-container',
-              props: {
-                padding: 'lg',
-                className: 'bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex flex-col justify-between min-h-screen relative overflow-hidden',
-              },
-              children: [
-                {
-                  id: 'login-logo',
-                  type: 'oven-image',
-                  props: {
-                    src: '/logo-white.svg',
-                    alt: 'Company Logo',
-                    width: 160,
-                    height: 40,
-                    className: 'mb-8',
-                  },
+                id: 'login-hero',
+                type: 'oven-hero-panel',
+                props: {
+                  backgroundImage: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200&q=80',
+                  overlay: 'brand-red',
+                  minHeight: 'screen',
+                  verticalAlign: 'between',
+                  padding: 'xl',
                 },
-                {
-                  id: 'login-brand-heading',
-                  type: 'oven-heading',
-                  props: {
-                    text: 'Supply Chain Dashboard',
-                    level: 'h1',
-                    className: 'text-4xl font-bold text-white mb-4',
-                  },
-                },
-                {
-                  id: 'login-brand-description',
-                  type: 'oven-paragraph',
-                  props: {
-                    text: 'Manage your entire supply chain from a single platform. Real-time tracking, analytics, and intelligent automation.',
-                    className: 'text-blue-100 text-lg mb-12',
-                  },
-                },
-                {
-                  id: 'login-stats-grid',
-                  type: 'oven-grid-3col',
-                  props: { gap: 'md', className: 'mt-auto' },
-                  children: [
-                    {
-                      id: 'login-stats-cell-1',
-                      type: 'oven-grid-cell',
-                      props: {},
-                      children: [{
-                        id: 'login-stat-uptime',
-                        type: 'oven-stat-card',
-                        props: {
-                          label: 'Uptime',
-                          value: '99.9%',
-                          className: 'bg-white/10 border-white/20 text-white',
-                        },
-                      }],
+                children: [
+                  {
+                    id: 'login-logo',
+                    type: 'oven-image',
+                    props: {
+                      src: '/logo.svg',
+                      alt: 'Newsan Logo',
+                      width: 140,
+                      height: 40,
+                      className: 'brightness-0 invert h-10',
                     },
-                    {
-                      id: 'login-stats-cell-2',
-                      type: 'oven-grid-cell',
-                      props: {},
-                      children: [{
-                        id: 'login-stat-support',
-                        type: 'oven-stat-card',
+                  },
+                  {
+                    id: 'login-hero-content',
+                    type: 'oven-container',
+                    props: { maxWidth: 'full', padding: 'none', className: 'mt-auto mb-8' },
+                    children: [
+                      {
+                        id: 'login-brand-heading',
+                        type: 'oven-heading',
                         props: {
-                          label: 'Support',
-                          value: '24/7',
-                          className: 'bg-white/10 border-white/20 text-white',
+                          text: 'Supply Chain Dashboard',
+                          level: 'h1',
+                          className: 'text-4xl font-bold text-white mb-4',
                         },
-                      }],
-                    },
-                    {
-                      id: 'login-stats-cell-3',
-                      type: 'oven-grid-cell',
-                      props: {},
-                      children: [{
-                        id: 'login-stat-ai',
-                        type: 'oven-stat-card',
+                      },
+                      {
+                        id: 'login-brand-description',
+                        type: 'oven-paragraph',
                         props: {
-                          label: 'Intelligence',
-                          value: 'AI',
-                          className: 'bg-white/10 border-white/20 text-white',
+                          text: 'Gestioná toda tu cadena de suministro desde una sola plataforma. Seguimiento en tiempo real, analítica e inteligencia artificial.',
+                          className: 'text-white/80 text-lg mb-8',
                         },
-                      }],
-                    },
-                  ],
-                },
-              ],
-            }],
+                      },
+                    ],
+                  },
+                  {
+                    id: 'login-stats-row',
+                    type: 'oven-grid-3col',
+                    props: { gap: 'md' },
+                    children: [
+                      {
+                        id: 'login-stats-cell-1',
+                        type: 'oven-grid-cell',
+                        props: {},
+                        children: [
+                          {
+                            id: 'login-stat-val-1',
+                            type: 'oven-heading',
+                            props: { text: '100%', level: 'h3', className: 'text-3xl font-bold text-white' },
+                          },
+                          {
+                            id: 'login-stat-label-1',
+                            type: 'oven-paragraph',
+                            props: { text: 'Visibilidad', className: 'text-white/60 text-sm' },
+                          },
+                        ],
+                      },
+                      {
+                        id: 'login-stats-cell-2',
+                        type: 'oven-grid-cell',
+                        props: {},
+                        children: [
+                          {
+                            id: 'login-stat-val-2',
+                            type: 'oven-heading',
+                            props: { text: '24/7', level: 'h3', className: 'text-3xl font-bold text-white' },
+                          },
+                          {
+                            id: 'login-stat-label-2',
+                            type: 'oven-paragraph',
+                            props: { text: 'Monitoreo', className: 'text-white/60 text-sm' },
+                          },
+                        ],
+                      },
+                      {
+                        id: 'login-stats-cell-3',
+                        type: 'oven-grid-cell',
+                        props: {},
+                        children: [
+                          {
+                            id: 'login-stat-val-3',
+                            type: 'oven-heading',
+                            props: { text: 'AI', level: 'h3', className: 'text-3xl font-bold text-white' },
+                          },
+                          {
+                            id: 'login-stat-label-3',
+                            type: 'oven-paragraph',
+                            props: { text: 'Asistente', className: 'text-white/60 text-sm' },
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              }],
             },
-            // ── Right cell: Login form panel ──
+            // ── Right cell: SSO login form ──
             {
               id: 'login-cell-right',
               type: 'oven-grid-cell',
-              props: {},
+              props: { className: 'flex items-center justify-center' },
               children: [{
-              id: 'login-form-panel',
-              type: 'oven-container',
-              props: {
-                padding: 'lg',
-                maxWidth: 'sm',
-                className: 'flex flex-col justify-center min-h-screen mx-auto w-full',
-              },
-              children: [
-                {
-                  id: 'login-form-heading',
-                  type: 'oven-heading',
-                  props: {
-                    text: 'Welcome Back',
-                    level: 'h2',
-                    className: 'text-2xl font-bold text-gray-900 mb-1',
-                  },
+                id: 'login-form-panel',
+                type: 'oven-container',
+                props: {
+                  padding: 'lg',
+                  maxWidth: 'sm',
+                  className: 'flex flex-col justify-center min-h-screen mx-auto w-full',
                 },
-                {
-                  id: 'login-form-subtitle',
-                  type: 'oven-paragraph',
-                  props: {
-                    text: 'Sign in to your account to continue',
-                    className: 'text-gray-500 mb-6',
-                  },
-                },
-                {
-                  id: 'login-error-alert',
-                  type: 'oven-alert',
-                  props: {
-                    message: 'Invalid credentials. Please try again.',
-                    variant: 'error',
-                    dismissible: true,
-                  },
-                },
-                {
-                  id: 'login-email',
-                  type: 'oven-email-input',
-                  props: {
-                    label: 'Email Address',
-                    name: 'email',
-                    placeholder: 'you@company.com',
-                    required: true,
-                  },
-                },
-                {
-                  id: 'login-password',
-                  type: 'oven-password-input',
-                  props: {
-                    label: 'Password',
-                    name: 'password',
-                    required: true,
-                    showToggle: true,
-                  },
-                },
-                {
-                  id: 'login-remember',
-                  type: 'oven-checkbox',
-                  props: {
-                    label: 'Remember me for 30 days',
-                    name: 'rememberMe',
-                  },
-                },
-                {
-                  id: 'login-submit',
-                  type: 'oven-submit-button',
-                  props: {
-                    label: 'Sign In',
-                    variant: 'primary',
-                    fullWidth: true,
-                    className: 'mt-4',
-                  },
-                },
-                {
-                  id: 'login-divider',
-                  type: 'oven-divider',
-                  props: { label: 'or continue with', className: 'my-6' },
-                },
-                {
-                  id: 'login-google-btn',
-                  type: 'oven-button',
-                  props: {
-                    label: 'Sign in with Google',
-                    variant: 'outline',
-                    className: 'w-full',
-                  },
-                },
-                {
-                  id: 'login-domains-grid',
-                  type: 'oven-grid-3col',
-                  props: { gap: 'sm', className: 'mt-6' },
-                  children: [
-                    {
-                      id: 'login-domains-cell-1',
-                      type: 'oven-grid-cell',
-                      props: {},
-                      children: [{
-                        id: 'login-badge-1',
-                        type: 'oven-badge',
-                        props: { text: '@company.com', variant: 'info' },
-                      }],
+                children: [
+                  {
+                    id: 'login-form-heading',
+                    type: 'oven-heading',
+                    props: {
+                      text: 'Bienvenido',
+                      level: 'h2',
+                      className: 'text-3xl font-bold text-gray-900 mb-2',
                     },
-                    {
-                      id: 'login-domains-cell-2',
-                      type: 'oven-grid-cell',
-                      props: {},
-                      children: [{
-                        id: 'login-badge-2',
-                        type: 'oven-badge',
-                        props: { text: '@partner.org', variant: 'info' },
-                      }],
-                    },
-                    {
-                      id: 'login-domains-cell-3',
-                      type: 'oven-grid-cell',
-                      props: {},
-                      children: [{
-                        id: 'login-badge-3',
-                        type: 'oven-badge',
-                        props: { text: '@corp.net', variant: 'info' },
-                      }],
-                    },
-                  ],
-                },
-                {
-                  id: 'login-footer',
-                  type: 'oven-paragraph',
-                  props: {
-                    text: 'By signing in, you agree to our Terms of Service and Privacy Policy.',
-                    className: 'text-xs text-gray-400 text-center mt-8',
                   },
-                },
-              ],
-            }],
+                  {
+                    id: 'login-form-subtitle',
+                    type: 'oven-paragraph',
+                    props: {
+                      text: 'Iniciá sesión con tu cuenta corporativa para acceder al dashboard de supply chain.',
+                      className: 'text-gray-500 mb-8',
+                    },
+                  },
+                  {
+                    id: 'login-google-btn',
+                    type: 'oven-oauth-button',
+                    props: {
+                      provider: 'google',
+                      label: 'Continuar con Google',
+                      variant: 'filled',
+                      fullWidth: true,
+                      size: 'lg',
+                    },
+                  },
+                  {
+                    id: 'login-divider',
+                    type: 'oven-divider',
+                    props: { label: 'Dominios autorizados', className: 'my-8' },
+                  },
+                  {
+                    id: 'login-domains-grid',
+                    type: 'oven-grid-2col',
+                    props: { gap: 'sm' },
+                    children: [
+                      {
+                        id: 'login-domains-cell-1',
+                        type: 'oven-grid-cell',
+                        props: {},
+                        children: [{
+                          id: 'login-badge-1',
+                          type: 'oven-badge',
+                          props: { text: '@marvik.ai', variant: 'default', className: 'w-full justify-center' },
+                        }],
+                      },
+                      {
+                        id: 'login-domains-cell-2',
+                        type: 'oven-grid-cell',
+                        props: {},
+                        children: [{
+                          id: 'login-badge-2',
+                          type: 'oven-badge',
+                          props: { text: '@newsan.com.ar', variant: 'default', className: 'w-full justify-center' },
+                        }],
+                      },
+                    ],
+                  },
+                  {
+                    id: 'login-footer',
+                    type: 'oven-paragraph',
+                    props: {
+                      text: '\u00a9 2026 Newsan S.A. Todos los derechos reservados.',
+                      className: 'text-xs text-gray-400 text-center mt-12',
+                    },
+                  },
+                ],
+              }],
             },
           ],
         },
