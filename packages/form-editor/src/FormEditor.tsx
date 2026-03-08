@@ -48,6 +48,15 @@ function serializeComponent(component: any): ComponentNode {
     }
   }
 
+  // Fallback: extract className from GrapeJS model classes if not set via traits
+  if (!props.className) {
+    const modelClasses = (component.getClasses?.() || [])
+      .filter((c: string) => !c.startsWith('gjs-'));
+    if (modelClasses.length > 0) {
+      props.className = modelClasses.join(' ');
+    }
+  }
+
   const type = component.get?.('type') || attrs['data-oven-type'] || 'div';
   const children = (component.components?.() || []).map(serializeComponent);
 

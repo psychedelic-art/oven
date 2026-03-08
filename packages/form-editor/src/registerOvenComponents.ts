@@ -79,6 +79,17 @@ function extractTraitProps(model: any): Record<string, unknown> {
   return props;
 }
 
+/**
+ * Extract user-defined CSS classes from a GrapeJS model, filtering out
+ * GrapeJS internal classes (gjs-*). Used as a fallback when className
+ * isn't available as a trait value.
+ */
+function extractUserClasses(model: any): string {
+  return (model.getClasses?.() || [])
+    .filter((c: string) => !c.startsWith('gjs-'))
+    .join(' ');
+}
+
 /** Build traits array from a block's data contract */
 function buildTraits(block: BlockDefinition): Array<Record<string, unknown>> {
   const traits: Array<Record<string, unknown>> = [];
@@ -259,8 +270,12 @@ function registerGridRow(
 
     view: {
       onRender({ el, model }: { el: HTMLElement; model: any }) {
-        // Apply className trait to the row element
+        // Apply className trait to the row element (with fallback to model classes)
         const traitProps = extractTraitProps(model);
+        if (!traitProps.className) {
+          const classes = extractUserClasses(model);
+          if (classes) traitProps.className = classes;
+        }
         if (traitProps.className && typeof traitProps.className === 'string') {
           const baseClasses = `oven-component oven-${block.category}`;
           el.setAttribute('class', `${baseClasses} ${traitProps.className}`);
@@ -311,8 +326,12 @@ function registerContainer(
 
     view: {
       onRender({ el, model }: { el: HTMLElement; model: any }) {
-        // Apply className trait to the container element for Tailwind styling
+        // Apply className trait to the container element for Tailwind styling (with fallback)
         const traitProps = extractTraitProps(model);
+        if (!traitProps.className) {
+          const classes = extractUserClasses(model);
+          if (classes) traitProps.className = classes;
+        }
         if (traitProps.className && typeof traitProps.className === 'string') {
           const baseClasses = `oven-component oven-${block.category}`;
           el.setAttribute('class', `${baseClasses} ${traitProps.className}`);
@@ -404,6 +423,10 @@ function registerLeaf(
         }
 
         const props = extractTraitProps(model);
+        if (!props.className) {
+          const classes = extractUserClasses(model);
+          if (classes) props.className = classes;
+        }
         try {
           el.innerHTML = renderToStaticMarkup(
             React.createElement(entry.component, props),
