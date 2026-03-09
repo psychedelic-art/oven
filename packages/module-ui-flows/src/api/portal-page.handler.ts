@@ -4,13 +4,15 @@ import { getDb } from '@oven/module-registry/db';
 import { notFound } from '@oven/module-registry/api-utils';
 import { uiFlows, uiFlowPages } from '../schema';
 import { tenants } from '@oven/module-tenants/schema';
+import { urlSegmentToPageSlug } from '../slug-utils';
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ tenantSlug: string; pageSlug: string }> }
 ) {
   const db = getDb();
-  const { tenantSlug, pageSlug } = await params;
+  const { tenantSlug, pageSlug: rawSlug } = await params;
+  const pageSlug = urlSegmentToPageSlug(rawSlug);
 
   const [tenant] = await db.select().from(tenants)
     .where(eq(tenants.slug, tenantSlug))

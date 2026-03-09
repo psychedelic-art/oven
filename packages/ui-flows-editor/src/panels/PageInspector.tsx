@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -9,9 +9,19 @@ import {
   IconButton,
   FormControlLabel,
   Switch,
+  FormControl,
+  InputLabel,
+  Chip,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import type { Node } from '@xyflow/react';
+
+interface FormOption {
+  id: number;
+  name: string;
+  slug: string;
+  status: string;
+}
 
 interface PageInspectorProps {
   selectedNode: Node | null;
@@ -23,6 +33,27 @@ interface PageInspectorProps {
  * Right-side panel for editing page node properties.
  */
 export function PageInspector({ selectedNode, onUpdateNode, onClose }: PageInspectorProps) {
+  const [forms, setForms] = useState<FormOption[]>([]);
+  const [loadingForms, setLoadingForms] = useState(false);
+
+  useEffect(() => {
+    async function fetchForms() {
+      setLoadingForms(true);
+      try {
+        const res = await fetch('/api/forms?range=[0,999]');
+        if (res.ok) {
+          const json = await res.json();
+          setForms(Array.isArray(json) ? json : json.data || []);
+        }
+      } catch {
+        // Silently fail — dropdown stays empty
+      } finally {
+        setLoadingForms(false);
+      }
+    }
+    fetchForms();
+  }, []);
+
   if (!selectedNode) return null;
 
   const data = (selectedNode.data ?? {}) as Record<string, any>;
@@ -71,25 +102,48 @@ export function PageInspector({ selectedNode, onUpdateNode, onClose }: PageInspe
         size="small"
         label="Slug"
         value={data.slug ?? ''}
-        onChange={(e: any) => update('slug', e.target.value)}
+        onChange={(e: any) => {
+          const normalized = e.target.value.replace(/^\/+|\/+$/g, '');
+          update('slug', normalized);
+        }}
         fullWidth
         sx={{ mb: 2 }}
-        helperText="URL path segment (e.g. 'contact', 'faq')"
+        helperText={
+          (data.slug ?? '') === ''
+            ? 'Empty = home page (portal root). Visitors see: tenant.domain.com/'
+            : "Relative path (e.g. 'contact'). No leading slash. Visitors see: tenant.domain.com/" + (data.slug ?? '')
+        }
       />
 
       <Divider sx={{ mb: 2 }} />
 
-      {/* Form page: form reference */}
+      {/* Form page: form selector */}
       {(nodeType === 'form' || nodeType === 'custom') && (
-        <TextField
-          size="small"
-          label="Form Reference"
-          value={data.formRef ?? ''}
-          onChange={(e: any) => update('formRef', e.target.value)}
-          fullWidth
-          sx={{ mb: 2 }}
-          helperText="Form slug or ID to render"
-        />
+        <FormControl size="small" fullWidth sx={{ mb: 2 }}>
+          <InputLabel>Form</InputLabel>
+          <Select
+            value={data.formRef ?? ''}
+            onChange={(e: any) => update('formRef', e.target.value)}
+            label="Form"
+            disabled={loadingForms}
+          >
+            <MenuItem value="">
+              <em>None</em>
+            </MenuItem>
+            {forms.map((form) => (
+              <MenuItem key={form.id} value={String(form.id)}>
+                {form.name}
+                {form.status === 'draft' && (
+                  <Chip
+                    label="draft"
+                    size="small"
+                    sx={{ ml: 1, height: 18, fontSize: 10 }}
+                  />
+                )}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       )}
 
       {/* Landing page: hero config */}

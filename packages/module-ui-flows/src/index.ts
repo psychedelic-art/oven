@@ -1,4 +1,11 @@
 import type { ModuleDefinition, EventSchemaMap } from '@oven/module-registry';
+export {
+  normalizePageSlug,
+  normalizeFlowSlug,
+  pageSlugToUrlSegment,
+  urlSegmentToPageSlug,
+  HOME_PAGE_SENTINEL,
+} from './slug-utils';
 import { uiFlowsSchema } from './schema';
 import { seedUiFlows } from './seed';
 import * as uiFlowsHandler from './api/ui-flows.handler';

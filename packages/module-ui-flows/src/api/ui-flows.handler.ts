@@ -4,6 +4,7 @@ import { getDb } from '@oven/module-registry/db';
 import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
 import { eventBus } from '@oven/module-registry';
 import { uiFlows, uiFlowPages } from '../schema';
+import { normalizeFlowSlug, normalizePageSlug } from '../slug-utils';
 
 export async function GET(request: NextRequest) {
   const db = getDb();
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
     .values({
       tenantId,
       name,
-      slug,
+      slug: normalizeFlowSlug(slug),
       description,
       definition: definition ?? { pages: [], navigation: { type: 'top-bar', items: [] }, routing: { defaultPage: '' }, footer: { enabled: false } },
       themeConfig: themeConfig ?? null,
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
       await db.insert(uiFlowPages).values({
         uiFlowId: result.id,
         tenantId: result.tenantId,
-        slug: page.slug,
+        slug: normalizePageSlug(page.slug),
         title: page.title,
         pageType: page.type,
         formId: page.formRef ? parseInt(page.formRef, 10) : null,

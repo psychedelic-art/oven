@@ -13,8 +13,9 @@ import {
   EditButton,
   useRecordContext,
 } from 'react-admin';
-import { Button, Chip } from '@mui/material';
+import { Alert, Box, Button, Chip, Typography } from '@mui/material';
 import EditNoteIcon from '@mui/icons-material/EditNote';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Link } from 'react-router-dom';
 
 const statusColors: Record<string, 'info' | 'success' | 'default'> = {
@@ -77,13 +78,38 @@ export default function UiFlowShow() {
         <DateField source="createdAt" label="Created At" showTime />
         <DateField source="updatedAt" label="Updated At" showTime />
 
+        <Alert
+          severity="info"
+          icon={<InfoOutlinedIcon fontSize="small" />}
+          sx={{ mt: 2, mb: 1 }}
+        >
+          <Typography variant="body2">
+            Pages with an <strong>empty slug</strong> are the portal home page.
+            Other pages are accessible at{' '}
+            <Box component="span" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
+              tenant.domain.com/&#123;page-slug&#125;
+            </Box>.
+          </Typography>
+        </Alert>
+
         <ReferenceManyField
           label="Pages"
           reference="ui-flow-pages"
           target="uiFlowId"
         >
           <Datagrid>
-            <TextField source="slug" />
+            <FunctionField
+              source="slug"
+              label="Slug"
+              render={(record: { slug: string }) => (
+                <Typography
+                  variant="body2"
+                  sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}
+                >
+                  {record.slug || '/ (home)'}
+                </Typography>
+              )}
+            />
             <TextField source="title" />
             <FunctionField
               source="pageType"

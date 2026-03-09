@@ -4,6 +4,7 @@ import { getDb } from '@oven/module-registry/db';
 import { notFound } from '@oven/module-registry/api-utils';
 import { eventBus } from '@oven/module-registry';
 import { uiFlows, uiFlowPages } from '../schema';
+import { normalizeFlowSlug, normalizePageSlug } from '../slug-utils';
 
 export async function GET(
   _request: NextRequest,
@@ -28,9 +29,20 @@ export async function PUT(
   const { id } = await params;
   const body = await request.json();
 
+  // Whitelist only updatable columns (matches POST handler pattern)
+  const updates: Record<string, unknown> = { updatedAt: new Date() };
+  if (body.name !== undefined) updates.name = body.name;
+  if (body.slug !== undefined) updates.slug = normalizeFlowSlug(body.slug);
+  if (body.description !== undefined) updates.description = body.description;
+  if (body.definition !== undefined) updates.definition = body.definition;
+  if (body.themeConfig !== undefined) updates.themeConfig = body.themeConfig;
+  if (body.domainConfig !== undefined) updates.domainConfig = body.domainConfig;
+  if (body.status !== undefined) updates.status = body.status;
+  if (body.enabled !== undefined) updates.enabled = body.enabled;
+
   const [result] = await db
     .update(uiFlows)
-    .set({ ...body, updatedAt: new Date() })
+    .set(updates)
     .where(eq(uiFlows.id, parseInt(id, 10)))
     .returning();
 
@@ -45,7 +57,7 @@ export async function PUT(
       await db.insert(uiFlowPages).values({
         uiFlowId: result.id,
         tenantId: result.tenantId,
-        slug: page.slug,
+        slug: normalizePageSlug(page.slug),
         title: page.title,
         pageType: page.type,
         formId: page.formRef ? parseInt(page.formRef, 10) : null,

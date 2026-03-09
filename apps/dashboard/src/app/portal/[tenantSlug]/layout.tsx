@@ -1,3 +1,4 @@
+import Script from 'next/script';
 import './portal.css';
 
 interface PortalData {
@@ -96,6 +97,9 @@ export default async function PortalLayout({
 
   return (
     <div className={rootClass} style={cssVars}>
+      {/* Tailwind CDN for dynamic content (form HTML from DB with Tailwind classes) */}
+      <Script src="https://cdn.tailwindcss.com" strategy="beforeInteractive" />
+
       {/* Inject custom CSS if any */}
       {theme?.customCss && <style dangerouslySetInnerHTML={{ __html: theme.customCss }} />}
 

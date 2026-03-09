@@ -6,6 +6,7 @@ import type {
   NavigationConfig,
   PortalSettings,
 } from '@oven/module-ui-flows/types';
+import { normalizePageSlug } from '@oven/module-ui-flows/slug-utils';
 import type { UiFlowEditorStore, PersistenceAdapter, HistorySnapshot } from './types';
 
 const MAX_HISTORY = 50;
@@ -77,7 +78,7 @@ export function nodesToDefinition(
 ): UiFlowDefinition {
   const pages: UiFlowPageDefinition[] = nodes.map((node) => ({
     id: node.id,
-    slug: (node.data as Record<string, unknown>)?.slug as string || node.id,
+    slug: normalizePageSlug(((node.data as Record<string, unknown>)?.slug as string) ?? node.id),
     title: (node.data as Record<string, unknown>)?.title as string || '',
     type: (node.type as UiFlowPageDefinition['type']) || 'landing',
     formRef: (node.data as Record<string, unknown>)?.formRef as string | undefined,

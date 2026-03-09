@@ -91,7 +91,7 @@ export default function FormRenderer({
   // ── Loading state ──
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto">
+      <div className="w-full min-h-full">
         <h2 className="text-2xl font-bold mb-4">{title}</h2>
         <p className="text-gray-400">Loading form...</p>
       </div>
@@ -101,7 +101,7 @@ export default function FormRenderer({
   // ── Success state ──
   if (submitted) {
     return (
-      <div className="max-w-2xl mx-auto text-center py-12">
+      <div className="w-full min-h-full text-center py-12">
         <h2 className="text-2xl font-bold text-blue-600 mb-2">Thank you!</h2>
         <p className="text-gray-500">Your submission has been received.</p>
       </div>
@@ -111,7 +111,7 @@ export default function FormRenderer({
   // ── No definition — placeholder ──
   if (!definition?.components || definition.components.length === 0) {
     return (
-      <div className="max-w-2xl mx-auto">
+      <div className="w-full min-h-full">
         <h2 className="text-2xl font-bold mb-4">{title}</h2>
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center text-gray-400">
           <p>Form not configured yet.</p>
@@ -123,7 +123,7 @@ export default function FormRenderer({
 
   // ── Render component tree ──
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="w-full min-h-full">
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4 text-red-700 text-sm">
           {error}

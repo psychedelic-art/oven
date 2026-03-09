@@ -1,3 +1,4 @@
+import { normalizePageSlug, pageSlugToUrlSegment } from '@oven/module-ui-flows/slug-utils';
 import LandingRenderer from './_renderers/LandingRenderer';
 import FormRenderer from './_renderers/FormRenderer';
 import FaqRenderer from './_renderers/FaqRenderer';
@@ -23,8 +24,9 @@ async function getPageData(
   pageSlug: string
 ): Promise<PortalPageData | null> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const urlSegment = pageSlugToUrlSegment(pageSlug);
   const res = await fetch(
-    `${baseUrl}/api/portal/${tenantSlug}/pages/${pageSlug}`,
+    `${baseUrl}/api/portal/${tenantSlug}/pages/${urlSegment}`,
     { next: { revalidate: 30 } }
   );
 
@@ -41,7 +43,7 @@ async function getPortalHome(tenantSlug: string): Promise<string | null> {
   if (!res.ok) return null;
   const data = await res.json();
   const homePage = data?.definition?.settings?.homePage;
-  if (homePage) return homePage;
+  if (homePage !== undefined && homePage !== null) return normalizePageSlug(homePage);
 
   // Fallback: first navigation item or first page
   const navItems = data?.definition?.navigation?.items || [];
@@ -50,9 +52,11 @@ async function getPortalHome(tenantSlug: string): Promise<string | null> {
     const firstPage = pages.find(
       (p: { id: string }) => p.id === navItems[0].pageId
     );
-    return firstPage?.slug || null;
+    if (firstPage) return normalizePageSlug(firstPage.slug);
+    return null;
   }
-  return pages[0]?.slug || null;
+  if (pages.length > 0) return normalizePageSlug(pages[0].slug);
+  return null;
 }
 
 export default async function PortalCatchAllPage({
@@ -67,7 +71,7 @@ export default async function PortalCatchAllPage({
   if (!slug || slug.length === 0) {
     // Root portal URL — resolve home page
     const home = await getPortalHome(tenantSlug);
-    if (!home) {
+    if (home === null) {
       return (
         <div className="portal-error">
           <h2>No Pages</h2>
@@ -75,9 +79,9 @@ export default async function PortalCatchAllPage({
         </div>
       );
     }
-    pageSlug = home;
+    pageSlug = normalizePageSlug(home);
   } else {
-    pageSlug = slug.join('/');
+    pageSlug = normalizePageSlug(slug.join('/'));
   }
 
   // Fetch page data
@@ -93,7 +97,8 @@ export default async function PortalCatchAllPage({
   }
 
   const { page } = data;
-  const pageDef = page.definition || page.config || {};
+  const rawDef = page.definition || page.config || {};
+  const pageDef = { ...rawDef, ...((rawDef as any).config || {}) };
 
   // Render based on page type
   switch (page.pageType) {
