@@ -1,8 +1,9 @@
 # Dental FAQ Virtual Assistant — Project Plan
 
-> **Status**: Implementation plan
+> **Status**: Sprint 1 COMPLETE — Sprint 2 next
 > **Architecture**: OVEN (Next.js 15 + React Admin 5 + Drizzle ORM + Neon Postgres + Turbo + pnpm)
 > **First Client**: Colombian dental office (Spanish)
+> **Last updated**: 2026-03-06
 
 ---
 
@@ -190,7 +191,7 @@ Both channels call the **same agent** through `module-agent-core`'s invoke endpo
 |-------|---------------|-----------|--------|
 | 1 | module-registry EXTEND | `chat` block + `capabilities` in ModuleDefinition — all new modules need this | S |
 | 2 | module-tenants | `reply()` needs `tenantId` to resolve config. Everything is tenant-scoped | M |
-| 3 | module-auth + auth-authjs | Dashboard needs login. Webhooks need API key verification. AuthJS for MVP (simplest for Next.js) | L |
+| 3 | module-auth + auth-authjs + auth-firebase | Dashboard needs login. Webhooks need API key verification. AuthJS for MVP, Firebase for enterprise clients | L |
 | 4 | module-ai (scoped: providers + embeddings + pgvector) | KB embedding pipeline needs `ai.embed`. Provider registry for LLM hook. pgvector extension installer | L |
 | 5 | module-knowledge-base | FAQ entries + search = the core product. Keyword search first, vector search as upgrade | L |
 | 6 | module-agent-core (scoped: agent def + invoke + sessions) | The `reply()` engine. Unified invoke endpoint both channels call | L |
@@ -217,27 +218,44 @@ Both channels call the **same agent** through `module-agent-core`'s invoke endpo
 |-------|---------------|-----|--------|
 | 13 | notifications-meta | Direct WhatsApp Cloud API (cheaper long-term) | M |
 | 14 | notifications-resend | Email notifications for escalations | S |
-| 15 | auth-firebase / auth-auth0 | Alternative auth adapters | M each |
+| 15 | auth-auth0 | Alternative auth adapter | M |
 | 16 | Full module-workflow-agents | MCP, visual editor, memory, subagents | XL |
 
 ---
 
 ## 5. Sprint Plan (MVP — adapted to OVEN)
 
-### Sprint 1: Foundation (Days 1–2)
+### Sprint 1: Foundation (Days 1–2) — ✅ COMPLETE
 
 **Goal**: DB schema + tenants + auth + deploy skeleton
 
-| Task | Module | Details |
-|------|--------|---------|
-| 1.1 | module-registry | Add `description`, `capabilities`, `chat` block to `ModuleDefinition` interface in `types.ts` |
-| 1.2 | module-tenants | Create package. Schema: `tenants` table (name, slug, businessName, schedule JSONB, services JSONB, paymentMethods JSONB, tone, humanContactInfo JSONB, emergencyInstructions, schedulingUrl, welcomeMessages, limits, enabled). CRUD API handlers. Seed first client |
-| 1.3 | module-auth | Create package + `auth-authjs` integration. Schema: `users`, `sessions`, `api_keys` tables. Auth middleware for Next.js. Login endpoint. API key verification for webhooks. `ADMIN_SECRET` for seed endpoint |
-| 1.4 | Neon DB | Enable pgvector extension (`CREATE EXTENSION IF NOT EXISTS vector`). Run Drizzle migrations |
-| 1.5 | Register modules | Add module-tenants + module-auth to `apps/dashboard/src/lib/modules.ts` |
-| 1.6 | Dashboard | Tenants CRUD page + login page |
+| Task | Module | Details | Status |
+|------|--------|---------|--------|
+| 1.1 | module-registry | Add `description`, `capabilities`, `chat` block to `ModuleDefinition` interface in `types.ts` | ✅ |
+| 1.2 | module-tenants | Create package. Schema: `tenants` table + `tenant_members` + `tenant_settings`. CRUD API handlers | ✅ |
+| 1.3 | module-auth | Create package + `auth-authjs` + `auth-firebase` integrations. Schema: `users`, `sessions`, `api_keys`, `password_reset_tokens`. Auth middleware. Login endpoint. API key verification | ✅ |
+| 1.4 | Neon DB | Enable pgvector extension. Run Drizzle migrations | ✅ |
+| 1.5 | module-forms + form-editor | 6 tables, 14 API endpoints. GrapeJS visual form editor with 40+ oven-ui ShadCN/Tailwind components | ✅ |
+| 1.6 | module-flows | 8 tables, 12 API endpoints. Content approval pipeline (Draft → Review → Approved) | ✅ |
+| 1.7 | Register modules | All Sprint 1 modules registered in modules.ts | ✅ |
+| 1.8 | Dashboard | Full CRUD for all Sprint 1 modules + login + custom editors | ✅ |
 
-**Deliverable**: Deployed skeleton on Vercel. Can login, create tenants, manage API keys.
+**Additional completed beyond original plan:**
+
+| Task | Module | Details | Status |
+|------|--------|---------|--------|
+| 1.9 | module-config | 5-tier config cascade (platform/module/tenant/tenant-module/instance). 2 tables, 6 handlers | ✅ |
+| 1.10 | module-subscriptions | Billing plans, quotas, providers, services, overrides. 9 tables, 22 handlers | ✅ |
+| 1.11 | module-roles | RBAC with hierarchy, RLS policies, API permissions. 8 tables, 18 handlers | ✅ |
+| 1.12 | module-ui-flows + ui-flows-editor | Visual portal builder (ReactFlow). 6 page types, theme/nav config, publish, versions, undo/redo. 5 tables, 12 handlers | ✅ |
+| 1.13 | module-maps + map-editor | Tile-based map editor (Pixi.js). 6 tables, 10 handlers | ✅ |
+| 1.14 | module-workflows + workflow-editor | Visual workflow editor (ReactFlow). 5 tables, 10 handlers | ✅ |
+| 1.15 | module-players + module-sessions | Player & session management. 4 tables, 12 handlers | ✅ |
+| 1.16 | module-player-map-position | Player map positions & assignments. 4 tables, 6 handlers | ✅ |
+| 1.17 | oven-ui | 40+ ShadCN/Tailwind portal components for form rendering | ✅ |
+| 1.18 | Portal subdomain routing | Middleware + 5 page renderers (Landing, Form, FAQ, Chat, Custom) | ✅ |
+
+**Deliverable**: ✅ Full admin dashboard with 14 modules, 67 DB tables, ~150 API handlers, 3 visual editors (forms, UI flows, maps), portal subdomain routing with 5 page types, and 40+ portal components.
 
 ### Sprint 2: Reply Engine (Days 3–5)
 
@@ -305,8 +323,7 @@ Both channels call the **same agent** through `module-agent-core`'s invoke endpo
 | 6.3 | Full module-workflow-agents | Memory nodes, MCP auto-generation, human-in-the-loop, subagent invocation, visual editor integration |
 | 6.4 | notifications-meta | Direct WhatsApp Cloud API adapter (alternative to Twilio) |
 | 6.5 | notifications-resend | Email adapter for escalation notifications to office |
-| 6.6 | auth-firebase | Firebase Auth adapter |
-| 6.7 | auth-auth0 | Auth0 adapter |
+| 6.6 | auth-auth0 | Auth0 adapter |
 | 6.8 | Full module-agent-core | Node library, versioning, playground, multimodal input |
 | 6.9 | Full module-chat | Chat sidebar, action cards, agent selector, capabilities endpoint |
 
@@ -319,9 +336,23 @@ Both channels call the **same agent** through `module-agent-core`'s invoke endpo
 **Sprint 1**:
 ```
 tenants                  -- module-tenants
+tenant_members           -- module-tenants
 users                    -- module-auth
 auth_sessions            -- module-auth
 api_keys                 -- module-auth
+password_reset_tokens    -- module-auth
+forms                    -- module-forms
+form_versions            -- module-forms
+form_components          -- module-forms
+form_data_sources        -- module-forms
+form_submissions         -- module-forms
+flows                    -- module-flows
+flow_versions            -- module-flows
+flow_stages              -- module-flows
+flow_items               -- module-flows
+flow_transitions         -- module-flows
+flow_comments            -- module-flows
+flow_reviews             -- module-flows
 ```
 
 **Sprint 2**:
@@ -502,23 +533,46 @@ function reply(tenantId, message, channel):
 
 ```
 packages/
-  module-registry/           ← EXTEND (add chat block to ModuleDefinition)
-  module-tenants/            ← NEW (Sprint 1)
-  module-auth/               ← NEW (Sprint 1)
-  auth-authjs/               ← NEW (Sprint 1 — MVP auth adapter)
-  auth-firebase/             ← FUTURE (Sprint 6)
-  auth-auth0/                ← FUTURE (Sprint 6)
-  module-ai/                 ← NEW (Sprint 2 — scoped, then full in Sprint 6)
-  module-knowledge-base/     ← NEW (Sprint 2)
-  module-agent-core/         ← NEW (Sprint 2 — scoped, then full in Sprint 6)
-  module-chat/               ← NEW (Sprint 3)
-  agent-ui/                  ← NEW (Sprint 3 — widget, then playground in Sprint 5)
-  module-notifications/      ← NEW (Sprint 4)
-  notifications-twilio/      ← NEW (Sprint 4 — MVP WhatsApp adapter)
-  notifications-meta/        ← FUTURE (Sprint 6)
-  notifications-resend/      ← FUTURE (Sprint 6 — email)
-  module-workflow-agents/    ← NEW (Sprint 5 — scoped guardrails, then full in Sprint 6)
-  module-files/              ← FUTURE (Sprint 6)
+  ─── IMPLEMENTED (23 packages) ──────────────────────────
+  module-registry/           ✅ DONE — Module registry with capabilities, chat block
+  module-config/             ✅ DONE — 5-tier config cascade, 2 tables, 6 handlers
+  module-tenants/            ✅ DONE — 3 tables, 8 handlers
+  module-subscriptions/      ✅ DONE — Billing plans, quotas, providers, 9 tables, 22 handlers
+  module-auth/               ✅ DONE — Adapter interface + middleware, 5 tables, 12 handlers
+  auth-authjs/               ✅ DONE — NextAuth.js v5 adapter
+  auth-firebase/             ✅ DONE — Firebase adapter
+  module-roles/              ✅ DONE — RBAC, RLS, hierarchy, 8 tables, 18 handlers
+  module-forms/              ✅ DONE — 6 tables, 14 endpoints
+  form-editor/               ✅ DONE — GrapeJS visual editor with 40+ oven-ui components
+  module-flows/              ✅ DONE — Content approval pipeline, 8 tables, 12 endpoints
+  module-ui-flows/           ✅ DONE — Portal definitions, 5 tables, 12 handlers
+  ui-flows-editor/           ✅ DONE — ReactFlow visual editor, 6 node types, theme/nav/preview/versions/undo-redo
+  module-maps/               ✅ DONE — Tile-based maps, 6 tables, 10 handlers
+  map-editor/                ✅ DONE — Pixi.js tile editor
+  module-workflows/          ✅ DONE — Workflow engine, 5 tables, 10 handlers
+  workflow-editor/           ✅ DONE — ReactFlow workflow editor
+  module-workflow-compiler/  ✅ DONE — Workflow definition compiler
+  module-players/            ✅ DONE — 2 tables, 6 handlers
+  module-sessions/           ✅ DONE — 2 tables, 6 handlers
+  module-player-map-position/ ✅ DONE — 4 tables, 6 handlers
+  oven-ui/                   ✅ DONE — 40+ ShadCN/Tailwind portal components
+  rls-editor/                ✅ DONE — RLS policy editor
+
+  ─── NOT YET BUILT (9 packages for dental MVP) ──────────
+  module-knowledge-base/     🔲 Sprint 2 — FAQ entries + search
+  module-ai/                 🔲 Sprint 2 — AI providers + embeddings + pgvector
+  module-agent-core/         🔲 Sprint 2 — Agent definitions + invoke engine
+  module-chat/               🔲 Sprint 3 — Web chat sessions + streaming
+  agent-ui/                  🔲 Sprint 3 — Chat widget + playground
+  module-notifications/      🔲 Sprint 4 — Notification channels + conversations
+  notifications-twilio/      🔲 Sprint 4 — Twilio WhatsApp adapter
+  module-workflow-agents/    🔲 Sprint 5 — Agent workflows + guardrails + memory
+  module-files/              🔲 Sprint 6 — File storage
+
+  ─── FUTURE (not dental MVP) ────────────────────────────
+  auth-auth0/                ⏳ Sprint 6+ — Auth0 adapter
+  notifications-meta/        ⏳ Sprint 6+ — Direct WhatsApp Cloud API
+  notifications-resend/      ⏳ Sprint 6+ — Email adapter
 ```
 
 ---

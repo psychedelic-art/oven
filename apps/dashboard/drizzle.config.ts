@@ -11,6 +11,13 @@ export default defineConfig({
     '../../packages/module-player-map-position/src/schema.ts',
     '../../packages/module-workflows/src/schema.ts',
     '../../packages/module-roles/src/schema.ts',
+    '../../packages/module-config/src/schema.ts',
+    '../../packages/module-tenants/src/schema.ts',
+    '../../packages/module-subscriptions/src/schema.ts',
+    '../../packages/module-auth/src/schema.ts',
+    '../../packages/module-forms/src/schema.ts',
+    '../../packages/module-flows/src/schema.ts',
+    '../../packages/module-ui-flows/src/schema.ts',
   ],
   out: './drizzle',
   dbCredentials: {

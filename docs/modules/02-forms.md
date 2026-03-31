@@ -3,7 +3,7 @@
 > **Package**: `packages/module-forms/` + `packages/form-editor/`
 > **Name**: `@oven/module-forms` + `@oven/form-editor`
 > **Dependencies**: `module-registry`, `module-roles`
-> **Status**: Planned
+> **Status**: In Progress (core editor, component registry, discovery, and rendering implemented)
 
 ---
 
@@ -15,13 +15,37 @@ The ambition is to bring the complexity of enterprise applications (like MEA-cla
 
 ---
 
-## 2. Three-Layer Architecture
+## 2. Implementation Status
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| GrapeJS editor integration | **Done** | Plain GrapeJS (no `grapesjs-react` wrapper) with manual init |
+| Component registry (DB) | **Done** | 42 seeded components across 6 categories with `data_contract` |
+| `registerOvenComponents()` | **Done** | Dynamic block registration from DB + `className` preservation |
+| `serializeComponent()` | **Done** | GrapeJS → `ComponentNode` tree converter with data source + workflow serialization |
+| Canvas Tailwind v4 styling | **Done** | CDN + `@import "tailwindcss"` trigger + `selectorManager.escapeName` + `triggerTailwindRescan()` |
+| Preview mode (React) | **Done** | `TailwindPreviewFrame` iframe with `renderComponentTree()` + `FormProvider` |
+| Discovery API | **Done** | `GET /api/form-discovery?type=workflows\|endpoints` for trait dropdowns |
+| Dynamic trait dropdowns | **Done** | Workflow slug + Data Source Endpoint as `select` with pre-fetched options |
+| Advanced API settings | **Done** | Method, headers, auth type/value, body traits for API data sources |
+| Form versions | **Done** | Auto-versioning on definition change |
+| Form submissions | **Done** | Capture + query submissions |
+| Data Layer (full) | Planned | Grouped fetches, caching, dependency chaining |
+| Business Layer | Planned | Transformations, validation rules, computed fields |
+| Drag-to-bind UX | Planned | Visual data source → component binding |
+| Published mode rendering | Partial | `renderComponentTree()` works; portal integration pending |
+| Data source test endpoint | Planned | `POST /api/form-data-sources/[id]/test` |
+
+---
+
+## 3. Three-Layer Architecture
 
 ### Data Layer
 Responsible for fetching, caching, and providing data to components.
 
 - **HTTP Request Definitions**: Define requests to internal OVEN API endpoints or external services, with method, URL, headers, params, and body templates
-- **API Discovery**: Scan available endpoints from the module registry (via `registry.getAllApiEndpoints()`) so builders can pick from known APIs without typing URLs
+- **API Discovery**: `GET /api/form-discovery?type=endpoints` scans available endpoints from the module registry so builders can pick from known APIs without typing URLs
+- **Workflow Discovery**: `GET /api/form-discovery?type=workflows` lists enabled workflows for workflow-based data sources and action triggers
 - **Schema Discovery**: For each API endpoint, retrieve and display the response schema so users can map output fields to components visually
 - **Grouped Fetches**: Combine multiple data sources into groups that execute as `Promise.all` (parallel), `Promise.race` (fastest wins), or sequential (chained) — similar to how workflow nodes compose operations
 - **Caching Policies**: Configure per-source caching: none, session-scoped, or TTL-based
@@ -42,52 +66,37 @@ The visual interface composed in GrapeJS.
 - **Data Binding**: Each component declares which data layer fields it consumes, with a clear mapping UI showing source field to component property
 - **Stateful Components**: Components like lists and tables that manage their own state (pagination, sorting, selection, filtering) while bound to data layer outputs
 - **Layout System**: Grid, flex, tabs, accordions, cards — standard responsive containers
-- **Action Handlers**: Buttons and forms can trigger data layer mutations (POST/PUT/DELETE) or emit events
+- **Action Handlers**: Buttons and forms can trigger data layer mutations (POST/PUT/DELETE), workflow executions, or emit events
 
 ---
 
-## 3. Component Library
+## 4. Component Library
 
-### Input Components
-- Text input, textarea, number input, email, password, phone
-- Date picker, time picker, datetime picker
-- Select (single), multi-select, combobox/autocomplete
-- Checkbox, radio group, toggle switch
-- File upload, image upload
-- Rich text editor, code editor
-- Slider, range picker, color picker
+42 components registered in the `form_components` table, organized in 6 categories:
 
-### Display Components
-- Text/heading, paragraph, rich text block
-- Image, avatar, icon
-- Badge, chip, tag
-- Progress bar, status indicator
-- Divider, spacer
+### Input Components (10)
+`oven-text-input`, `oven-textarea`, `oven-number-input`, `oven-email-input`, `oven-phone-input`, `oven-select`, `oven-checkbox`, `oven-radio-group`, `oven-toggle`, `oven-date-picker`
 
-### Data Components
-- **Data Table**: Sortable, filterable, paginated table bound to a data source. Configurable columns, inline actions, row selection
-- **Data List**: Vertical list with customizable item template, pagination, search
-- **Data Card Grid**: Card-based grid layout with data binding per card
-- **Detail View**: Key-value display for a single record
-- **Chart embed**: Embed a visualization from Analytics Forms
+### Data Display Components (7)
+`oven-data-table`, `oven-data-list`, `oven-data-card`, `oven-stat-card`, `oven-badge`, `oven-avatar`, `oven-progress-bar`
 
-### Layout Components
-- Grid container (responsive columns)
-- Flex row / flex column
-- Tabs, accordion, stepper
-- Card, paper, modal, drawer
-- Section with header
+### Layout Components (8)
+`oven-grid-2col`, `oven-grid-3col`, `oven-container`, `oven-card`, `oven-divider`, `oven-spacer`, `oven-tabs`, `oven-accordion`
 
-### Action Components
-- Button (primary, secondary, outlined, text)
-- Button group
-- Form submit / reset
-- Link / navigation
-- Action menu (dropdown actions)
+### Action Components (5)
+`oven-button`, `oven-submit-button`, `oven-link-button`, `oven-icon-button`, `oven-action-menu`
+
+### Navigation Components (5)
+`oven-breadcrumbs`, `oven-pagination`, `oven-sidebar-nav`, `oven-tab-navigation`, `oven-stepper`
+
+### Content Components (7)
+`oven-heading`, `oven-paragraph`, `oven-image`, `oven-alert`, `oven-hero-section`, `oven-feature-grid`, `oven-footer`
+
+Each component has a `data_contract` defining its inputs (with types, defaults, and options) and outputs, plus a `className` property for Tailwind CSS styling.
 
 ---
 
-## 4. Data Binding UX
+## 5. Data Binding UX
 
 The connection between data and components needs to be intuitive:
 
@@ -98,7 +107,7 @@ The connection between data and components needs to be intuitive:
 
 ---
 
-## 5. Database Schema
+## 6. Database Schema
 
 ### Tables
 
@@ -116,7 +125,7 @@ The connection between data and components needs to be intuitive:
 **`form_components`** — Registered reusable components
 - `id`, `name`, `slug`, `category`, `description`
 - `definition` (JSONB) — GrapeJS block definition
-- `defaultProps` (JSONB), `dataContract` (JSONB — expected input schema)
+- `defaultProps` (JSONB), `dataContract` (JSONB — expected input schema including `className`)
 - `createdAt`, `updatedAt`
 
 **`form_data_sources`** — Saved/reusable data source configurations
@@ -135,81 +144,163 @@ The connection between data and components needs to be intuitive:
 
 ---
 
-## 6. API Endpoints
+## 7. API Endpoints
 
-| Method | Route | Purpose |
-|--------|-------|---------|
-| GET/POST | `/api/forms` | List and create forms |
-| GET/PUT/DELETE | `/api/forms/[id]` | Single form CRUD |
-| GET | `/api/forms/[id]/render` | Get the published form for rendering (read-only) |
-| GET/POST | `/api/form-submissions` | List and create submissions |
-| GET | `/api/form-submissions/[id]` | Get a single submission |
-| GET/POST | `/api/form-components` | List and register reusable components |
-| GET/PUT/DELETE | `/api/form-components/[id]` | Component CRUD |
-| GET/POST | `/api/form-data-sources` | List and create data source configs |
-| GET/PUT/DELETE | `/api/form-data-sources/[id]` | Data source CRUD |
-| POST | `/api/form-data-sources/[id]/test` | Test a data source and return sample output |
-| GET | `/api/form-data-sources/discover` | Discover available API endpoints from registry |
-| GET | `/api/form-versions` | Version history |
-| POST | `/api/form-versions/[id]/restore` | Restore a version |
+| Method | Route | Purpose | Status |
+|--------|-------|---------|--------|
+| GET/POST | `/api/forms` | List and create forms | Done |
+| GET/PUT/DELETE | `/api/forms/[id]` | Single form CRUD | Done |
+| GET | `/api/forms/[id]/render` | Get the published form for rendering | Done |
+| GET/POST | `/api/form-submissions` | List and create submissions | Done |
+| GET | `/api/form-submissions/[id]` | Get a single submission | Done |
+| GET/POST | `/api/form-components` | List and register reusable components | Done |
+| GET/PUT/DELETE | `/api/form-components/[id]` | Component CRUD | Done |
+| GET/POST | `/api/form-data-sources` | List and create data source configs | Done |
+| GET/PUT/DELETE | `/api/form-data-sources/[id]` | Data source CRUD | Done |
+| GET | `/api/form-discovery` | Discover workflows + API endpoints for editor traits | Done |
+| GET | `/api/form-versions` | Version history | Done |
+| POST | `/api/form-data-sources/[id]/test` | Test a data source and return sample output | Planned |
+| POST | `/api/form-versions/[id]/restore` | Restore a version | Planned |
 
 ---
 
-## 7. Editor Package (`form-editor`)
+## 8. Editor Package (`form-editor`)
 
 ### Package: `packages/form-editor/`
 
-A standalone React package wrapping GrapeJS with OVEN-specific configuration:
+A standalone React package wrapping GrapeJS with OVEN-specific configuration. Uses **plain GrapeJS** (not `grapesjs-react`) with manual `grapesjs.init()` lifecycle.
 
-- **GrapeJS Canvas**: The main visual editor where components are dragged, dropped, and arranged
-- **Component Panel** (left sidebar): Categorized blocks from the component library
-- **Data Source Panel** (left sidebar tab): Browse, configure, and test data sources
-- **Style Panel** (right sidebar): CSS/style editor for the selected component
-- **Properties Panel** (right sidebar tab): Component props + data binding configuration
-- **Preview Mode**: Toggle between edit and preview to see the form with live data
-- **Toolbar**: Save, publish, version history, preview, settings
+#### Source Files
 
-### Peer Dependencies
-- `grapesjs` + `grapesjs-react`
-- `react`, `react-dom`
-- `@mui/material`, `@mui/icons-material`
+| File | Purpose |
+|------|---------|
+| `FormEditor.tsx` | Main component — GrapeJS init, canvas styling, `serializeComponent()`, save/load |
+| `registerOvenComponents.ts` | Registers DB-sourced blocks as GrapeJS components with traits, `onRender()`, and `className` extraction |
+| `types.ts` | TypeScript interfaces (`EditorConfig`, `BlockDefinition`, `EditorState`, `DiscoveryData`) |
+| `index.ts` | Package exports |
+
+#### Key Implementation Details
+
+**GrapeJS Initialization** (`FormEditor.tsx`):
+- `selectorManager.escapeName`: Overrides GrapeJS's default CSS selector sanitizer to preserve Tailwind characters (`/`, `[`, `]`, `:`, `!`). Without this, `w-1/2` becomes `w-1-2`.
+- `canvas.scripts`: Loads Tailwind v4 Browser CDN into the iframe
+- `canvas:frame:load` event: Injects `@import "tailwindcss"` trigger style + `oven-canvas-styles` CSS for container/slot visual placeholders
+- `storageManager: false`: Persistence handled by OVEN (save to DB via `handleSave`)
+
+**Component Registration** (`registerOvenComponents.ts`):
+- `registerOvenComponents(editor, options)`: Takes `blocks` (from DB) and `discovery` (workflows + endpoints), registers each as a GrapeJS component type with:
+  - **Traits** (`buildTraits(block, discovery)`): Auto-generated from `dataContract.inputs`. Includes dynamic `select` dropdowns for Workflow and Data Source Endpoint using pre-fetched discovery data. Adds advanced API traits (Method, Headers, Auth Type/Value, Body) when data source type is API.
+  - **`onRender()`**: Renders canvas placeholder markup for containers (header + drop slot), grid rows (flex cells with labels), grid cells, and leaf components (fallback placeholders). Calls `triggerTailwindRescan(el)` after DOM manipulation to force Tailwind v4 CDN rescan.
+  - **`extractTraitProps()`**: Converts GrapeJS traits to React-friendly props, with special handling for `className` (extracts user classes from GrapeJS model, excludes `gjs-` prefixed selectors). Skips internal data/workflow traits from the props map.
+
+**Serialization** (`serializeComponent()` in `FormEditor.tsx`):
+- Converts GrapeJS component model → `ComponentNode` tree (stored in `forms.definition.components`)
+- Extracts `dataSource` object from traits: endpoint, type, method, headers, authType, authValue, body
+- Extracts `workflowSlug` → `node.actions[]` with `{ event: 'onClick', type: 'workflow', workflowSlug }`
+- Falls back to GrapeJS model classes for `className` if not set via traits
+
+**Canvas Tailwind Integration**:
+- `triggerTailwindRescan(el)`: Helper that toggles a dummy class via `requestAnimationFrame` to trigger Tailwind v4 CDN's `MutationObserver` after raw DOM manipulation in `onRender()`.
+- `oven-canvas-styles`: CSS rules for visual editing aids (container headers, drop slots, grid layout, fallback placeholders) that display in the editor canvas
+
+#### Peer Dependencies
+- `grapesjs` (>=0.21.0)
+- `react`, `react-dom` (>=19.0.0)
+- `@mui/material`, `@mui/icons-material` (>=6.0.0)
+- `@oven/oven-ui` (workspace)
 
 ---
 
-## 8. Rendering Modes
+## 9. Page Creation Step-by-Step
+
+### Creating a New Page/Form
+
+1. **Navigate to Forms**: Go to `/#/forms` in the dashboard
+2. **Create New**: Click "Create" — enter a name, slug, and optional description
+3. **Open Editor**: After creation, navigate to `/#/forms/:id/editor` (or click "Edit" on the form detail page)
+
+### Working in the Editor
+
+4. **Drag Blocks**: The left sidebar shows available blocks organized by category:
+   - **Basic**: Text, Heading, Image, Link, Video
+   - **Layout**: Section, 2-Column, 3-Column
+   - **Form**: Text Input, Textarea, Select, Checkbox, Button
+   - **Oven Components**: All 42 registered components from the DB (Input, Data Display, Layout, Action, Navigation, Content categories)
+
+5. **Arrange Components**: Drag blocks onto the canvas. Layout components (containers, grids) show visual drop zones. Grid rows auto-create equal-width cells.
+
+6. **Configure Properties**: Click any component → right sidebar shows:
+   - **Traits Panel**: Component-specific properties from `data_contract.inputs` (label, placeholder, required, variant, etc.)
+   - **Data Category**: Data Source Type (None/API/Workflow/Static), Data Source Endpoint (dropdown of discovered API routes), and advanced settings (Method, Headers, Auth, Body)
+   - **Actions Category**: Workflow dropdown (populated from enabled workflows in DB)
+   - **Styles Panel**: CSS properties organized by sector (Layout, Dimension, Typography, Decorations)
+
+7. **Set Data Bindings**: For data-driven components:
+   - Select a Data Source Type (e.g., "API Endpoint")
+   - Choose an endpoint from the discovery dropdown (e.g., `GET maps/maps`)
+   - Optionally configure advanced settings: HTTP Method override, custom Headers (JSON), Auth Type + credentials, Request Body
+   - Bind data fields to component props using `$.path` syntax in trait values
+
+8. **Configure Workflow Triggers**: For action components (buttons):
+   - Select a workflow from the Workflow dropdown
+   - The serializer creates an `actions[]` entry with `{ event: 'onClick', type: 'workflow', workflowSlug }`
+
+9. **Apply Tailwind Classes**: Use GrapeJS's class selector (Style Manager) to add Tailwind utility classes. The `selectorManager.escapeName` config preserves special characters like `/`, `[`, `]`.
+
+### Preview & Save
+
+10. **Preview Mode**: Click "Preview" button in the header bar. Toggles to a `TailwindPreviewFrame` that renders actual React components from `@oven/oven-ui` via `renderComponentTree()` inside an isolated iframe with full Tailwind CSS processing.
+
+11. **Save**: Click "Save" (or Ctrl/Cmd+S). The editor serializes the GrapeJS component tree into `ComponentNode[]` format and sends a `PUT /api/forms/:id` with:
+    ```json
+    {
+      "definition": {
+        "components": [...],
+        "styles": [...],
+        "projectData": { ... }
+      }
+    }
+    ```
+    The `projectData` contains the full GrapeJS state for accurate reload. The `components` array contains the portable `ComponentNode` tree used by `renderComponentTree()`.
+
+12. **Publishing**: Change form status to "published" — the form is now available via `GET /api/forms/:id/render` for the portal or other consumers.
+
+---
+
+## 10. Rendering Modes
 
 | Mode | Description |
 |------|-------------|
-| **Edit** | Full GrapeJS editor — drag-and-drop, data binding, style editing |
-| **Preview** | Rendered form with live data fetching, all interactions work, but submissions are not persisted |
+| **Edit** | Full GrapeJS editor — drag-and-drop, trait editing, style editing, data source configuration |
+| **Preview** | Rendered as React components via `renderComponentTree()` inside `TailwindPreviewFrame` iframe with full Tailwind CSS |
 | **Published** | Production render — data is fetched, interactions work, submissions are stored in `form_submissions` |
 | **Submission View** | Read-only replay of a specific submission showing the form filled with that submission's data |
 
 ---
 
-## 9. Events
+## 11. Events
 
 | Event | Payload |
 |-------|---------|
-| `forms.form.created` | id, name, slug, createdBy |
-| `forms.form.updated` | id, name, slug, version |
-| `forms.form.published` | id, name, slug, version |
-| `forms.form.archived` | id, name, slug |
-| `forms.submission.created` | id, formId, submittedBy |
+| `forms.form.created` | id, tenantId, name, slug |
+| `forms.form.updated` | id, tenantId, name |
+| `forms.form.published` | id, tenantId, version |
+| `forms.form.archived` | id, tenantId, name |
+| `forms.submission.created` | id, tenantId, formId, formVersion, submittedBy |
 | `forms.component.registered` | id, name, slug, category |
 
 ---
 
-## 10. Integration Points
+## 12. Integration Points
 
 | Module | Integration |
 |--------|-------------|
 | **module-roles** | Permission-based access to edit, publish, submit forms |
+| **module-workflows** | Workflow discovery for action triggers; workflow execution on button clicks |
 | **module-flows** | Forms can be Flow items — drafted, reviewed, and published through stages |
-| **module-workflows** | Trigger a workflow on form submission (e.g., process data, send notifications) |
 | **module-question-types** | Educational question components are a special category in the component library |
 | **module-analytics-forms** | Analytics dashboards can embed form submission data |
-| **module-chat** | Chat agent can create and modify forms |
+| **module-chat** | Chat agent can create and modify forms via `chat.actionSchemas` |
 
 ---
 
@@ -264,21 +355,22 @@ tenantId: integer('tenant_id').notNull(),
 
 ```typescript
 chat: {
-  description: 'Enterprise interface builder with GrapeJS visual editor. Builds dynamic forms, pages, and applications with 3-layer architecture (Data, Business, Frontend).',
+  description: 'Enterprise interface builder module. Manages dynamic forms with versioned definitions, reusable component registries, data-source bindings, and submission capture.',
   capabilities: [
-    'create forms and pages',
-    'publish forms',
+    'list and search forms',
+    'create new forms',
     'list form submissions',
-    'manage reusable components',
-    'configure data sources',
+    'manage form components',
+    'manage form data sources',
   ],
   actionSchemas: [
     {
       name: 'forms.list',
-      description: 'List forms with filtering and pagination',
+      description: 'List forms with optional filtering by tenant, status, or search term',
       parameters: {
-        tenantId: { type: 'number' },
-        status: { type: 'string', description: 'draft/published/archived' },
+        tenantId: { type: 'number', description: 'Filter by tenant ID' },
+        status: { type: 'string', description: 'Filter by status (draft, published, archived)' },
+        q: { type: 'string', description: 'Search forms by name' },
       },
       returns: { data: { type: 'array' }, total: { type: 'number' } },
       requiredPermissions: ['forms.read'],
@@ -286,21 +378,24 @@ chat: {
     },
     {
       name: 'forms.create',
-      description: 'Create a new form or page',
+      description: 'Create a new form with definition and configuration',
       parameters: {
-        name: { type: 'string', required: true },
-        slug: { type: 'string', required: true },
-        description: { type: 'string' },
+        tenantId: { type: 'number', description: 'Tenant ID', required: true },
+        name: { type: 'string', description: 'Form name', required: true },
+        slug: { type: 'string', description: 'URL-safe slug', required: true },
+        description: { type: 'string', description: 'Form description' },
+        definition: { type: 'object', description: 'Form JSON definition' },
       },
-      returns: { id: { type: 'number' }, slug: { type: 'string' } },
+      returns: { id: { type: 'number' }, name: { type: 'string' } },
       requiredPermissions: ['forms.create'],
       endpoint: { method: 'POST', path: 'forms' },
     },
     {
       name: 'forms.listSubmissions',
-      description: 'List submissions for a form',
+      description: 'List form submissions with optional filtering',
       parameters: {
-        formId: { type: 'number', required: true },
+        tenantId: { type: 'number', description: 'Filter by tenant ID' },
+        formId: { type: 'number', description: 'Filter by form ID' },
       },
       returns: { data: { type: 'array' }, total: { type: 'number' } },
       requiredPermissions: ['form-submissions.read'],
@@ -348,13 +443,10 @@ events: {
       tenantId: { type: 'number', required: true },
       name: { type: 'string' },
       slug: { type: 'string' },
-      createdBy: { type: 'number' },
     },
     'forms.form.published': {
       id: { type: 'number', required: true },
       tenantId: { type: 'number', required: true },
-      name: { type: 'string' },
-      slug: { type: 'string' },
       version: { type: 'number' },
     },
     'forms.submission.created': {
@@ -365,7 +457,6 @@ events: {
     },
     'forms.component.registered': {
       id: { type: 'number', required: true },
-      tenantId: { type: 'number', description: 'null if platform-global' },
       name: { type: 'string' },
       slug: { type: 'string' },
       category: { type: 'string' },
@@ -378,25 +469,9 @@ events: {
 
 ```typescript
 export async function seedForms(db: any) {
-  const modulePermissions = [
-    { resource: 'forms', action: 'read', slug: 'forms.read', description: 'View forms' },
-    { resource: 'forms', action: 'create', slug: 'forms.create', description: 'Create forms' },
-    { resource: 'forms', action: 'update', slug: 'forms.update', description: 'Edit forms' },
-    { resource: 'forms', action: 'delete', slug: 'forms.delete', description: 'Delete forms' },
-    { resource: 'forms', action: 'publish', slug: 'forms.publish', description: 'Publish forms' },
-    { resource: 'form-submissions', action: 'read', slug: 'form-submissions.read', description: 'View submissions' },
-    { resource: 'form-submissions', action: 'create', slug: 'form-submissions.create', description: 'Submit forms' },
-    { resource: 'form-components', action: 'read', slug: 'form-components.read', description: 'View components' },
-    { resource: 'form-components', action: 'create', slug: 'form-components.create', description: 'Register components' },
-    { resource: 'form-components', action: 'update', slug: 'form-components.update', description: 'Edit components' },
-    { resource: 'form-components', action: 'delete', slug: 'form-components.delete', description: 'Delete components' },
-    { resource: 'form-data-sources', action: 'read', slug: 'form-data-sources.read', description: 'View data sources' },
-    { resource: 'form-data-sources', action: 'create', slug: 'form-data-sources.create', description: 'Create data sources' },
-  ];
-
-  for (const perm of modulePermissions) {
-    await db.insert(permissions).values(perm).onConflictDoNothing();
-  }
+  // Seeds 42 form_components across 6 categories with data_contracts
+  // Seeds permissions for forms, form-submissions, form-components, form-data-sources
+  // Uses onConflictDoUpdate for idempotent re-runs
 }
 ```
 

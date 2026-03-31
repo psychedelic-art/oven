@@ -5,6 +5,17 @@ import { sessionsModule } from '@oven/module-sessions';
 import { playerMapPositionModule } from '@oven/module-player-map-position';
 import { workflowsModule } from '@oven/module-workflows';
 import { rolesModule } from '@oven/module-roles';
+import { configModule } from '@oven/module-config';
+import { tenantsModule } from '@oven/module-tenants';
+import { subscriptionsModule } from '@oven/module-subscriptions';
+import { authModule, registerAuthAdapter } from '@oven/module-auth';
+import { authJsAdapter } from '@oven/auth-authjs';
+import { formsModule } from '@oven/module-forms';
+import { flowsModule } from '@oven/module-flows';
+import { uiFlowsModule } from '@oven/module-ui-flows';
+
+// Register auth adapter before module registration
+registerAuthAdapter(authJsAdapter);
 
 // Register modules in dependency order
 registry.register(mapsModule);                    // No deps
@@ -13,3 +24,10 @@ registry.register(sessionsModule);                // Depends on: maps, players
 registry.register(playerMapPositionModule);       // Depends on: maps, players, sessions
 registry.register(workflowsModule);              // No deps
 registry.register(rolesModule);                  // No deps (scans others for API discovery)
+registry.register(configModule);                 // No deps
+registry.register(tenantsModule);                // Depends on: config
+registry.register(subscriptionsModule);          // Depends on: config, tenants
+registry.register(authModule);                   // Depends on: roles
+registry.register(formsModule);                  // Depends on: roles
+registry.register(flowsModule);                  // Depends on: roles
+registry.register(uiFlowsModule);               // Depends on: forms, tenants
