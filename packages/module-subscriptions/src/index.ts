@@ -21,6 +21,9 @@ import * as tenantLimitsHandler from './api/tenant-limits.handler';
 import * as tenantServiceLimitHandler from './api/tenant-service-limit.handler';
 import * as quotaOverridesHandler from './api/quota-overrides.handler';
 import * as quotaOverridesByIdHandler from './api/quota-overrides-by-id.handler';
+import * as usageTrackHandler from './api/usage-track.handler';
+import * as usageSummaryHandler from './api/usage-summary.handler';
+import * as tenantUsageHandler from './api/tenant-usage.handler';
 
 const eventSchemas: EventSchemaMap = {
   'subscriptions.category.created': {
@@ -106,6 +109,18 @@ const eventSchemas: EventSchemaMap = {
     currentUsage: { type: 'number', description: 'Current period usage', required: true },
     quota: { type: 'number', description: 'Effective quota limit', required: true },
   },
+  'subscriptions.usage.recorded': {
+    tenantId: { type: 'number', description: 'Tenant DB ID', required: true },
+    serviceSlug: { type: 'string', description: 'Service slug', required: true },
+    amount: { type: 'number', description: 'Amount consumed', required: true },
+    remaining: { type: 'number', description: 'Remaining quota' },
+  },
+  'subscriptions.quota.warning': {
+    tenantId: { type: 'number', description: 'Tenant DB ID', required: true },
+    serviceSlug: { type: 'string', description: 'Service slug', required: true },
+    usagePercent: { type: 'number', description: 'Usage percentage (0-100)', required: true },
+    threshold: { type: 'number', description: 'Warning threshold percentage', required: true },
+  },
 };
 
 export const subscriptionsModule: ModuleDefinition = {
@@ -190,6 +205,10 @@ export const subscriptionsModule: ModuleDefinition = {
       PUT: quotaOverridesByIdHandler.PUT,
       DELETE: quotaOverridesByIdHandler.DELETE,
     },
+    // Usage Metering
+    'usage/track': { POST: usageTrackHandler.POST },
+    'usage/summary': { GET: usageSummaryHandler.GET },
+    'tenant-subscriptions/[id]/usage': { GET: tenantUsageHandler.GET },
   },
   configSchema: [
     {
@@ -232,6 +251,8 @@ export const subscriptionsModule: ModuleDefinition = {
       'subscriptions.subscription.updated',
       'subscriptions.subscription.cancelled',
       'subscriptions.quota.exceeded',
+      'subscriptions.usage.recorded',
+      'subscriptions.quota.warning',
     ],
     schemas: eventSchemas,
   },
@@ -276,10 +297,44 @@ export const subscriptionsModule: ModuleDefinition = {
         requiredPermissions: ['billing-plans.read'],
         endpoint: { method: 'GET', path: 'billing-plans' },
       },
+      {
+        name: 'subscriptions.trackUsage',
+        description: 'Record a usage event for a tenant service',
+        parameters: {
+          tenantId: { type: 'number', description: 'Tenant ID', required: true },
+          serviceSlug: { type: 'string', description: 'Service slug', required: true },
+          amount: { type: 'number', description: 'Amount consumed', required: true },
+        },
+        returns: { recorded: { type: 'boolean' }, remaining: { type: 'number' }, exceeded: { type: 'boolean' } },
+        requiredPermissions: ['tenant-subscriptions.read'],
+        endpoint: { method: 'POST', path: 'usage/track' },
+      },
+      {
+        name: 'subscriptions.getUsageSummary',
+        description: 'Get usage summary for a tenant across all services',
+        parameters: {
+          tenantId: { type: 'number', description: 'Tenant ID', required: true },
+        },
+        returns: { usage: { type: 'array' } },
+        requiredPermissions: ['tenant-subscriptions.read'],
+        endpoint: { method: 'GET', path: 'usage/summary' },
+      },
+      {
+        name: 'subscriptions.getTenantUsage',
+        description: 'Get detailed usage vs limits for a tenant',
+        parameters: {
+          tenantId: { type: 'number', description: 'Tenant ID', required: true },
+        },
+        returns: { services: { type: 'array' }, anyExceeded: { type: 'boolean' } },
+        requiredPermissions: ['tenant-subscriptions.read'],
+        endpoint: { method: 'GET', path: 'tenant-subscriptions/[tenantId]/usage' },
+      },
     ],
   },
 };
 
 export { subscriptionsSchema } from './schema';
 export { seedSubscriptions } from './seed';
+export { usageMeteringService, UsageMeteringService } from './engine/usage-metering';
+export type { TrackUsageParams, TrackUsageResult, CheckQuotaResult, ServiceUsage } from './engine/usage-metering';
 export * from './types';

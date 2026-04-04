@@ -187,6 +187,37 @@ import UiFlowEdit from './ui-flows/UiFlowEdit';
 import UiFlowShow from './ui-flows/UiFlowShow';
 import UiFlowAnalyticsList from './ui-flow-analytics/UiFlowAnalyticsList';
 
+// Files
+import { FileList, FileShow, FileManager } from './files';
+
+// AI
+import {
+  ProviderList as AIProviderList,
+  ProviderCreate as AIProviderCreate,
+  ProviderEdit as AIProviderEdit,
+  ProviderShow as AIProviderShow,
+  AliasList,
+  AliasCreate,
+  AliasEdit,
+  VectorStoreList,
+  VectorStoreCreate,
+  VectorStoreEdit,
+  VectorStoreShow,
+  UsageLogList,
+  BudgetList,
+  BudgetCreate,
+  BudgetEdit,
+  BudgetAlertList,
+  GuardrailList,
+  GuardrailCreate,
+  AIPlayground,
+  AIUsageDashboard,
+  AIToolCatalog,
+  AIExtensions,
+  PlaygroundExecutionList,
+  PlaygroundExecutionShow,
+} from './ai';
+
 // Icons
 import GridViewIcon from '@mui/icons-material/GridView';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -222,6 +253,14 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import WebIcon from '@mui/icons-material/Web';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
+import PsychologyIcon from '@mui/icons-material/Psychology';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import StorageIcon from '@mui/icons-material/Storage';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
+import WarningIcon from '@mui/icons-material/Warning';
+import GppGoodIcon from '@mui/icons-material/GppGood';
+import HistoryIcon from '@mui/icons-material/History';
 
 const CustomLayout = (props: any) => <Layout {...props} menu={CustomMenu} />;
 
@@ -548,6 +587,77 @@ export default function AdminApp() {
       <Resource name="ui-flow-pages" />
       <Resource name="ui-flow-versions" />
 
+      {/* AI Module Resources */}
+      <Resource
+        name="ai-providers"
+        options={{ label: 'AI Providers' }}
+        icon={PsychologyIcon}
+        list={AIProviderList}
+        edit={AIProviderEdit}
+        create={AIProviderCreate}
+        show={AIProviderShow}
+      />
+      <Resource
+        name="ai-aliases"
+        options={{ label: 'Model Aliases' }}
+        icon={SmartToyIcon}
+        list={AliasList}
+        edit={AliasEdit}
+        create={AliasCreate}
+      />
+      <Resource
+        name="ai-vector-stores"
+        options={{ label: 'Vector Stores' }}
+        icon={StorageIcon}
+        list={VectorStoreList}
+        edit={VectorStoreEdit}
+        create={VectorStoreCreate}
+        show={VectorStoreShow}
+      />
+      <Resource
+        name="ai-usage-logs"
+        options={{ label: 'Usage Logs' }}
+        icon={BarChartIcon}
+        list={UsageLogList}
+      />
+      <Resource
+        name="ai-budgets"
+        options={{ label: 'Budgets' }}
+        icon={MonetizationOnIcon}
+        list={BudgetList}
+        edit={BudgetEdit}
+        create={BudgetCreate}
+      />
+      <Resource
+        name="ai-budget-alerts"
+        options={{ label: 'Budget Alerts' }}
+        icon={WarningIcon}
+        list={BudgetAlertList}
+      />
+      <Resource
+        name="ai-guardrails"
+        options={{ label: 'Guardrails' }}
+        icon={GppGoodIcon}
+        list={GuardrailList}
+        create={GuardrailCreate}
+      />
+      <Resource
+        name="ai-playground-executions"
+        options={{ label: 'Playground History' }}
+        icon={HistoryIcon}
+        list={PlaygroundExecutionList}
+        show={PlaygroundExecutionShow}
+      />
+
+      {/* Files Module Resources */}
+      <Resource
+        name="files"
+        options={{ label: 'Files' }}
+        icon={StorageIcon}
+        list={FileList}
+        show={FileShow}
+      />
+
       {/* Custom Pages */}
       <CustomRoutes>
         <Route path="/modules" element={<ModuleManager />} />
@@ -558,6 +668,11 @@ export default function AdminApp() {
         <Route path="/forms/:id/editor" element={<FormEditorPage />} />
         <Route path="/api-permissions" element={<ApiPermissionList />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/ai/playground" element={<AIPlayground />} />
+        <Route path="/ai/usage-dashboard" element={<AIUsageDashboard />} />
+        <Route path="/ai/tool-catalog" element={<AIToolCatalog />} />
+        <Route path="/ai/extensions" element={<AIExtensions />} />
+        <Route path="/file-manager" element={<FileManager />} />
       </CustomRoutes>
     </Admin>
   );
