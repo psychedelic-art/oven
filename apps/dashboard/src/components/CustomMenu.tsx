@@ -10,6 +10,9 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import BuildIcon from '@mui/icons-material/Build';
 import ExtensionIcon from '@mui/icons-material/Extension';
 import FolderIcon from '@mui/icons-material/Folder';
+import QuestionAnswerIcon from '@mui/icons-material/QuestionAnswer';
+import SearchIcon from '@mui/icons-material/Search';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
 export default function CustomMenu() {
   return (
@@ -80,6 +83,21 @@ export default function CustomMenu() {
         leftIcon={<ExtensionIcon />}
       />
       <Menu.ResourceItem name="ai-playground-executions" />
+
+      <Divider sx={{ my: 1 }} />
+      <Box sx={{ px: 2, pb: 0.5 }}>
+        <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10 }}>
+          Knowledge Base
+        </Typography>
+      </Box>
+      <Menu.ResourceItem name="kb-knowledge-bases" />
+      <Menu.ResourceItem name="kb-categories" />
+      <Menu.ResourceItem name="kb-entries" />
+      <Menu.Item
+        to="/knowledge-base/playground"
+        primaryText="KB Playground"
+        leftIcon={<SearchIcon />}
+      />
 
       <Divider sx={{ my: 1 }} />
       <Box sx={{ px: 2, pb: 0.5 }}>

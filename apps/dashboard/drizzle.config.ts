@@ -20,6 +20,7 @@ export default defineConfig({
     '../../packages/module-ui-flows/src/schema.ts',
     '../../packages/module-ai/src/schema.ts',
     '../../packages/module-files/src/schema.ts',
+    '../../packages/module-knowledge-base/src/schema.ts',
   ],
   out: './drizzle',
   dbCredentials: {

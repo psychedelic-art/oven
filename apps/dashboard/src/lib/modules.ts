@@ -15,6 +15,7 @@ import { flowsModule } from '@oven/module-flows';
 import { uiFlowsModule } from '@oven/module-ui-flows';
 import { aiModule } from '@oven/module-ai';
 import { filesModule } from '@oven/module-files';
+import { knowledgeBaseModule } from '@oven/module-knowledge-base';
 
 // Register auth adapter before module registration
 registerAuthAdapter(authJsAdapter);
@@ -31,6 +32,7 @@ registry.register(tenantsModule);                // Depends on: config
 registry.register(filesModule);                  // Depends on: tenants
 registry.register(subscriptionsModule);          // Depends on: config, tenants
 registry.register(aiModule);                     // Depends on: subscriptions
+registry.register(knowledgeBaseModule);          // Depends on: ai
 registry.register(authModule);                   // Depends on: roles
 registry.register(formsModule);                  // Depends on: roles
 registry.register(flowsModule);                  // Depends on: roles

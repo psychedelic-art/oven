@@ -218,6 +218,21 @@ import {
   PlaygroundExecutionShow,
 } from './ai';
 
+// Knowledge Base
+import {
+  KnowledgeBaseList,
+  KnowledgeBaseCreate,
+  KnowledgeBaseEdit,
+  CategoryList as KBCategoryList,
+  CategoryCreate as KBCategoryCreate,
+  CategoryEdit as KBCategoryEdit,
+  EntryList as KBEntryList,
+  EntryCreate as KBEntryCreate,
+  EntryEdit as KBEntryEdit,
+  EntryShow as KBEntryShow,
+  KBPlayground,
+} from './knowledge-base';
+
 // Icons
 import GridViewIcon from '@mui/icons-material/GridView';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -261,6 +276,8 @@ import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import WarningIcon from '@mui/icons-material/Warning';
 import GppGoodIcon from '@mui/icons-material/GppGood';
 import HistoryIcon from '@mui/icons-material/History';
+import QuestionAnswerIcon from '@mui/icons-material/QuestionAnswer';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 
 const CustomLayout = (props: any) => <Layout {...props} menu={CustomMenu} />;
 
@@ -649,6 +666,33 @@ export default function AdminApp() {
         show={PlaygroundExecutionShow}
       />
 
+      {/* Knowledge Base Module Resources */}
+      <Resource
+        name="kb-knowledge-bases"
+        options={{ label: 'Knowledge Bases' }}
+        icon={LibraryBooksIcon}
+        list={KnowledgeBaseList}
+        edit={KnowledgeBaseEdit}
+        create={KnowledgeBaseCreate}
+      />
+      <Resource
+        name="kb-categories"
+        options={{ label: 'KB Categories' }}
+        icon={LibraryBooksIcon}
+        list={KBCategoryList}
+        edit={KBCategoryEdit}
+        create={KBCategoryCreate}
+      />
+      <Resource
+        name="kb-entries"
+        options={{ label: 'KB Entries' }}
+        icon={QuestionAnswerIcon}
+        list={KBEntryList}
+        edit={KBEntryEdit}
+        create={KBEntryCreate}
+        show={KBEntryShow}
+      />
+
       {/* Files Module Resources */}
       <Resource
         name="files"
@@ -672,6 +716,7 @@ export default function AdminApp() {
         <Route path="/ai/usage-dashboard" element={<AIUsageDashboard />} />
         <Route path="/ai/tool-catalog" element={<AIToolCatalog />} />
         <Route path="/ai/extensions" element={<AIExtensions />} />
+        <Route path="/knowledge-base/playground" element={<KBPlayground />} />
         <Route path="/file-manager" element={<FileManager />} />
       </CustomRoutes>
     </Admin>
