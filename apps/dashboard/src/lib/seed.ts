@@ -4,9 +4,18 @@ import { db } from './db';
 import { registry } from '@oven/module-registry';
 
 async function main() {
-  console.log('Seeding database...');
-  await registry.seedAll(db);
-  console.log('Seeding complete!');
+  const moduleName = process.argv[2];
+
+  if (moduleName) {
+    console.log(`Seeding module: ${moduleName}`);
+    await registry.seedModule(db, moduleName);
+    console.log(`Seeding "${moduleName}" complete!`);
+  } else {
+    console.log('Seeding all modules...');
+    await registry.seedAll(db);
+    console.log('Seeding complete!');
+  }
+
   process.exit(0);
 }
 

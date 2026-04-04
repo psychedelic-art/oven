@@ -164,7 +164,7 @@ chat: {
   description: 'FAQ and knowledge management with semantic search',
   capabilities: ['search FAQ entries', 'list categories', 'create entries', 'get entry details'],
   actionSchemas: [
-    { name: 'kb.search', endpoint: { method: 'POST', path: 'knowledge-base/[tenantSlug]/search' }, ... },
+    { name: 'kb.searchEntries', endpoint: { method: 'POST', path: 'knowledge-base/[tenantSlug]/search' }, ... },
     { name: 'kb.listEntries', endpoint: { method: 'GET', path: 'kb-entries' }, ... },
     { name: 'kb.getEntry', endpoint: { method: 'GET', path: 'kb-entries/[id]' }, ... },
   ]

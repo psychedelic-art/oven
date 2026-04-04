@@ -78,8 +78,8 @@ export const chatSessions = pgTable('chat_sessions', {
   channel: varchar('channel', { length: 32 }).notNull(),
   title: varchar('title', { length: 255 }),
   status: varchar('status', { length: 32 }).notNull().default('active'),
-  context: jsonb('context').notNull().default({}),
-  metadata: jsonb('metadata').notNull().default({}),
+  context: jsonb('context').notNull().default('{}'),
+  metadata: jsonb('metadata').notNull().default('{}'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => [

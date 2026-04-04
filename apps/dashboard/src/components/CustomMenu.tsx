@@ -4,6 +4,12 @@ import { Menu } from 'react-admin';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ApiIcon from '@mui/icons-material/Api';
 import { Typography, Divider, Box } from '@mui/material';
+import PsychologyIcon from '@mui/icons-material/Psychology';
+import ScienceIcon from '@mui/icons-material/Science';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import BuildIcon from '@mui/icons-material/Build';
+import ExtensionIcon from '@mui/icons-material/Extension';
+import FolderIcon from '@mui/icons-material/Folder';
 
 export default function CustomMenu() {
   return (
@@ -40,6 +46,49 @@ export default function CustomMenu() {
       <Menu.ResourceItem name="workflows" />
       <Menu.ResourceItem name="workflow-executions" />
       <Menu.ResourceItem name="module-configs" />
+
+      <Divider sx={{ my: 1 }} />
+      <Box sx={{ px: 2, pb: 0.5 }}>
+        <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10 }}>
+          AI Services
+        </Typography>
+      </Box>
+      <Menu.ResourceItem name="ai-providers" />
+      <Menu.ResourceItem name="ai-aliases" />
+      <Menu.ResourceItem name="ai-vector-stores" />
+      <Menu.ResourceItem name="ai-usage-logs" />
+      <Menu.ResourceItem name="ai-budgets" />
+      <Menu.ResourceItem name="ai-guardrails" />
+      <Menu.Item
+        to="/ai/playground"
+        primaryText="AI Playground"
+        leftIcon={<ScienceIcon />}
+      />
+      <Menu.Item
+        to="/ai/usage-dashboard"
+        primaryText="Usage Dashboard"
+        leftIcon={<BarChartIcon />}
+      />
+      <Menu.Item
+        to="/ai/tool-catalog"
+        primaryText="Tool Catalog"
+        leftIcon={<BuildIcon />}
+      />
+      <Menu.Item
+        to="/ai/extensions"
+        primaryText="Extensions"
+        leftIcon={<ExtensionIcon />}
+      />
+      <Menu.ResourceItem name="ai-playground-executions" />
+
+      <Divider sx={{ my: 1 }} />
+      <Box sx={{ px: 2, pb: 0.5 }}>
+        <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10 }}>
+          Files
+        </Typography>
+      </Box>
+      <Menu.Item to="/file-manager" primaryText="File Manager" leftIcon={<FolderIcon />} />
+      <Menu.ResourceItem name="files" />
 
       <Divider sx={{ my: 1 }} />
       <Box sx={{ px: 2, pb: 0.5 }}>

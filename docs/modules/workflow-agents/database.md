@@ -519,7 +519,7 @@ export const agentMemory = pgTable('agent_memory', {
   userId: integer('user_id'),
   key: varchar('key', { length: 255 }).notNull(),
   content: text('content').notNull(),
-  // embedding: vector('embedding', { dimensions: 1536 }),  -- requires pgvector extension
+  embedding: vector('embedding', { dimensions: 1536 }),  // requires pgvector extension — install before migration
   metadata: jsonb('metadata'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
