@@ -89,6 +89,7 @@ export function createAIMiddleware(ctx: AIMiddlewareContext): LanguageModelV1Mid
 
       let inputTokens = 0;
       let outputTokens = 0;
+      let accumulatedText = '';
 
       const transformStream = new TransformStream({
         transform(chunk, controller) {
@@ -97,10 +98,35 @@ export function createAIMiddleware(ctx: AIMiddlewareContext): LanguageModelV1Mid
             inputTokens = chunk.usage.promptTokens ?? inputTokens;
             outputTokens = chunk.usage.completionTokens ?? outputTokens;
           }
+          // Accumulate text for output guardrail evaluation
+          if (chunk.type === 'text-delta' && chunk.textDelta) {
+            accumulatedText += chunk.textDelta;
+          }
           controller.enqueue(chunk);
         },
         async flush() {
           const latencyMs = Date.now() - startTime;
+
+          // Output guardrails on accumulated stream text
+          if (ctx.tenantId && accumulatedText) {
+            const guardrailResult = await evaluateGuardrails(accumulatedText, 'output', ctx.tenantId);
+            if (!guardrailResult.passed && guardrailResult.action === 'block') {
+              // Note: Stream has already been sent to client. We log the violation
+              // but cannot retroactively block. Future: use a buffered approach.
+              await trackAIUsage({
+                tenantId: ctx.tenantId,
+                inputTokens,
+                outputTokens,
+                model: extractModelId(params),
+                provider: extractProvider(params),
+                latencyMs,
+                toolName: ctx.toolName,
+                status: 'guardrail_blocked',
+                metadata: { ...ctx.metadata, guardrailViolation: guardrailResult.message },
+              });
+              return;
+            }
+          }
 
           // Track usage after stream completes
           if (ctx.tenantId && (inputTokens > 0 || outputTokens > 0)) {

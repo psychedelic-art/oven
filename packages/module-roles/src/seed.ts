@@ -32,7 +32,7 @@ const ROLE_PERMISSION_MAP: Record<string, string[]> = {
 };
 
 export async function seed(db: any) {
-  // Seed permissions
+  // ─── 1. Permissions (idempotent via onConflictDoNothing) ──
   const allPermissions: Array<{ resource: string; action: string; slug: string; description: string }> = [];
   for (const resource of RESOURCES) {
     for (const action of ACTIONS) {
@@ -46,27 +46,24 @@ export async function seed(db: any) {
   }
 
   for (const perm of allPermissions) {
-    const existing = await db.select().from(permissions).where(eq(permissions.slug, perm.slug));
-    if (existing.length === 0) {
-      await db.insert(permissions).values(perm);
-    }
+    await db.insert(permissions).values(perm).onConflictDoNothing();
   }
 
-  // Seed roles
+  // ─── 2. Roles (idempotent via onConflictDoNothing) ────────
   for (const role of DEFAULT_ROLES) {
-    const existing = await db.select().from(roles).where(eq(roles.slug, role.slug));
-    if (existing.length === 0) {
-      await db.insert(roles).values(role);
-    }
+    await db.insert(roles).values(role).onConflictDoNothing();
   }
 
-  // Seed role-permission mappings
+  // ─── 3. Role-permission mappings (delete+recreate for seeded roles) ──
   const allDbRoles = await db.select().from(roles);
   const allDbPerms = await db.select().from(permissions);
 
   for (const role of allDbRoles) {
     const patterns = ROLE_PERMISSION_MAP[role.slug];
     if (!patterns) continue;
+
+    // Delete existing mappings for this role, then re-insert
+    await db.delete(rolePermissions).where(eq(rolePermissions.roleId, role.id));
 
     for (const perm of allDbPerms) {
       const shouldAssign = patterns.some((pattern) => {
@@ -78,19 +75,10 @@ export async function seed(db: any) {
       });
 
       if (shouldAssign) {
-        const existing = await db
-          .select()
-          .from(rolePermissions)
-          .where(eq(rolePermissions.roleId, role.id));
-        const alreadyMapped = existing.some(
-          (rp: any) => rp.permissionId === perm.id
-        );
-        if (!alreadyMapped) {
-          await db.insert(rolePermissions).values({
-            roleId: role.id,
-            permissionId: perm.id,
-          });
-        }
+        await db.insert(rolePermissions).values({
+          roleId: role.id,
+          permissionId: perm.id,
+        });
       }
     }
   }

@@ -3,7 +3,29 @@
 > **Package**: `packages/module-knowledge-base/`
 > **Name**: `@oven/module-knowledge-base`
 > **Dependencies**: `module-registry`, `module-ai`, `module-tenants`
-> **Status**: Planned
+> **Status**: **Implemented (Phase 2)**
+
+---
+
+## Implementation Summary
+
+| Metric | Count |
+|--------|-------|
+| Database tables | 4 (kb_knowledge_bases, kb_categories, kb_entries, kb_entry_versions) |
+| Engine components | 2 (embedding-pipeline, search-engine) |
+| API routes | 15+ across 11 handler files |
+| Unit tests | 19 passing across 2 suites (embedding-pipeline: 7, search-engine: 12) |
+| Events emitted | 11 |
+| Config keys | 8 |
+| Permissions | 9 |
+| Dashboard UI | 14 components including KBPlayground |
+
+### Key Implementation Details
+- **Multi-KB Architecture**: Tenants can own multiple knowledge bases (`kb_knowledge_bases` table)
+- **Tags Field**: `tags` text array on entries for user-facing categorization
+- **Seed Pattern**: delete+recreate (per Rule 12): 1 KB + 10 dental categories + 15 entries for first tenant
+- **KBPlayground**: Unified dashboard interface for search testing, bulk operations, and stats
+- **Hybrid Search**: Configurable semantic/keyword weights (default 0.7/0.3)
 
 ---
 

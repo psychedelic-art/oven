@@ -12,7 +12,7 @@ import {
 export async function seedSubscriptions() {
   const db = getDb();
 
-  // ─── Permissions ────────────────────────────────────────────
+  // ─── 1. Permissions (idempotent via onConflictDoNothing) ──
   const modulePermissions = [
     { resource: 'service-categories', action: 'read', slug: 'service-categories.read', description: 'View service categories' },
     { resource: 'service-categories', action: 'create', slug: 'service-categories.create', description: 'Create service categories' },
@@ -43,18 +43,24 @@ export async function seedSubscriptions() {
     await db.insert(permissions).values(perm).onConflictDoNothing({ target: permissions.slug });
   }
 
-  // ─── Default service catalog (idempotent) ───────────────────
-  const existingCategories = await db.select().from(serviceCategories).limit(1);
-  if (existingCategories.length > 0) return;
+  // ─── 2. Delete existing service catalog data (FK-safe order) ──
+  // planQuotas → billingPlans → providerServices → services → serviceCategories → providers
+  await db.delete(planQuotas);
+  await db.delete(billingPlans);
+  await db.delete(providerServices);
+  await db.delete(services);
+  await db.delete(serviceCategories);
+  await db.delete(providers);
+  console.log('[module-subscriptions] Cleared existing service catalog data');
 
-  // Categories
+  // ─── 3. Categories ────────────────────────────────────────
   const [messaging, ai, storage] = await db.insert(serviceCategories).values([
     { name: 'Messaging', slug: 'messaging', icon: 'Chat', order: 1 },
     { name: 'AI', slug: 'ai', icon: 'Psychology', order: 2 },
     { name: 'Storage', slug: 'storage', icon: 'CloudUpload', order: 3 },
   ]).returning();
 
-  // Services — Messaging & Storage
+  // ─── 4. Services ──────────────────────────────────────────
   const [whatsapp, sms, email, webChat, _aiChat, _fileStorage] = await db.insert(services).values([
     { categoryId: messaging.id, name: 'WhatsApp', slug: 'whatsapp', unit: 'messages' },
     { categoryId: messaging.id, name: 'SMS', slug: 'sms', unit: 'messages' },
@@ -64,7 +70,6 @@ export async function seedSubscriptions() {
     { categoryId: storage.id, name: 'File Storage', slug: 'file-storage', unit: 'gb' },
   ]).returning();
 
-  // Services — AI (granular tracking)
   const [llmPrompt, llmCompletion, aiEmbeddings, aiImageGen, aiVectorQueries, aiAgentExec] =
     await db.insert(services).values([
       { categoryId: ai.id, name: 'LLM Prompt Tokens', slug: 'llm-prompt-tokens', unit: 'tokens' },
@@ -75,7 +80,7 @@ export async function seedSubscriptions() {
       { categoryId: ai.id, name: 'AI Agent Executions', slug: 'ai-agent-executions', unit: 'executions' },
     ]).returning();
 
-  // Providers
+  // ─── 5. Providers ─────────────────────────────────────────
   const [twilio, _meta, resend, openai, anthropic, google, pinecone] = await db.insert(providers).values([
     { name: 'Twilio', slug: 'twilio', website: 'https://twilio.com' },
     { name: 'Meta Business', slug: 'meta', website: 'https://business.facebook.com' },
@@ -86,7 +91,7 @@ export async function seedSubscriptions() {
     { name: 'Pinecone', slug: 'pinecone', website: 'https://pinecone.io' },
   ]).returning();
 
-  // Provider-service mappings
+  // ─── 6. Provider-service mappings ─────────────────────────
   await db.insert(providerServices).values([
     {
       providerId: twilio.id, serviceId: whatsapp.id, isDefault: true,
@@ -118,7 +123,6 @@ export async function seedSubscriptions() {
         { key: 'OPENAI_MODEL', label: 'Model', type: 'string', required: false },
       ],
     },
-    // AI provider-service mappings (granular)
     { providerId: openai.id, serviceId: llmPrompt.id, isDefault: true, costPerUnit: 15, currency: 'USD' },
     { providerId: openai.id, serviceId: llmCompletion.id, isDefault: true, costPerUnit: 60, currency: 'USD' },
     { providerId: openai.id, serviceId: aiEmbeddings.id, isDefault: true, costPerUnit: 2, currency: 'USD' },
@@ -130,8 +134,7 @@ export async function seedSubscriptions() {
     { providerId: pinecone.id, serviceId: aiVectorQueries.id, isDefault: true, costPerUnit: 8, currency: 'USD' },
   ]);
 
-  // ─── Billing Plans ───────────────────────────────────────────
-
+  // ─── 7. Billing Plans ────────────────────────────────────
   const [freePlan, starterPlan, proPlan] = await db.insert(billingPlans).values([
     { name: 'Free', slug: 'free', price: 0, currency: 'USD', isSystem: true, order: 0,
       features: { maxMembers: 3, maxAgents: 1, maxKBs: 1 } },
@@ -141,9 +144,7 @@ export async function seedSubscriptions() {
       features: { maxMembers: 50, maxAgents: 25, maxKBs: 10, customDomain: true } },
   ]).returning();
 
-  // ─── Plan Quotas ────────────────────────────────────────────
-
-  // Free plan quotas
+  // ─── 8. Plan Quotas ──────────────────────────────────────
   await db.insert(planQuotas).values([
     { planId: freePlan.id, serviceId: whatsapp.id, quota: 300, period: 'monthly' },
     { planId: freePlan.id, serviceId: webChat.id, quota: 500, period: 'monthly' },
@@ -152,7 +153,6 @@ export async function seedSubscriptions() {
     { planId: freePlan.id, serviceId: aiAgentExec.id, quota: 100, period: 'monthly' },
   ]);
 
-  // Starter plan quotas
   await db.insert(planQuotas).values([
     { planId: starterPlan.id, serviceId: whatsapp.id, quota: 3000, period: 'monthly', pricePerUnit: 5 },
     { planId: starterPlan.id, serviceId: webChat.id, quota: 5000, period: 'monthly', pricePerUnit: 2 },
@@ -164,7 +164,6 @@ export async function seedSubscriptions() {
     { planId: starterPlan.id, serviceId: aiAgentExec.id, quota: 5000, period: 'monthly', pricePerUnit: 2 },
   ]);
 
-  // Pro plan quotas
   await db.insert(planQuotas).values([
     { planId: proPlan.id, serviceId: whatsapp.id, quota: 30000, period: 'monthly', pricePerUnit: 3 },
     { planId: proPlan.id, serviceId: webChat.id, quota: 50000, period: 'monthly', pricePerUnit: 1 },
@@ -175,4 +174,6 @@ export async function seedSubscriptions() {
     { planId: proPlan.id, serviceId: aiVectorQueries.id, quota: 500000, period: 'monthly', pricePerUnit: 1 },
     { planId: proPlan.id, serviceId: aiAgentExec.id, quota: 50000, period: 'monthly', pricePerUnit: 1 },
   ]);
+
+  console.log('[module-subscriptions] Seeded 3 categories, 12 services, 7 providers, 13 provider-services, 3 plans, 21 quotas');
 }

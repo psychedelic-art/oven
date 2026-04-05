@@ -100,6 +100,213 @@ interface ConversationViewProps {
 
 ---
 
+## 2A. Session Management UI
+
+### Inspired by Newsan enterprise chat patterns
+
+**Session Sidebar**:
+- Pinnable sessions with pin indicator
+- Session search/filtering by title
+- Session preview (last message truncated)
+- Message count badge
+- New session button
+- Click to switch active session
+
+**Session Persistence**:
+- localStorage with configurable TTL (default 24h)
+- Session validation on app restore (check against backend)
+- Retry with exponential backoff (max 5 attempts, 500ms interval)
+- Graceful degradation when backend unavailable
+
+**Session Switching**:
+- Validate target session before switching
+- Clear real-time messages from previous session
+- Load paginated history for target session
+- Deduplication logic to prevent message doubling
+
+**Session Actions**:
+| Action | Endpoint | UI |
+|--------|----------|-----|
+| Pin/unpin | `PATCH /api/chat/sessions/[id]` | Toggle pin icon |
+| Rename | `PATCH /api/chat/sessions/[id]` | Inline edit title |
+| Delete | `DELETE /api/chat/sessions/[id]` | Confirm dialog |
+| Export | `GET /api/chat/sessions/[id]/export` | Download JSON/MD/TXT |
+
+---
+
+## 2B. Message Architecture
+
+### Dual-State Message Pattern (from Newsan)
+
+Messages use a dual-state architecture that separates real-time (current turn) from history (paginated API):
+
+```typescript
+// Real-time messages: current conversation turn, optimistically added
+const realtimeBySession = Record<string, Message[]>;
+
+// History messages: fetched from API, paginated
+const historyMessages = Message[]; // from infinite query
+
+// Combined on render
+const messages = useMemo(() => {
+  if (historyMessages.length) {
+    const effectiveRealtime = suppressDuplicates ? [] : currentRealtimeMessages;
+    return [...historyMessages, ...effectiveRealtime];
+  }
+  return [DEFAULT_WELCOME_MESSAGE, ...currentRealtimeMessages];
+}, [historyMessages, currentRealtimeMessages]);
+```
+
+**Optimistic Updates**:
+1. User message added to real-time state immediately
+2. Cache updated with session preview (React Query)
+3. API call sent to backend
+4. On success: messages moved to history cache, real-time cleared
+5. On error: error message added to real-time state
+
+**Pagination**:
+- Infinite scroll for older messages (default page size: 20)
+- "Load more" button at top of message list
+- Newest messages at bottom (natural chat order)
+
+**Message Filtering**:
+```typescript
+function filterMessagesForDisplay(messages: Message[]): Message[] {
+  return messages.filter(msg => {
+    if (msg.role === 'user') return true;
+    if (msg.error) return true;
+    if (msg.toolCalls?.length || msg.data?.length) return true;
+    return !!msg.content?.trim();
+  });
+}
+```
+
+---
+
+## 2C. Chat Input
+
+### Enhanced Input (from Newsan + Claude Code)
+
+**Auto-Growing Textarea**:
+- Starts as single line, grows up to 6 rows
+- Shift+Enter for newline, Enter to send
+- Max character limit (configurable, default 2000)
+- Character counter shown at 80% capacity
+
+**Command Detection**:
+- When input starts with `/`, triggers command palette
+- Filters available commands as user types
+- Arrow keys + Enter to select command
+- Tab to autocomplete command name
+- Escape to dismiss palette
+
+### CommandPalette Component
+
+```typescript
+interface CommandPaletteProps {
+  commands: ChatCommand[];
+  filter: string;           // current input after '/'
+  onSelect: (command: ChatCommand) => void;
+  onClose: () => void;
+  position: { top: number; left: number };
+}
+```
+
+**Features**:
+- Keyboard navigation: Arrow Up/Down, Enter to select, Escape to close
+- Fuzzy search on command name and description
+- Category headers (Navigation, Agent, Tools, Export, Settings)
+- Description preview for focused command
+- Parameter hints (e.g., "/mode <creative|precise|balanced>")
+
+**File Attachments**:
+- Drag-and-drop onto input area
+- File picker button (images, audio, documents)
+- Preview thumbnails for attached files
+- Remove attachment button
+
+**Voice Input** (optional):
+- Microphone button toggles recording
+- Uses `ai.transcribe` tool for speech-to-text
+- Transcribed text appears in input field
+- Configurable via `WIDGET_ENABLE_VOICE_INPUT` config key
+
+**Disabled States**:
+| State | Condition | UI |
+|-------|-----------|-----|
+| Initializing | Session not yet created | Input disabled, "Connecting..." |
+| Sending | Message in flight | Input disabled, spinner on send button |
+| Error | Session invalid | Input disabled, error message |
+| Offline | Network unavailable | Input disabled, "Offline" badge |
+
+---
+
+## 2D. Message Rendering
+
+### Rich Message Display (from Newsan + Claude Code)
+
+**Role-Based Styling**:
+| Role | Position | Background | Avatar |
+|------|----------|------------|--------|
+| User | Right-aligned | Primary color | User initials |
+| Assistant | Left-aligned | Surface color | Agent icon |
+| System | Center | Muted | Info icon |
+| Tool | Left-aligned, indented | Code background | Tool icon |
+
+**Content Parts**:
+- **Text**: Rendered with react-markdown, syntax highlighting for code blocks
+- **Tool calls**: Expandable `ToolCallCard` component showing name, input, output, duration
+- **Charts**: Plotly/Recharts integration for data visualization (from Newsan)
+- **Data tables**: Inline table for structured results
+- **Images**: Inline image display with lightbox zoom
+- **Audio**: Audio player component
+- **Error**: `ChatErrorCard` with error message and retry button
+
+**Streaming Display**:
+```typescript
+// StreamingText component renders tokens as they arrive
+<StreamingText
+  text={partialContent}
+  isStreaming={status === 'streaming'}
+  cursor={true}  // blinking cursor during streaming
+/>
+```
+
+**Message Feedback**:
+- Like/dislike buttons below each assistant message
+- Optional comment field on dislike
+- Feedback stored via `POST /api/chat/feedback`
+- Visual state: liked (green), disliked (red), neutral (gray)
+
+---
+
+## 2E. Layout Modes
+
+### Resizable Chat Layout (from Newsan)
+
+**Layout Modes**:
+| Mode | When | Layout |
+|------|------|--------|
+| Inline | Default on desktop | Split panel: 60% content, 40% chat |
+| Modal | Default on dashboard pages | Side panel overlay with backdrop |
+| Fullscreen | User toggle | Full viewport, session sidebar on left |
+| Embedded | Widget on external site | Floating panel in bottom-right |
+
+**Resizable Panels**:
+- `react-resizable-panels` integration
+- Drag handle between content and chat panels
+- Minimum widths: content 300px, chat 320px
+- Persistence: panel sizes saved to localStorage
+
+**Responsive Behavior**:
+| Breakpoint | Layout |
+|-----------|--------|
+| >= 1024px | Split panel or modal (user choice) |
+| 768-1023px | Modal side panel |
+| < 768px | Full-screen overlay with back button |
+
+---
+
 ## 3. Embeddable Widget Bundle
 
 ### Build Configuration
@@ -110,12 +317,12 @@ The chat widget is bundled as a standalone JavaScript file for embedding on exte
 packages/agent-ui/
   src/
     widget/
-      mount.tsx               ← Auto-mount logic: reads data-* attributes, renders ChatWidget
-      styles.css              ← Scoped styles (CSS modules or shadow DOM)
-  vite.config.widget.ts       ← Vite build config for standalone bundle
+      mount.tsx               <- Auto-mount logic: reads data-* attributes, renders ChatWidget
+      styles.css              <- Scoped styles (CSS modules or shadow DOM)
+  vite.config.widget.ts       <- Vite build config for standalone bundle
   dist/
-    chat-widget.js            ← Single file, self-contained
-    chat-widget.css           ← Optional external styles (or inlined)
+    chat-widget.js            <- Single file, self-contained
+    chat-widget.css           <- Optional external styles (or inlined)
 ```
 
 ### Embedding on External Websites
@@ -185,6 +392,27 @@ When `theme="dark"` or `theme="auto"` (follows system preference):
 }
 ```
 
+### Theme Presets (inspired by Newsan's 15-theme system)
+
+| Preset | Primary | Surface | Background |
+|--------|---------|---------|------------|
+| Light | #1976D2 | #F5F5F5 | #FFFFFF |
+| Dark | #90CAF9 | #2D2D2D | #1A1A1A |
+| Ocean | #0288D1 | #E1F5FE | #F0F8FF |
+| Forest | #2E7D32 | #E8F5E9 | #F1F8E9 |
+| Sunset | #E65100 | #FFF3E0 | #FFFDE7 |
+| Midnight | #5C6BC0 | #1A237E | #0D1F4B |
+| Rose | #AD1457 | #FCE4EC | #FFF0F5 |
+| Clinical | #00695C | #E0F2F1 | #F5FFFE |
+| Professional | #37474F | #ECEFF1 | #F5F5F5 |
+| Warm | #BF360C | #FBE9E7 | #FFFAF5 |
+
+**Per-Tenant Branding**:
+- Colors loaded from `GET /api/tenants/[slug]/public`
+- CSS variables set at widget mount time
+- Tenant can override any theme variable via module-config
+- Config keys: `WIDGET_PRIMARY_COLOR`, `WIDGET_SURFACE_COLOR`, `WIDGET_FONT_FAMILY`
+
 ---
 
 ## 5. Package Structure
@@ -193,38 +421,48 @@ When `theme="dark"` or `theme="auto"` (follows system preference):
 packages/agent-ui/
   package.json
   tsconfig.json
-  vite.config.ts                     ← Library build (React components)
-  vite.config.widget.ts              ← Standalone widget build
+  vite.config.ts                     <- Library build (React components)
+  vite.config.widget.ts              <- Standalone widget build
   src/
-    index.ts                         ← Export ChatWidget, AgentPlayground, ConversationView
+    index.ts                         <- Export ChatWidget, AgentPlayground, ConversationView
     widget/
-      ChatWidget.tsx                 ← Main widget component (Props: tenantSlug, theme, agentSlug, apiBaseUrl)
-      ChatBubble.tsx                 ← Single message bubble (user/assistant) with markdown rendering
-      TypingIndicator.tsx            ← Animated dots while agent is thinking
-      WelcomeScreen.tsx              ← Initial state: welcome message + quick-reply category buttons
-      EscalationBanner.tsx           ← Shows contact info when handoff=true
-      AppointmentButton.tsx          ← "Agendar cita" button → opens schedulingUrl
-      WidgetLauncher.tsx             ← Floating button (bottom-right) that opens/closes the widget
-      embed.ts                       ← Embeddable entry point: reads data-* attrs, renders into shadow DOM
-      styles.css                     ← Widget-specific scoped styles
+      ChatWidget.tsx                 <- Main widget component (Props: tenantSlug, theme, agentSlug, apiBaseUrl)
+      ChatBubble.tsx                 <- Single message bubble (user/assistant) with markdown rendering
+      TypingIndicator.tsx            <- Animated dots while agent is thinking
+      WelcomeScreen.tsx              <- Initial state: welcome message + quick-reply category buttons
+      EscalationBanner.tsx           <- Shows contact info when handoff=true
+      AppointmentButton.tsx          <- "Agendar cita" button -> opens schedulingUrl
+      WidgetLauncher.tsx             <- Floating button (bottom-right) that opens/closes the widget
+      embed.ts                       <- Embeddable entry point: reads data-* attrs, renders into shadow DOM
+      styles.css                     <- Widget-specific scoped styles
     playground/
-      AgentPlayground.tsx            ← Full playground: message list, input bar, settings panel, tool call cards
-      ToolCallCard.tsx               ← Expandable card showing tool name, input, output, duration
-      ParamsPanel.tsx                ← Sidebar: model selector, temperature slider, maxTokens (from agent.exposedParams)
+      AgentPlayground.tsx            <- Full playground: message list, input bar, settings panel, tool call cards
+      ToolCallCard.tsx               <- Expandable card showing tool name, input, output, duration
+      ParamsPanel.tsx                <- Sidebar: model selector, temperature slider, maxTokens (from agent.exposedParams)
     shared/
-      ConversationView.tsx           ← Generic message thread renderer (Props: messages[], onSendMessage, streaming)
-      MessageList.tsx                ← Scrollable message list with auto-scroll on new messages
-      MessageInput.tsx               ← Text input + send button + optional file attach
-      StreamingText.tsx              ← Component that renders streaming tokens as they arrive
+      ConversationView.tsx           <- Generic message thread renderer (Props: messages[], onSendMessage, streaming)
+      MessageList.tsx                <- Scrollable message list with auto-scroll on new messages
+      MessageInput.tsx               <- Text input + send button + optional file attach
+      StreamingText.tsx              <- Component that renders streaming tokens as they arrive
+      CommandPalette.tsx             <- Slash-command palette with fuzzy search and keyboard navigation
+      ChatErrorCard.tsx              <- Error display with retry button
+      SessionSidebar.tsx             <- Pinnable session list with search, preview, and actions
+      LayoutManager.tsx              <- Resizable panel orchestrator (inline, modal, fullscreen, embedded)
+      MessageFeedback.tsx            <- Like/dislike buttons with optional comment
     hooks/
-      useChat.ts                     ← Wrapper around @ai-sdk/react useChat
-      useTenantConfig.ts             ← Fetches public tenant config
-      useBusinessHours.ts            ← Computes business hours status
-      useAnonymousSession.ts         ← Session token management (localStorage)
+      useChat.ts                     <- Wrapper around @ai-sdk/react useChat
+      useTenantConfig.ts             <- Fetches public tenant config
+      useBusinessHours.ts            <- Computes business hours status
+      useAnonymousSession.ts         <- Session token management (localStorage)
+      useSessionPersistence.ts       <- localStorage TTL, validation, retry with backoff
+      useDualStateMessages.ts        <- Real-time + history message merging with deduplication
+      useCommandPalette.ts           <- Slash-command detection, filtering, keyboard navigation
+      useResizablePanels.ts          <- Panel size persistence and responsive breakpoint logic
     themes/
-      light.css                      ← Light theme variables
-      dark.css                       ← Dark theme variables
-    types.ts                         ← Shared TypeScript types
+      light.css                      <- Light theme variables
+      dark.css                       <- Dark theme variables
+      presets.ts                     <- Theme preset definitions (10 presets)
+    types.ts                         <- Shared TypeScript types
 ```
 
 ### Peer Dependencies
@@ -238,7 +476,9 @@ packages/agent-ui/
   },
   "dependencies": {
     "@mui/material": "^6.0.0",
-    "@mui/icons-material": "^6.0.0"
+    "@mui/icons-material": "^6.0.0",
+    "react-resizable-panels": "^2.0.0",
+    "react-markdown": "^9.0.0"
   }
 }
 ```
@@ -268,6 +508,12 @@ Resolved via the config cascade system. Configurable at platform, module, or ten
 | `WIDGET_SHOW_POWERED_BY` | boolean | true | Show "Powered by OVEN" badge |
 | `WIDGET_ENABLE_FILE_UPLOAD` | boolean | false | Allow file uploads in widget |
 | `WIDGET_ENABLE_VOICE_INPUT` | boolean | false | Allow voice input in widget |
+| `WIDGET_PRIMARY_COLOR` | string | '#1976D2' | Override primary theme color |
+| `WIDGET_SURFACE_COLOR` | string | '#F5F5F5' | Override surface theme color |
+| `WIDGET_FONT_FAMILY` | string | 'Inter, system-ui' | Override font family |
+| `WIDGET_MAX_CHAR_LIMIT` | number | 2000 | Max characters per message input |
+| `WIDGET_SESSION_TTL_HOURS` | number | 24 | localStorage session TTL in hours |
+| `WIDGET_DEFAULT_LAYOUT` | string | 'inline' | Default layout mode (inline/modal/fullscreen) |
 | `PLAYGROUND_DEFAULT_AGENT` | string | '' | Default agent slug for playground |
 
 ---

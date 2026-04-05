@@ -28,7 +28,7 @@ interface ModuleDefinition {
 
 ---
 
-## Packages (8 total)
+## Packages (14 total)
 
 | Package | Tables | Handlers | Events | Purpose |
 |---------|--------|----------|--------|---------|
@@ -40,6 +40,12 @@ interface ModuleDefinition {
 | `@oven/module-workflows` | 5 | 15 | 9 | Workflow engine, executions, configs, versioning |
 | `@oven/module-workflow-compiler` | — | — | — | Workflow → TypeScript compiler (Handlebars) |
 | `@oven/map-editor` | — | — | — | R3F visual tile map editor |
+| `@oven/module-subscriptions` | 6 | 12 | 6 | Plans, quotas, subscriptions, metering |
+| `@oven/module-ai` | 9 | 32+ | 15 | AI providers, aliases, embeddings, vector stores, budgets, guardrails, usage tracking |
+| `@oven/module-knowledge-base` | 4 | 15 | 11 | Knowledge bases, categories, entries, versions, semantic/hybrid search |
+| `@oven/module-files` | 1 | 4 | 2 | File uploads (Vercel Blob + LocalFS adapters) |
+| `@oven/module-agent-core` | 6 | 22 | 13 | Agent definitions, tool wrapper, invocation, sessions, node library |
+| `@oven/module-roles` | 3 | 8 | 4 | Roles, permissions, hierarchy, RLS policies |
 
 ---
 

@@ -2,7 +2,7 @@ import { getDb } from '@oven/module-registry/db';
 import { eventBus } from '@oven/module-registry';
 import { usageMeteringService } from '@oven/module-subscriptions';
 import { aiUsageLogs, aiBudgets, aiBudgetAlerts } from '../schema';
-import { calculateCost } from './cost-calculator';
+import { calculateCost, getModelPricing } from './cost-calculator';
 import { eq, and, sql } from 'drizzle-orm';
 
 // ─── Types ───────────────────────────────────────────────────
@@ -123,8 +123,6 @@ export async function checkAIQuota(
 // ─── Private Helpers ─────────────────────────────────────────
 
 function getCostRate(model: string, type: 'input' | 'output'): number {
-  // Import inline to avoid circular dependency issues
-  const { getModelPricing } = require('./cost-calculator');
   const pricing = getModelPricing(model);
   if (!pricing) return 0;
   return type === 'input' ? pricing.inputPerMToken : pricing.outputPerMToken;

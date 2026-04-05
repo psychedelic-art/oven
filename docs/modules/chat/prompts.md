@@ -241,18 +241,104 @@ Menu section: `──── Chat ────` with Chat (custom page), Chat Ses
 - Widget CORS: configurable allowed origins per tenant
 - Shadow DOM isolation: widget styles don't leak into host page
 
-## Test Plan (TDD)
+## New Subsystems (Phase 4A Expansion)
 
-### module-chat
-1. `session-manager.test.ts` — auth create, anonymous create, resume, archive, timeout
-2. `message-processor.test.ts` — route to agent, stream handling, error recovery
-3. `escalation-handler.test.ts` — keyword detection, status change, contact info return
-4. `analytics-collector.test.ts` — compute duration, counts, costs on close
-5. `api/chat-sessions.test.ts` — CRUD, anonymous auth, tenant filtering
-6. `api/chat-messages.test.ts` — send message, stream response, tool action recording
+### Command System (inspired by Claude Code)
+- 15 built-in `/slash` commands (help, clear, agent, tools, search, mode, export, status, feedback, reset, model, temperature, skill, mcp, pin)
+- Commands execute locally without LLM reasoning
+- Custom commands per-tenant via `chat_commands` table
+- See `08-chat.md` section 4A for full specification
 
-### agent-ui
-7. `ChatWidget.test.tsx` — render, open/close, send message, receive response
-8. `AgentPlayground.test.tsx` — agent selector, param panel, tool call display
-9. `ConversationView.test.tsx` — message list, role styling, timestamps
-10. `useAnonymousSession.test.ts` — token creation, persistence, reuse
+### Skill System (inspired by Claude Code)
+- 6 built-in skills (summarize, translate, extract, analyze, faq-create, report)
+- Skills are prompt templates with `whenToUse` for auto-selection
+- Custom skills per-tenant via `chat_skills` table
+- MCP-provided skills from connected MCP servers
+
+### Hook System (inspired by Claude Code)
+- 8 lifecycle events (pre-message, post-message, pre-tool-use, post-tool-use, on-error, on-escalation, session-start, session-end)
+- Handlers: condition, api, event, guardrail
+- Priority-ordered execution
+- Per-tenant hook definitions via `chat_hooks` table
+
+### MCP Integration (inspired by Claude Code)
+- Connect external MCP servers (stdio, sse, http, ws transports)
+- Tool discovery + caching in `chat_mcp_connections`
+- Bridge MCP tools into agent tool catalog
+- Per-tenant MCP connections
+
+### Prompt Builder (inspired by Claude Code)
+- Dynamic system prompt assembly with section caching
+- Static sections (agent prompt, tenant, commands, skills) cached across turns
+- Dynamic sections (tools, KB context, session context, hooks) recomputed per turn
+- ~40-60% prompt token cost reduction
+
+### Additional Database Tables
+- `chat_commands` — Registered /slash commands
+- `chat_skills` — Loadable skill definitions
+- `chat_hooks` — Lifecycle hook definitions
+- `chat_mcp_connections` — MCP server connections per tenant
+- `chat_feedback` — Message quality feedback
+
+### Additional API Endpoints
+| Method | Route | Purpose |
+|--------|-------|---------|
+| GET | /api/chat-commands | List available commands |
+| POST | /api/chat-commands/[slug]/execute | Execute a command |
+| GET/POST | /api/chat-skills | CRUD skills |
+| GET/PUT/DELETE | /api/chat-skills/[id] | Single skill ops |
+| GET/POST | /api/chat-hooks | CRUD hooks |
+| GET/PUT/DELETE | /api/chat-hooks/[id] | Single hook ops |
+| GET/POST/DELETE | /api/chat-mcp-servers | MCP connection CRUD |
+| POST | /api/chat-mcp-servers/[id]/connect | Connect to MCP server |
+| GET | /api/chat-mcp-servers/[id]/tools | Discovered tools |
+| POST | /api/chat-feedback | Submit message feedback |
+
+### Additional Config Keys
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `ENABLE_COMMANDS` | boolean | true | Enable /slash commands |
+| `ENABLE_SKILLS` | boolean | true | Enable skill system |
+| `ENABLE_HOOKS` | boolean | true | Enable hook system |
+| `ENABLE_MCP` | boolean | false | Enable MCP integration |
+| `MAX_MCP_CONNECTIONS` | number | 5 | Max MCP servers per tenant |
+| `COMMAND_PREFIX` | string | '/' | Command prefix character |
+
+---
+
+## Test Plan (TDD) — Updated
+
+### module-chat Engine Tests
+1. `chat-service.test.ts` — 15 tests (message flow, agent invocation, error handling)
+2. `command-registry.test.ts` — 12 tests (registration, discovery, execution, permissions)
+3. `skill-loader.test.ts` — 10 tests (loading, merging, deduplication, templates)
+4. `hook-manager.test.ts` — 12 tests (event dispatch, handler execution, ordering)
+5. `prompt-builder.test.ts` — 10 tests (section assembly, caching, dynamic content)
+6. `streaming-handler.test.ts` — 8 tests (SSE, token streaming, abort, error)
+7. `context-manager.test.ts` — 8 tests (accumulation, limits, cleanup)
+
+### module-chat Handler Tests
+8. `chat-sessions.handler.test.ts` — 8 tests (CRUD, anonymous auth, tenant filtering)
+9. `chat-messages.handler.test.ts` — 10 tests (send message, streaming, tool actions)
+10. `chat-commands.handler.test.ts` — 6 tests
+11. `chat-skills.handler.test.ts` — 6 tests
+12. `chat-hooks.handler.test.ts` — 6 tests
+13. `chat-feedback.handler.test.ts` — 4 tests
+
+### module-chat MCP Tests
+14. `mcp-connector.test.ts` — 10 tests (connect, disconnect, retry, timeout)
+15. `mcp-tool-bridge.test.ts` — 8 tests (discovery, invocation, error handling)
+16. `mcp-server-manager.test.ts` — 6 tests (lifecycle, status tracking)
+17. `chat-mcp-servers.handler.test.ts` — 6 tests
+
+### module-chat Command + Skill Tests
+18. `commands/*.test.ts` — 15 tests (one per built-in command)
+19. `skills/builtin/*.test.ts` — 6 tests (one per built-in skill)
+
+### agent-ui Component Tests
+20. `ChatWidget.test.tsx` — render, open/close, send message, receive response
+21. `AgentPlayground.test.tsx` — agent selector, param panel, tool call display
+22. `ConversationView.test.tsx` — message list, role styling, timestamps
+23. `useAnonymousSession.test.ts` — token creation, persistence, reuse
+
+**Total Target**: ~166 tests / 17 suites (module-chat) + ~24 tests / 4 suites (agent-ui)

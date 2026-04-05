@@ -244,3 +244,28 @@ Condition: $.metadata.industry == 'dental' (or always, if dental is the only ver
 | UC-KB-003: Search test | Execute search | Embed query | Resolve threshold | Resolve slug | Track usage | - | - |
 | UC-KB-005: Re-embed | Bulk process | Embed text | Resolve model | Scope data | Check quota | - | - |
 | UC-KB-007: Agent response | Search | Embed query | Resolve config | Scope data | Track usage | Receive msg | Execute workflow |
+
+---
+
+## 4. Implementation Cross-Check
+
+> Added post-implementation to reconcile the specification above with the actual delivered code.
+
+| Area | Spec Assumption | Actual Implementation | Notes |
+|------|----------------|----------------------|-------|
+| Multi-KB architecture | Single implicit KB per tenant | `kb_knowledge_bases` table added; `knowledgeBaseId` FK on categories and entries | Tenants can own multiple knowledge bases with independent configs |
+| Entry metadata | Keywords field only | `tags` text array field added to entries | User-facing categorization separate from embedding keywords |
+| Dashboard UI | CategoryList, EntryList, SearchTest, BulkActions (separate pages) | KBPlayground unified interface replaces SearchTest + BulkActions; 14 components total including KnowledgeBaseList/Create/Edit | Single playground for search testing, bulk operations, and stats |
+| Endpoints | 15 endpoints across 9 handler files | 15+ endpoints across 11 handler files — all working | Additional handlers for knowledge base CRUD and vector store ops |
+| Tests | Target ~54 tests | 19 tests / 2 suites passing (embedding-pipeline: 7, search-engine: 12) | Core engine fully tested; handler tests deferred to Phase 2.5 |
+| Seed | 9 permissions + 10 categories | delete+recreate pattern per Rule 12; 1 KB + 10 categories + 15 entries for first tenant | Seed is idempotent via full delete before insert |
+| Chat block tool name | `kb.searchEntries` | `kb.search` | **MISMATCH**: agent-core, chat, and workflow-agents docs reference `kb.searchEntries` but KB module uses `kb.search`. Must standardize to `kb.searchEntries` to avoid tool resolution failures. |
+| Config keys | 6 keys | 8 keys (added SEARCH_SEMANTIC_WEIGHT, SEARCH_KEYWORD_WEIGHT) | Extra config for fine-tuning hybrid search behavior |
+
+### Open Items
+
+| Item | Priority | Description |
+|------|----------|-------------|
+| Tool name standardization | HIGH | Rename `kb.search` to `kb.searchEntries` in chat block actionSchemas to match cross-module references |
+| Handler-level tests | MEDIUM | 11 handler files have no dedicated test suites (engine tests cover core logic) |
+| Wiring for tenant onboarding | LOW | `tenants.tenant.created` → auto-seed KB categories wiring exists in docs but not implemented as DB wiring |
