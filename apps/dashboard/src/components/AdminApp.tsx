@@ -233,6 +233,19 @@ import {
   KBPlayground,
 } from './knowledge-base';
 
+// Agents
+import {
+  AgentList, AgentCreate, AgentEdit,
+  NodeList as AgentNodeList,
+  NodeCreate as AgentNodeCreate,
+  NodeEdit as AgentNodeEdit,
+  SessionList as AgentSessionList,
+  ExecutionList as AgentExecutionList,
+} from './agents';
+
+import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
+import AccountTreeOutlined from '@mui/icons-material/AccountTreeOutlined';
+
 // Icons
 import GridViewIcon from '@mui/icons-material/GridView';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -691,6 +704,34 @@ export default function AdminApp() {
         edit={KBEntryEdit}
         create={KBEntryCreate}
         show={KBEntryShow}
+      />
+
+      {/* Agent Core Module Resources */}
+      <Resource
+        name="agents"
+        options={{ label: 'Agents' }}
+        icon={SmartToyOutlinedIcon}
+        list={AgentList}
+        create={AgentCreate}
+        edit={AgentEdit}
+      />
+      <Resource
+        name="agent-nodes"
+        options={{ label: 'Node Definitions' }}
+        icon={AccountTreeOutlined}
+        list={AgentNodeList}
+        create={AgentNodeCreate}
+        edit={AgentNodeEdit}
+      />
+      <Resource
+        name="agent-sessions"
+        options={{ label: 'Agent Sessions' }}
+        list={AgentSessionList}
+      />
+      <Resource
+        name="agent-executions"
+        options={{ label: 'Agent Executions' }}
+        list={AgentExecutionList}
       />
 
       {/* Files Module Resources */}

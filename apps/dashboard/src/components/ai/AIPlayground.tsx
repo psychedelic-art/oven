@@ -1550,6 +1550,7 @@ function SpeechToTextPanel({
   const [result, setResult] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [audioPickerOpen, setAudioPickerOpen] = useState(false);
   const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage } = useHistory('stt');
 
   useEffect(() => {
@@ -1605,15 +1606,25 @@ function SpeechToTextPanel({
         {sttAliases.length > 0 && (
           <AliasSelect aliases={sttAliases} value={model} onChange={setModel} label="STT Model" loading={aliasLoading} />
         )}
-        <FilePickerCombobox
-          value={audioUrl}
-          onChange={setAudioUrl}
-          folder="ai-audio"
-          accept="audio/*"
-          label="Audio File"
-          placeholder="Search audio files, paste URL, or drop below..."
-          helperText="Select from file library, paste a URL, or drag and drop audio below"
-        />
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+          <FilePickerCombobox
+            value={audioUrl}
+            onChange={setAudioUrl}
+            folder="ai-audio"
+            accept="audio/*"
+            label="Audio File"
+            placeholder="Search audio files, paste URL, or browse..."
+            helperText="Select from file library, paste a URL, or drag and drop audio below"
+          />
+          <Button
+            variant="outlined"
+            startIcon={<FolderOpenIcon />}
+            onClick={() => setAudioPickerOpen(true)}
+            sx={{ mt: 0.5, textTransform: 'none', whiteSpace: 'nowrap' }}
+          >
+            Browse
+          </Button>
+        </Box>
         <FileUploader
           compact
           folder="ai-audio"
@@ -1621,6 +1632,17 @@ function SpeechToTextPanel({
           accept={{ 'audio/*': ['.mp3', '.wav', '.m4a', '.flac', '.webm', '.ogg'] }}
           maxFiles={1}
           onUploadComplete={(file) => setAudioUrl(file.publicUrl)}
+        />
+        <FilePicker
+          open={audioPickerOpen}
+          onClose={() => setAudioPickerOpen(false)}
+          onSelect={(file) => {
+            setAudioUrl(file.publicUrl);
+            setAudioPickerOpen(false);
+          }}
+          folder="ai-audio"
+          accept="audio/*"
+          title="Select Audio from Library"
         />
         <TextField label="Language (optional)" value={language} onChange={(e) => setLanguage(e.target.value)} size="small" helperText="ISO-639-1 code (e.g., en, es). Auto-detected if empty." sx={{ maxWidth: 200 }} />
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>

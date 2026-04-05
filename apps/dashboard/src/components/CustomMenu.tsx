@@ -102,6 +102,17 @@ export default function CustomMenu() {
       <Divider sx={{ my: 1 }} />
       <Box sx={{ px: 2, pb: 0.5 }}>
         <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10 }}>
+          Agents
+        </Typography>
+      </Box>
+      <Menu.ResourceItem name="agents" />
+      <Menu.ResourceItem name="agent-nodes" />
+      <Menu.ResourceItem name="agent-sessions" />
+      <Menu.ResourceItem name="agent-executions" />
+
+      <Divider sx={{ my: 1 }} />
+      <Box sx={{ px: 2, pb: 0.5 }}>
+        <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10 }}>
           Files
         </Typography>
       </Box>

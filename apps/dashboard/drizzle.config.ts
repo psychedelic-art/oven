@@ -21,6 +21,7 @@ export default defineConfig({
     '../../packages/module-ai/src/schema.ts',
     '../../packages/module-files/src/schema.ts',
     '../../packages/module-knowledge-base/src/schema.ts',
+    '../../packages/module-agent-core/src/schema.ts',
   ],
   out: './drizzle',
   dbCredentials: {
