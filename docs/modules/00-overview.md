@@ -8,7 +8,7 @@
 > | **module-ai** | 1 | DONE | 102 | 9 | 32+ |
 > | **module-knowledge-base** | 2 | DONE | 19 | 4 | 15+ |
 > | **module-agent-core** | 3 | BACKEND DONE | 15 | 6 | 22 |
-> | **module-chat** | 4A | NEXT | — | 7 (planned) | 20+ (planned) |
+> | **module-chat** | 4A | IN PROGRESS | — | 8 (planned) | ~30 (planned) |
 > | **agent-ui** | 4B | NEXT | — | 0 (editor pkg) | 0 |
 > | **module-workflow-agents** | 5 | FUTURE | — | 6 (planned) | 17 (planned) |
 >

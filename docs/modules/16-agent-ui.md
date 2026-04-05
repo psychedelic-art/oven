@@ -2,9 +2,11 @@
 
 > **Package**: `packages/agent-ui/`
 > **Name**: `@oven/agent-ui`
-> **Dependencies**: `module-chat`, `module-agent-core`, `@ai-sdk/react`
-> **Type**: Editor Package (no ModuleDefinition — pure UI components)
-> **Status**: Planned
+> **Dependencies**: `module-chat`, `module-agent-core`, `@ai-sdk/react`, `@oven/oven-ui`
+> **Type**: Editor Package (no ModuleDefinition — pure UI components, Tailwind CSS + cn())
+> **Status**: Planned (Phase 4B)
+> **Last Updated**: 2026-04-05
+> **Reference patterns**: See `docs/modules/chat/newsan-patterns.md` for reusable frontend patterns
 
 ---
 
@@ -36,7 +38,6 @@ interface ChatWidgetProps {
   showSchedulingButton?: boolean;   // shows "Schedule Appointment" CTA
   onEscalation?: (reason: string) => void;
   className?: string;
-  style?: React.CSSProperties;
 }
 ```
 

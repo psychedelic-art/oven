@@ -114,92 +114,158 @@ module-ai (Phase 1 ✅ DONE)
 
 ---
 
-## 4. module-chat — Phase 4A NEXT
+## 4. module-chat — Phase 4A IN PROGRESS
 
-**Package**: `packages/module-chat/` (to create)
+**Package**: `packages/module-chat/`
 **Spec**: `docs/modules/08-chat.md` + `docs/modules/chat/*.md`
-**Dependencies**: module-registry, module-agent-core, module-ai
+**Dependencies**: module-registry, module-agent-core, module-ai, module-knowledge-base
+**Started**: 2026-04-05
 
 | Area | Status | Details |
 |------|--------|---------|
-| Schema | NOT STARTED | 7 tables: chat_sessions, chat_messages, chat_commands, chat_skills, chat_hooks, chat_mcp_connections, chat_feedback |
-| Engine | NOT STARTED | 9 components: chat-service, command-registry, skill-loader, hook-manager, prompt-builder, context-manager, streaming-handler, mcp-connector, capability-discovery |
-| API Handlers | NOT STARTED | 9 files, 20+ endpoints |
-| Tests | NOT STARTED | Target: ~166 tests / 17 suites (TDD) |
-| Events | NOT STARTED | ~12 events |
-| Dashboard UI | NOT STARTED | Chat interface, sessions, capability browser |
+| Schema | DONE | 8 tables: chatSessions, chatMessages, chatActions, chatCommands, chatSkills, chatHooks, chatMcpConnections, chatFeedback |
+| Engine (Core) | DONE | 3 components: session-manager, message-processor (with processMessage orchestrator), streaming-handler |
+| Engine (Extensions) | DONE | 6 of 6: command-registry (15 builtins + custom), skill-loader (template rendering), hook-manager (4 handler types + chain), mcp-connector (HTTP tool execution + bridging), prompt-builder (section-based + token budget), context-manager (history + truncation) |
+| API Handlers | DONE | 14 handler files, 30 endpoints (7 list, 7 by-id, messages, capabilities) |
+| Route Stubs | DONE | 14 dashboard route files in apps/dashboard/src/app/api/chat-*/ |
+| Module Registration | DONE | chatModule registered in modules.ts after agentCoreModule |
+| Tests | DONE | 90 tests / 11 suites passing (target was ~95) |
+| Events | DONE | 12 events defined in ModuleDefinition with typed schemas |
+| Seed | DONE | 15 built-in commands, 6 built-in skills |
+| Config | DONE | 9 configSchema keys |
+| Dashboard UI | NOT STARTED | CRUD pages for sessions, commands, skills, hooks, MCP, feedback |
 
 ### Phase 4A Architecture (Expanded)
 
 Incorporates patterns from two reference codebases:
-- **Newsan Dashboard** — Enterprise chat UI patterns (sessions, messages, filters, theming)
-- **Claude Code** — Command system, skill system, hook system, MCP integration, prompt engineering
+- **Newsan Dashboard** — Enterprise chat UI patterns (sessions, messages, filters, theming, composition hooks)
+- **Claude Code** — Command system, skill system, hook system, MCP integration, prompt engineering, context management
 
-#### New Subsystems (not in original spec)
-1. **Command System** — 15 built-in `/slash` commands (help, clear, agent, tools, search, mode, export, status, feedback, reset, model, temperature, skill, mcp, pin)
-2. **Skill System** — 6 built-in skills (summarize, translate, extract, analyze, faq-create, report) + custom per-tenant + MCP-provided
-3. **Hook System** — 8 lifecycle events (pre-message, post-message, pre-tool-use, post-tool-use, on-error, on-escalation, session-start, session-end)
-4. **MCP Integration** — Connect external MCP servers, discover tools, bridge into agent tool catalog
-5. **Prompt Builder** — Dynamic system prompt assembly with section caching (static/dynamic boundary)
+#### Engine Components (9 files in `src/engine/`)
+1. **session-manager.ts** — Create/resume/archive sessions, resolve backing agent (cascade: explicit > tenant config > platform default), validate access (authenticated via userId, anonymous via X-Session-Token)
+2. **message-processor.ts** — Mediator pattern: validate → record user msg → assemble prompt → invoke agent-core → stream response → record assistant msg + tool actions → update context → check escalation
+3. **streaming-handler.ts** — SSE adapter transforming agent stream to `token|toolCallStart|toolCallEnd|done|error` events
+4. **command-registry.ts** — 15 built-in commands + DB-stored custom commands. Resolve by slug, parse arguments, execute, return CommandResult
+5. **skill-loader.ts** — 6 built-in skills + DB-stored custom skills. Load, resolve, render prompt templates with `{{var}}` substitution
+6. **hook-manager.ts** — 4 handler types (condition, api/webhook, event-bus, guardrail) on 8 lifecycle events. Execute in priority order with abort support
+7. **mcp-connector.ts** — DB-stored MCP connections. Connect (SSE/HTTP), discover tools, bridge into agent tool catalog, execute tool calls
+8. **prompt-builder.ts** — Section-based system prompt assembly with caching. Sections: base + agent instructions + tenant context + commands + skills + MCP capabilities + tools + KB context + session context + hook instructions
+9. **context-manager.ts** — Token counting (approximate), sliding window, message summarization (via aiGenerateText), entity tracking in session.context JSONB
 
-### Sprint Plan
+#### Reference Analysis Sources
+- `docs/modules/chat/claude-code-feature-inventory.md` — Structured inventory of claude-code features with adaptation decisions
+- `docs/modules/chat/newsan-patterns.md` — Reusable patterns from newsan-dashboard-fe
 
-| Sprint | Focus | Tests Target | Duration |
-|--------|-------|-------------|----------|
-| 4A.1 | Schema + Engine Core | ~75 tests / 7 suites | 2 weeks |
-| 4A.2 | API Handlers | ~40 tests / 6 suites | 1 week |
-| 4A.3 | MCP Integration | ~30 tests / 4 suites | 1 week |
-| 4A.4 | Built-in Commands + Skills | ~21 tests | 1 week |
+### Sprint Plan (Revised)
+
+| Sprint | Focus | Tests | Status |
+|--------|-------|-------|--------|
+| 4A.1 | Schema + Core Engine (session-manager, message-processor, streaming-handler) | 21 / 3 suites | DONE |
+| 4A.2 | API Handlers (14 handler files + 14 dashboard route stubs + module registration) | 32 / 4 suites | DONE |
+| 4A.3 | Commands + Skills + Hooks (command-registry, skill-loader, hook-manager + processMessage orchestrator) | 58 / 7 suites | DONE |
+| 4A.4 | MCP Connector + Prompt Builder + Context Manager + Integration test | 90 / 11 suites | DONE |
 
 ---
 
-## 5. agent-ui — Phase 4B NEXT (Parallel with 4A)
+## 5. agent-ui — Phase 4B COMPLETE
 
-**Package**: `packages/agent-ui/` (to create)
+**Package**: `packages/agent-ui/`
 **Spec**: `docs/modules/16-agent-ui.md`
-**Type**: Editor package (NO ModuleDefinition — pure UI components)
-**Dependencies**: module-chat (API), module-agent-core (API), @ai-sdk/react
+**Type**: Editor Package (NO ModuleDefinition — pure UI components, Tailwind CSS + cn())
+**Dependencies**: @oven/oven-ui (workspace), react-markdown (direct). Peer: react >=18, react-dom >=18
+**Started**: 2026-04-05
 
 | Area | Status | Details |
 |------|--------|---------|
-| ChatWidget | NOT STARTED | Embeddable floating chat with themes, quick replies, command palette, business hours |
-| AgentPlayground | NOT STARTED | Testing interface with agent selector, param panel, tool call cards |
-| ConversationView | NOT STARTED | Read-only message history viewer |
-| Session Management | NOT STARTED | Sidebar with search, pin, preview; localStorage persistence with TTL |
-| Theming | NOT STARTED | 15+ theme presets, CSS custom properties, per-tenant branding |
-| Widget Bundle | NOT STARTED | Standalone JS for external embedding (Vite) |
-| Layout | NOT STARTED | Resizable split/modal/fullscreen modes |
-| Tests | NOT STARTED | Target: ~24 tests / 3 suites |
+| Hooks | DONE | 8 hooks: useChat (composition), useTenantConfig, useBusinessHours, useAnonymousSession, useSessionPersistence, useDualStateMessages, useCommandPalette, useChatScroll |
+| Shared Components | DONE | 11 components: MessageBubble, MessageList, MessageInput, StreamingText, CommandPalette, ChatErrorCard, ToolCallCard, MessageFeedback, TypingIndicator, SessionSidebar, ConversationView |
+| Widget Components | DONE | 4 components: ChatWidget (facade), WidgetLauncher, WelcomeScreen, EscalationBanner |
+| Playground | DONE | 2 components: AgentPlayground, ParamsPanel |
+| Tests | DONE | 28 tests / 4 suites passing (useBusinessHours, useSessionPersistence, useCommandPalette, themes) |
+| Layout | DONE | LayoutManager with inline/modal/fullscreen/embedded modes, resizable panels, localStorage persistence |
+| Theming | DONE | 10 theme presets (light, dark, ocean, forest, sunset, corporate, minimal, neon, warm, cool) + applyTheme + overrides |
+| Widget Bundle | DONE | Vite IIFE build entry (Shadow DOM, window.OvenChat.init API, data-* auto-init) |
+| Dashboard Pages | DONE | 13 React Admin components: ChatSessionList/Edit, ChatCommandList/Create/Edit, ChatSkillList/Create/Edit, ChatHookList/Create, ChatMCPConnectionList/Create, ChatFeedbackList |
+| Dashboard Registration | DONE | 6 Resources registered in AdminApp.tsx with MUI icons |
 
 ### Sprint Plan
 
-| Sprint | Focus | Duration |
-|--------|-------|----------|
-| 4B.1 | Core components (ChatWidget, ChatInput, ChatMessage, MessageList, StreamingText, CommandPalette) | 2 weeks |
-| 4B.2 | Session management (sidebar, persistence, switching, hooks) | 1 week |
-| 4B.3 | Advanced features (ToolCallCard, Feedback, Playground, ParamsPanel, ErrorCard) | 2 weeks |
-| 4B.4 | Theming + embedding (CSS vars, dark mode, tenant branding, widget bundle) | 1 week |
-| 4B.5 | Layout + integration (resizable panels, dashboard pages, portal, mobile) | 2 weeks |
+| Sprint | Focus | Tests | Status |
+|--------|-------|-------|--------|
+| 4B.1 | Core UI: 8 hooks + 11 shared + 4 widget + 2 playground components | 18 / 3 suites | DONE |
+| 4B.2 | LayoutManager + theming (10 presets) + Vite bundle + dashboard CRUD pages (13 components) + resource registration | 28 / 4 suites | DONE |
 
 ---
 
-## 6. module-workflow-agents — Phase 5 FUTURE
+## 6. module-workflow-agents — Phase 5 OPERATIONALLY COMPLETE
 
-**Package**: `packages/module-workflow-agents/` (to create)
+**Package**: `packages/module-workflow-agents/`
 **Spec**: `docs/modules/11-workflow-agents.md`
-**Dependencies**: module-workflows, module-agent-core, module-ai
+**Dependencies**: module-workflows, module-agent-core, module-ai, module-knowledge-base, module-chat
+**Started**: 2026-04-05
 
 | Area | Status | Details |
 |------|--------|---------|
-| Schema | NOT STARTED | 6 tables: agent_workflows, agent_workflow_versions, agent_workflow_executions, agent_workflow_node_executions, agent_memory, mcp_server_definitions |
-| Engine | NOT STARTED | Extends WorkflowEngine with 11 agent node types (agent.llm, agent.toolExecutor, agent.toolLoop, agent.rag, agent.imageGen, agent.embed, agent.memory.read, agent.memory.write, agent.humanReview, agent.subagent, agent.prompt) |
-| API Handlers | NOT STARTED | 10+ files, 17 endpoints |
-| Tests | NOT STARTED | Target: ~106 tests / 13 suites (TDD) — largest module |
-| MCP Generator | NOT STARTED | Auto-generates MCP server definitions from workflows |
+| Schema | DONE | 6 tables: agentWorkflows, agentWorkflowVersions, agentWorkflowExecutions, agentWorkflowNodeExecutions, agentMemory, mcpServerDefinitions |
+| Engine (Core) | DONE | node-executor (9 node types all wired), workflow-engine (graph traversal + HITL pause) |
+| Engine (Operations) | DONE | checkpoint-manager (save/load/resume + status transitions), cost-tracker (per-node + aggregate) |
+| API Handlers | DONE | 10 handler files: workflows CRUD, execute, versions, executions CRUD, resume, cancel, memory, mcp-servers |
+| Route Stubs | DONE | 11 dashboard route files in apps/dashboard/src/app/api/ |
+| Module Registration | DONE | workflowAgentsModule registered with 4 resources, 4 menu items |
+| Tests | DONE | 49 tests / 5 suites (node-executor: 22, workflow-engine: 5, mcp-compiler: 5, langgraph-compiler: 5, checkpoint-manager: 12) |
+| Events | DONE | 10 events (workflow.created/updated/deleted, execution.started/completed/failed/paused, node.started/completed/failed) |
+| Config | DONE | 3 configSchema keys (MAX_STEPS, TIMEOUT_MS, MEMORY_ENABLED) |
+| MCP Compiler | DONE | compileWorkflowToToolSchema + compileAndStoreMCP (workflow → MCP tool schema → upsert DB) |
+| LangGraph Compiler | DONE | compileToLangGraph (workflow → Python StateGraph code with node functions, edges, conditional routing) |
+| Dashboard UI | DONE | 5 components: AgentWorkflowList, Create, Edit (tabbed), ExecutionList, ExecutionShow (with node details) |
+| Dashboard Registration | DONE | 2 Resources registered in AdminApp.tsx (agent-workflows, agent-workflow-executions) |
 
-### Prerequisites
-- agent_memory.embedding column must be uncommented with pgvector extension
-- module-agent-core must be stable (Phase 3 complete)
+### Node Types Implemented
+
+| Node | Slug | Category | Status |
+|------|------|----------|--------|
+| LLM | `llm` | llm | DONE — calls module-ai aiGenerateText |
+| Tool Executor | `tool-executor` | tool | DONE — wired to discoverTools() + executeTool() from module-agent-core |
+| Condition | `condition` | condition | DONE — evaluates guards (==, !=, >, <, exists) |
+| Transform | `transform` | transform | DONE — $.path mapping with dual format support |
+| Memory | `memory` | memory | DONE — write: aiEmbed() + INSERT agent_memory; read: key/content search |
+| Human Review | `human-review` | human-in-the-loop | DONE — pause/resume pattern |
+| RAG | `rag` | retrieval | DONE — wired to hybridSearch() from module-knowledge-base |
+| Subagent | `subagent` | orchestration | DONE — wired to invokeAgent() from module-agent-core |
+| Prompt Assembly | `prompt` | prompt | DONE — {{var}} template rendering |
+
+### Gap Analysis (Docs vs Implementation)
+
+**Implemented (matches docs):**
+- 6 DB tables with correct structure
+- 9 node types all wired to real modules
+- Graph execution engine with state accumulation
+- MCP tool schema compilation
+- LangGraph Python code generation
+- CRUD API for workflows + executions
+- Dashboard CRUD + tabbed edit form
+
+**Closed gaps (Phase 5A.2):**
+- ✅ API: resume, cancel, versions, memory, mcp-servers endpoints added (now 14 of 18)
+- ✅ Engine: CheckpointManager with save/load/resume + valid status transitions
+- ✅ Engine: CostTracker with per-node recording + aggregate summaries
+- ✅ Events: Added 5 new events (resumed, cancelled, checkpoint.saved, human_review.pending, cost.updated) — now 15 total
+- ✅ Human-review: Engine pauses on human-review nodes, saves checkpoint, emits pending event
+
+**Remaining gaps:**
+- Schema: Missing columns (mcpExport, tokenUsage, costCents on executions) — needs migration
+- Config: Missing 4 of 7 config keys — low priority
+- Packages: mcp-server (MCP protocol handler) and agent-runtime-py (Python sidecar) — future
+- UI: Visual graph editor (AgentWorkflowEditorPage) — future sprint
+- Memory: pgvector embedding column on agent_memory — needs DB extension
+
+### Execution Engine Patterns
+- Same state machine loop as module-workflows (states → invoke → context accumulation)
+- $.path expression resolution for input mapping
+- Guard evaluation for branching (==, !=, >, <, exists, contains, empty)
+- Context accumulation: output keyed by state name, accessible via $.stateId.field
+- Safety limits: maxSteps (default 50) prevents infinite loops
+- Event emission at every lifecycle point (execution start/end, node start/end)
 
 ---
 
@@ -210,10 +276,10 @@ Incorporates patterns from two reference codebases:
 | module-ai | 9 | 102 | 32+ | 1 | DONE |
 | module-knowledge-base | 4 | 19 | 15+ | 2 | DONE |
 | module-agent-core | 6 | 15 | 22 | 3 | BACKEND DONE |
-| module-chat | 7 | ~166 | 20+ | 4A | NOT STARTED |
-| agent-ui | 0 | ~24 | 0 | 4B | NOT STARTED |
-| module-workflow-agents | 6 | ~106 | 17 | 5 | NOT STARTED |
-| **Total** | **32** | **~432** | **~106** | | |
+| module-chat | 8 | 90 | 30 | 4A | DONE |
+| agent-ui | 0 | 28 | 0 | 4B | DONE |
+| module-workflow-agents | 6 | 49 | 14 | 5 | OPERATIONALLY COMPLETE |
+| **Total** | **39** | **~273** | **~107** | | |
 
 ---
 

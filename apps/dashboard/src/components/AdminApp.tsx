@@ -243,8 +243,38 @@ import {
   ExecutionList as AgentExecutionList,
 } from './agents';
 
+// Workflow Agents
+import { AgentWorkflowList } from './workflow-agents/AgentWorkflowList';
+import { AgentWorkflowCreate } from './workflow-agents/AgentWorkflowCreate';
+import { AgentWorkflowEdit } from './workflow-agents/AgentWorkflowEdit';
+import { AgentWorkflowExecutionList } from './workflow-agents/AgentWorkflowExecutionList';
+import { AgentWorkflowExecutionShow } from './workflow-agents/AgentWorkflowExecutionShow';
+import RouteIcon from '@mui/icons-material/Route';
+import PlaylistPlayIcon from '@mui/icons-material/PlaylistPlay';
+
+// Chat
+import { ChatSessionList } from './chat/ChatSessionList';
+import { ChatSessionEdit } from './chat/ChatSessionEdit';
+import { ChatCommandList } from './chat/ChatCommandList';
+import { ChatCommandCreate } from './chat/ChatCommandCreate';
+import { ChatCommandEdit } from './chat/ChatCommandEdit';
+import { ChatSkillList } from './chat/ChatSkillList';
+import { ChatSkillCreate } from './chat/ChatSkillCreate';
+import { ChatSkillEdit } from './chat/ChatSkillEdit';
+import { ChatHookList } from './chat/ChatHookList';
+import { ChatHookCreate } from './chat/ChatHookCreate';
+import { ChatMCPConnectionList } from './chat/ChatMCPConnectionList';
+import { ChatMCPConnectionCreate } from './chat/ChatMCPConnectionCreate';
+import { ChatFeedbackList } from './chat/ChatFeedbackList';
+
 import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
 import AccountTreeOutlined from '@mui/icons-material/AccountTreeOutlined';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import TerminalIcon from '@mui/icons-material/Terminal';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import WebhookIcon from '@mui/icons-material/Webhook';
+import CableIcon from '@mui/icons-material/Cable';
+import ThumbsUpDownIcon from '@mui/icons-material/ThumbsUpDown';
 
 // Icons
 import GridViewIcon from '@mui/icons-material/GridView';
@@ -732,6 +762,68 @@ export default function AdminApp() {
         name="agent-executions"
         options={{ label: 'Agent Executions' }}
         list={AgentExecutionList}
+      />
+
+      {/* Chat Module Resources */}
+      <Resource
+        name="chat-sessions"
+        options={{ label: 'Chat Sessions' }}
+        icon={ChatBubbleOutlineIcon}
+        list={ChatSessionList}
+        edit={ChatSessionEdit}
+      />
+      <Resource
+        name="chat-commands"
+        options={{ label: 'Commands' }}
+        icon={TerminalIcon}
+        list={ChatCommandList}
+        create={ChatCommandCreate}
+        edit={ChatCommandEdit}
+      />
+      <Resource
+        name="chat-skills"
+        options={{ label: 'Skills' }}
+        icon={AutoFixHighIcon}
+        list={ChatSkillList}
+        create={ChatSkillCreate}
+        edit={ChatSkillEdit}
+      />
+      <Resource
+        name="chat-hooks"
+        options={{ label: 'Hooks' }}
+        icon={WebhookIcon}
+        list={ChatHookList}
+        create={ChatHookCreate}
+      />
+      <Resource
+        name="chat-mcp-connections"
+        options={{ label: 'MCP Connections' }}
+        icon={CableIcon}
+        list={ChatMCPConnectionList}
+        create={ChatMCPConnectionCreate}
+      />
+      <Resource
+        name="chat-feedback"
+        options={{ label: 'Feedback' }}
+        icon={ThumbsUpDownIcon}
+        list={ChatFeedbackList}
+      />
+
+      {/* Workflow Agents Module Resources */}
+      <Resource
+        name="agent-workflows"
+        options={{ label: 'Agent Workflows' }}
+        icon={RouteIcon}
+        list={AgentWorkflowList}
+        create={AgentWorkflowCreate}
+        edit={AgentWorkflowEdit}
+      />
+      <Resource
+        name="agent-workflow-executions"
+        options={{ label: 'Workflow Runs' }}
+        icon={PlaylistPlayIcon}
+        list={AgentWorkflowExecutionList}
+        show={AgentWorkflowExecutionShow}
       />
 
       {/* Files Module Resources */}
