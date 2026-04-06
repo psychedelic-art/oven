@@ -37,7 +37,14 @@ export {
 export {
   AgentPlayground,
   ParamsPanel,
+  UnifiedAIPlayground,
+  TargetSelector,
+  RuntimeConfigPanel,
+  ExecutionInspector,
+  EvalReportPanel,
+  TracePanel,
 } from './playground';
+export type { UnifiedAIPlaygroundProps, PlaygroundTarget, PlaygroundMode } from './playground';
 
 // ─── Layout ─────────────────────────────────────────────────
 export { LayoutManager } from './layout';

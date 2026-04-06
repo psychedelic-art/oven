@@ -13,6 +13,9 @@ import FolderIcon from '@mui/icons-material/Folder';
 import QuestionAnswerIcon from '@mui/icons-material/QuestionAnswer';
 import SearchIcon from '@mui/icons-material/Search';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import RouteIcon from '@mui/icons-material/Route';
+import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 
 export default function CustomMenu() {
   return (
@@ -109,6 +112,35 @@ export default function CustomMenu() {
       <Menu.ResourceItem name="agent-nodes" />
       <Menu.ResourceItem name="agent-sessions" />
       <Menu.ResourceItem name="agent-executions" />
+
+      <Divider sx={{ my: 1 }} />
+      <Box sx={{ px: 2, pb: 0.5 }}>
+        <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10 }}>
+          Chat
+        </Typography>
+      </Box>
+      <Menu.ResourceItem name="chat-sessions" />
+      <Menu.ResourceItem name="chat-commands" />
+      <Menu.ResourceItem name="chat-skills" />
+      <Menu.ResourceItem name="chat-hooks" />
+      <Menu.ResourceItem name="chat-mcp-connections" />
+      <Menu.ResourceItem name="chat-feedback" />
+
+      <Divider sx={{ my: 1 }} />
+      <Box sx={{ px: 2, pb: 0.5 }}>
+        <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10 }}>
+          Workflow Agents
+        </Typography>
+      </Box>
+      <Menu.ResourceItem name="agent-workflows" />
+      <Menu.ResourceItem name="agent-workflow-executions" />
+      <Menu.ResourceItem name="agent-memory" />
+      <Menu.ResourceItem name="mcp-server-definitions" />
+      <Menu.Item
+        to="/ai-playground"
+        primaryText="AI Playground"
+        leftIcon={<ScienceOutlinedIcon />}
+      />
 
       <Divider sx={{ my: 1 }} />
       <Box sx={{ px: 2, pb: 0.5 }}>

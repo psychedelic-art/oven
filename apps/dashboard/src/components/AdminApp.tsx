@@ -249,7 +249,13 @@ import { AgentWorkflowCreate } from './workflow-agents/AgentWorkflowCreate';
 import { AgentWorkflowEdit } from './workflow-agents/AgentWorkflowEdit';
 import { AgentWorkflowExecutionList } from './workflow-agents/AgentWorkflowExecutionList';
 import { AgentWorkflowExecutionShow } from './workflow-agents/AgentWorkflowExecutionShow';
+import { AgentWorkflowEditorPage } from './workflow-agents/AgentWorkflowEditorPage';
+import { AIPlaygroundPage } from './workflow-agents/AIPlaygroundPage';
+import { AgentMemoryList } from './workflow-agents/AgentMemoryList';
+import { MCPServerList } from './workflow-agents/MCPServerList';
 import RouteIcon from '@mui/icons-material/Route';
+import MemoryIcon from '@mui/icons-material/Memory';
+import DnsIcon from '@mui/icons-material/Dns';
 import PlaylistPlayIcon from '@mui/icons-material/PlaylistPlay';
 
 // Chat
@@ -825,6 +831,8 @@ export default function AdminApp() {
         list={AgentWorkflowExecutionList}
         show={AgentWorkflowExecutionShow}
       />
+      <Resource name="agent-memory" options={{ label: 'Agent Memory' }} icon={MemoryIcon} list={AgentMemoryList} />
+      <Resource name="mcp-server-definitions" options={{ label: 'MCP Servers' }} icon={DnsIcon} list={MCPServerList} />
 
       {/* Files Module Resources */}
       <Resource
@@ -851,6 +859,8 @@ export default function AdminApp() {
         <Route path="/ai/extensions" element={<AIExtensions />} />
         <Route path="/knowledge-base/playground" element={<KBPlayground />} />
         <Route path="/file-manager" element={<FileManager />} />
+        <Route path="/agent-workflows/:id/editor" element={<AgentWorkflowEditorPage />} />
+        <Route path="/ai-playground" element={<AIPlaygroundPage />} />
       </CustomRoutes>
     </Admin>
   );

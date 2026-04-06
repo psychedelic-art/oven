@@ -212,13 +212,25 @@ Incorporates patterns from two reference codebases:
 | API Handlers | DONE | 10 handler files: workflows CRUD, execute, versions, executions CRUD, resume, cancel, memory, mcp-servers |
 | Route Stubs | DONE | 11 dashboard route files in apps/dashboard/src/app/api/ |
 | Module Registration | DONE | workflowAgentsModule registered with 4 resources, 4 menu items |
-| Tests | DONE | 49 tests / 5 suites (node-executor: 22, workflow-engine: 5, mcp-compiler: 5, langgraph-compiler: 5, checkpoint-manager: 12) |
+| Tests | DONE | 65 tests / 7 suites (+guardrails-evals: 7) |
 | Events | DONE | 10 events (workflow.created/updated/deleted, execution.started/completed/failed/paused, node.started/completed/failed) |
 | Config | DONE | 3 configSchema keys (MAX_STEPS, TIMEOUT_MS, MEMORY_ENABLED) |
 | MCP Compiler | DONE | compileWorkflowToToolSchema + compileAndStoreMCP (workflow → MCP tool schema → upsert DB) |
 | LangGraph Compiler | DONE | compileToLangGraph (workflow → Python StateGraph code with node functions, edges, conditional routing) |
-| Dashboard UI | DONE | 5 components: AgentWorkflowList, Create, Edit (tabbed), ExecutionList, ExecutionShow (with node details) |
-| Dashboard Registration | DONE | 2 Resources registered in AdminApp.tsx (agent-workflows, agent-workflow-executions) |
+| Dashboard UI | DONE | 5 CRUD components + Visual Editor Page (AgentWorkflowEditorPage → AgentWorkflowCanvas) |
+| Dashboard Registration | DONE | 2 Resources + 1 Custom Route (`/agent-workflows/:id/editor`) in AdminApp.tsx |
+| Visual Editor | DONE | `@oven/agent-workflow-editor`: React Flow canvas, 10 node types, palette, inspector, agent config, converters, drag-drop, save/execute + validation + version history + execution debug + diff viewer + 8 templates + import/export + template picker + clone API |
+| Templates | DONE | 8 built-in templates (basic-chat, rag-assistant, tool-agent, approval-workflow, research-summarize, support-triage, memory-enhanced, multi-step-planner) |
+| Clone/Fork | DONE | POST /api/agent-workflows/[id]/clone with provenance tracking (clonedFrom, templateSlug) |
+| Import/Export | DONE | exportWorkflow → JSON blob, importWorkflow → validated parse with error/warning reporting |
+| Schema Metadata | DONE | 5 new columns: category, tags, isTemplate, clonedFrom, templateSlug |
+| Guardrails | DONE | Pre/post LLM guardrail checks in workflow engine (evaluateGuardrails wired), chat hook-manager guardrail handler wired, scoped guardrail bindings table + API |
+| Observability | DONE | metrics-collector (getWorkflowMetrics, getNodeMetrics), API at /api/agent-workflow-metrics |
+| Evaluations | DONE | eval-runner (rule-based + LLM-based scoring), agent_eval_definitions + agent_eval_runs tables, CRUD API |
+| Guardrail Bindings | DONE | agent_guardrail_bindings table with scopeType (agent/workflow/node), GET/POST/DELETE API |
+| Unified Playground | DONE | `UnifiedAIPlayground` with tabbed right panel (Inspector/Eval/Trace), target selector, runtime config, dashboard route `/ai-playground` |
+| Promptfoo Integration | DONE | `promptfoo-adapter.ts`: compile target → eval config, run evals, normalize results. API at `/api/agent-eval-promptfoo`. EvalReportPanel in playground. |
+| LangSmith Tracing | DONE | `langsmith-tracer.ts`: subscribes to eventBus, maps execution/node events → LangSmith runs. Opt-in via LANGSMITH_API_KEY. TracePanel in playground with link-out. |
 
 ### Node Types Implemented
 
@@ -256,7 +268,6 @@ Incorporates patterns from two reference codebases:
 - Schema: Missing columns (mcpExport, tokenUsage, costCents on executions) — needs migration
 - Config: Missing 4 of 7 config keys — low priority
 - Packages: mcp-server (MCP protocol handler) and agent-runtime-py (Python sidecar) — future
-- UI: Visual graph editor (AgentWorkflowEditorPage) — future sprint
 - Memory: pgvector embedding column on agent_memory — needs DB extension
 
 ### Execution Engine Patterns
@@ -278,7 +289,7 @@ Incorporates patterns from two reference codebases:
 | module-agent-core | 6 | 15 | 22 | 3 | BACKEND DONE |
 | module-chat | 8 | 90 | 30 | 4A | DONE |
 | agent-ui | 0 | 28 | 0 | 4B | DONE |
-| module-workflow-agents | 6 | 49 | 14 | 5 | OPERATIONALLY COMPLETE |
+| module-workflow-agents | 9 | 75 | 21 | 5 | PRODUCTION READY |
 | **Total** | **39** | **~273** | **~107** | | |
 
 ---

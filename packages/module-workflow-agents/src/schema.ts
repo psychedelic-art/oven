@@ -16,12 +16,19 @@ export const agentWorkflows = pgTable('agent_workflows', {
   memoryConfig: jsonb('memory_config'),
   status: varchar('status', { length: 32 }).notNull().default('draft'),
   version: integer('version').notNull().default(1),
+  category: varchar('category', { length: 64 }),
+  tags: jsonb('tags'),
+  isTemplate: boolean('is_template').notNull().default(false),
+  clonedFrom: integer('cloned_from'),
+  templateSlug: varchar('template_slug', { length: 128 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => [
   index('aw_tenant_id_idx').on(table.tenantId),
   index('aw_agent_id_idx').on(table.agentId),
   index('aw_status_idx').on(table.status),
+  index('aw_category_idx').on(table.category),
+  index('aw_is_template_idx').on(table.isTemplate),
   unique('aw_slug_tenant').on(table.slug, table.tenantId),
 ]);
 
@@ -118,6 +125,57 @@ export const mcpServerDefinitions = pgTable('mcp_server_definitions', {
   unique('msd_slug_tenant').on(table.slug, table.tenantId),
 ]);
 
+// ─── agent_guardrail_bindings ───────────────────────────────
+
+export const agentGuardrailBindings = pgTable('agent_guardrail_bindings', {
+  id: serial('id').primaryKey(),
+  tenantId: integer('tenant_id'),
+  guardrailId: integer('guardrail_id').notNull(),
+  scopeType: varchar('scope_type', { length: 32 }).notNull(), // 'agent' | 'workflow' | 'node'
+  scopeId: integer('scope_id').notNull(), // agentId or workflowId
+  nodeSlug: varchar('node_slug', { length: 128 }), // optional: for node-level scoping
+  enabled: boolean('enabled').notNull().default(true),
+  priority: integer('priority').notNull().default(0),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('agb_tenant_id_idx').on(table.tenantId),
+  index('agb_guardrail_id_idx').on(table.guardrailId),
+  index('agb_scope_idx').on(table.scopeType, table.scopeId),
+]);
+
+// ─── agent_eval_definitions ─────────────────────────────────
+
+export const agentEvalDefinitions = pgTable('agent_eval_definitions', {
+  id: serial('id').primaryKey(),
+  tenantId: integer('tenant_id'),
+  workflowId: integer('workflow_id'),
+  name: varchar('name', { length: 255 }).notNull(),
+  evalType: varchar('eval_type', { length: 32 }).notNull(), // 'rule' | 'llm'
+  config: jsonb('config').notNull(), // type-specific config (keywords, schema, prompt)
+  enabled: boolean('enabled').notNull().default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  index('aed_tenant_id_idx').on(table.tenantId),
+  index('aed_workflow_id_idx').on(table.workflowId),
+]);
+
+// ─── agent_eval_runs ────────────────────────────────────────
+
+export const agentEvalRuns = pgTable('agent_eval_runs', {
+  id: serial('id').primaryKey(),
+  evalDefinitionId: integer('eval_definition_id').notNull(),
+  executionId: integer('execution_id').notNull(),
+  score: integer('score'), // 0-100 scale
+  passed: boolean('passed').notNull(),
+  sourceType: varchar('source_type', { length: 32 }).notNull().default('built-in'), // 'built-in' | 'promptfoo'
+  details: jsonb('details'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('aer_eval_def_id_idx').on(table.evalDefinitionId),
+  index('aer_execution_id_idx').on(table.executionId),
+]);
+
 // ─── Composed Schema Export ─────────────────────────────────
 
 export const workflowAgentsSchema = {
@@ -127,4 +185,7 @@ export const workflowAgentsSchema = {
   agentWorkflowNodeExecutions,
   agentMemory,
   mcpServerDefinitions,
+  agentGuardrailBindings,
+  agentEvalDefinitions,
+  agentEvalRuns,
 };

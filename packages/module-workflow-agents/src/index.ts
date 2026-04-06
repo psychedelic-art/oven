@@ -9,8 +9,18 @@ import * as agentWorkflowExecutionsByIdHandler from './api/agent-workflow-execut
 import * as agentWorkflowExecutionsResumeHandler from './api/agent-workflow-executions-resume.handler';
 import * as agentWorkflowExecutionsCancelHandler from './api/agent-workflow-executions-cancel.handler';
 import * as agentWorkflowVersionsHandler from './api/agent-workflow-versions.handler';
+import * as agentWorkflowsCloneHandler from './api/agent-workflows-clone.handler';
 import * as agentMemoryHandler from './api/agent-memory.handler';
 import * as mcpServerDefinitionsHandler from './api/mcp-server-definitions.handler';
+import * as agentWorkflowMetricsHandler from './api/agent-workflow-metrics.handler';
+import * as agentGuardrailBindingsHandler from './api/agent-guardrail-bindings.handler';
+import * as agentEvalDefinitionsHandler from './api/agent-eval-definitions.handler';
+import * as agentEvalRunsHandler from './api/agent-eval-runs.handler';
+import * as agentEvalPromptfooHandler from './api/agent-eval-promptfoo.handler';
+import { initLangSmithTracer } from './services/langsmith-tracer';
+
+// Auto-initialize LangSmith tracer (no-op if LANGSMITH_API_KEY not set)
+initLangSmithTracer();
 
 // ─── Event Schemas ──────────────────────────────────────────
 
@@ -67,9 +77,16 @@ export const workflowAgentsModule: ModuleDefinition = {
     'agent-workflow-executions/[id]': { GET: agentWorkflowExecutionsByIdHandler.GET },
     'agent-workflow-executions/[id]/resume': { POST: agentWorkflowExecutionsResumeHandler.POST },
     'agent-workflow-executions/[id]/cancel': { POST: agentWorkflowExecutionsCancelHandler.POST },
+    'agent-workflows/[id]/clone': { POST: agentWorkflowsCloneHandler.POST },
     'agent-memory': { GET: agentMemoryHandler.GET },
     'agent-memory/[id]': { DELETE: agentMemoryHandler.DELETE },
     'mcp-server-definitions': { GET: mcpServerDefinitionsHandler.GET },
+    'agent-workflow-metrics': { GET: agentWorkflowMetricsHandler.GET },
+    'agent-guardrail-bindings': { GET: agentGuardrailBindingsHandler.GET, POST: agentGuardrailBindingsHandler.POST },
+    'agent-guardrail-bindings/[id]': { DELETE: agentGuardrailBindingsHandler.DELETE },
+    'agent-eval-definitions': { GET: agentEvalDefinitionsHandler.GET, POST: agentEvalDefinitionsHandler.POST },
+    'agent-eval-runs': { GET: agentEvalRunsHandler.GET },
+    'agent-eval-promptfoo': { GET: agentEvalPromptfooHandler.GET, POST: agentEvalPromptfooHandler.POST },
   },
   configSchema: [
     { key: 'AGENT_WORKFLOW_MAX_STEPS', type: 'number', description: 'Default max execution steps', defaultValue: 50, instanceScoped: false },
@@ -93,4 +110,11 @@ export { saveCheckpoint, loadCheckpoint, resumeFromCheckpoint, transitionStatus 
 export type { CheckpointData, ResumeData } from './engine/checkpoint-manager';
 export { CostTracker } from './engine/cost-tracker';
 export type { CostEntry, ExecutionCostSummary } from './engine/cost-tracker';
+export { getWorkflowMetrics, getNodeMetrics } from './engine/metrics-collector';
+export type { WorkflowMetrics, NodeMetrics } from './engine/metrics-collector';
+export { runEvaluation, recordEvalRun } from './engine/eval-runner';
+export type { EvalDefinition, EvalResult } from './engine/eval-runner';
+export { initLangSmithTracer, getTraceUrl, isTracingEnabled } from './services/langsmith-tracer';
+export { runPromptfooEval, compileTargetToPromptfooConfig, mapChecksToAssertions } from './services/promptfoo-adapter';
+export type { PromptfooTestCase, PromptfooAssertion, NormalizedEvalReport, NormalizedTestCaseResult } from './services/promptfoo-adapter';
 export type * from './types';

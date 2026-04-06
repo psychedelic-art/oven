@@ -14,6 +14,11 @@ export interface AgentWorkflow {
   memoryConfig: MemoryConfig | null;
   status: WorkflowAgentStatus;
   version: number;
+  category: string | null;
+  tags: string[] | null;
+  isTemplate: boolean;
+  clonedFrom: number | null;
+  templateSlug: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

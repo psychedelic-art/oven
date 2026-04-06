@@ -68,6 +68,26 @@ export async function runAgentWorkflow(
           nodeType: nodeSlug,
         });
 
+        // Pre-execution guardrail check (LLM input)
+        if (nodeSlug === 'llm' && opts.tenantId) {
+          try {
+            const { evaluateGuardrails } = await import('@oven/module-ai');
+            const inputText = typeof resolvedInput.messages === 'string'
+              ? resolvedInput.messages
+              : JSON.stringify(resolvedInput.messages);
+            const guardResult = await evaluateGuardrails(inputText, 'input', opts.tenantId);
+            if (!guardResult.passed && guardResult.action === 'block') {
+              await eventBus.emit('workflow-agents.guard.triggered', {
+                executionId: opts.executionId, nodeId: currentState, scope: 'input',
+                ruleId: guardResult.ruleId, message: guardResult.message,
+              });
+              context = { ...context, [currentState]: { error: guardResult.message, guardrailBlocked: true } };
+              if (stateDef.invoke.onError) { currentState = stateDef.invoke.onError; continue; }
+              return fail(opts.executionId, context, stepsExecuted, `Guardrail blocked input: ${guardResult.message}`);
+            }
+          } catch { /* guardrail evaluation failure should not block execution */ }
+        }
+
         const startTime = Date.now();
         const output = await executeNode(nodeSlug, {
           input: resolvedInput,
@@ -77,6 +97,23 @@ export async function runAgentWorkflow(
           tenantId: opts.tenantId,
         });
         const durationMs = Date.now() - startTime;
+
+        // Post-execution guardrail check (LLM output)
+        if (nodeSlug === 'llm' && opts.tenantId && output.text) {
+          try {
+            const { evaluateGuardrails } = await import('@oven/module-ai');
+            const guardResult = await evaluateGuardrails(output.text as string, 'output', opts.tenantId);
+            if (!guardResult.passed && guardResult.action === 'block') {
+              await eventBus.emit('workflow-agents.guard.triggered', {
+                executionId: opts.executionId, nodeId: currentState, scope: 'output',
+                ruleId: guardResult.ruleId, message: guardResult.message,
+              });
+              context = { ...context, [currentState]: { ...output, guardrailBlocked: true, guardrailMessage: guardResult.message } };
+              if (stateDef.invoke.onError) { currentState = stateDef.invoke.onError; continue; }
+              return fail(opts.executionId, context, stepsExecuted, `Guardrail blocked output: ${guardResult.message}`);
+            }
+          } catch { /* guardrail failure should not block execution */ }
+        }
 
         // Check for node-level error
         if (output.error && stateDef.invoke.onError) {

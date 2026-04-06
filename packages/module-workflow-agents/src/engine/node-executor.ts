@@ -82,6 +82,10 @@ export async function executeNode(
       return executeSubagentNode(ctx);
     case 'prompt':
       return executePromptNode(ctx);
+    case 'switch':
+      return executeSwitchNode(ctx);
+    case 'loop':
+      return executeLoopNode(ctx);
     default:
       return { error: `Unknown node type: ${nodeSlug}` };
   }
@@ -269,4 +273,47 @@ async function executePromptNode(ctx: NodeExecutionContext): Promise<Record<stri
     rendered = rendered.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), val);
   }
   return { systemPrompt: rendered };
+}
+
+// ─── Switch / Router Node ───────────────────────────────────
+// Evaluates a field and returns which case matched.
+// The workflow engine uses the `route` output to determine the next state.
+
+async function executeSwitchNode(ctx: NodeExecutionContext): Promise<Record<string, unknown>> {
+  const field = ctx.input.field as string ?? '';
+  const cases = (ctx.input.cases ?? {}) as Record<string, string>;
+  const actual = resolveValue(`$.${field}`, ctx.context);
+  const actualStr = String(actual ?? '');
+
+  // Find matching case
+  for (const [caseValue, targetNode] of Object.entries(cases)) {
+    if (caseValue === 'default') continue;
+    if (actualStr === caseValue || actualStr.includes(caseValue)) {
+      return { route: targetNode, matchedCase: caseValue, value: actualStr };
+    }
+  }
+
+  // Fall through to default
+  const defaultTarget = cases['default'] ?? '';
+  return { route: defaultTarget, matchedCase: 'default', value: actualStr };
+}
+
+// ─── Loop / Iterate Node ────────────────────────────────────
+// Iterates over a collection or repeats while a condition holds.
+
+async function executeLoopNode(ctx: NodeExecutionContext): Promise<Record<string, unknown>> {
+  const loopType = ctx.input.type as string ?? 'forEach';
+  const maxIterations = (ctx.input.maxIterations as number) ?? 10;
+
+  if (loopType === 'forEach') {
+    const collectionPath = ctx.input.collection as string ?? '';
+    const expr = collectionPath.startsWith('$.') ? collectionPath : `$.${collectionPath}`;
+    const collection = resolveValue(expr, ctx.context);
+    const items = Array.isArray(collection) ? collection : [];
+    const capped = items.slice(0, maxIterations);
+    return { items: capped, iterationCount: capped.length, totalItems: items.length };
+  }
+
+  // While loop — just returns the iteration count (actual looping handled by engine)
+  return { iterationCount: 0, maxIterations };
 }

@@ -187,11 +187,38 @@ async function executeGuardrailHandler(
   config: Record<string, unknown>,
   context: HookContext,
 ): Promise<HookResult> {
-  // Placeholder: guardrail evaluation will be integrated in Sprint 4A.4
-  return {
-    hookId: hook.id,
-    hookName: hook.name,
-    continue: true,
-    data: { guardrailResult: 'pass' },
-  };
+  const text = context.message ?? '';
+  if (!text) {
+    return { hookId: hook.id, hookName: hook.name, continue: true, data: { guardrailResult: 'pass' } };
+  }
+
+  try {
+    const { evaluateGuardrails } = await import('@oven/module-ai');
+    const scope = (config.scope as string) ?? 'both';
+    const result = await evaluateGuardrails(text, scope as 'input' | 'output' | 'both', context.tenantId);
+
+    if (!result.passed && result.action === 'block') {
+      return {
+        hookId: hook.id,
+        hookName: hook.name,
+        continue: false,
+        data: { guardrailResult: result, blocked: true },
+      };
+    }
+
+    return {
+      hookId: hook.id,
+      hookName: hook.name,
+      continue: true,
+      data: { guardrailResult: result },
+    };
+  } catch (err) {
+    // Guardrail evaluation failure should not block execution
+    return {
+      hookId: hook.id,
+      hookName: hook.name,
+      continue: true,
+      data: { guardrailResult: 'error', error: err instanceof Error ? err.message : String(err) },
+    };
+  }
 }
