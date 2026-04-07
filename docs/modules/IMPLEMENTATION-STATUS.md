@@ -133,7 +133,7 @@ module-ai (Phase 1 ✅ DONE)
 | Events | DONE | 12 events defined in ModuleDefinition with typed schemas |
 | Seed | DONE | 15 built-in commands, 6 built-in skills |
 | Config | DONE | 9 configSchema keys |
-| Dashboard UI | NOT STARTED | CRUD pages for sessions, commands, skills, hooks, MCP, feedback |
+| Dashboard UI | DONE | 13 React Admin CRUD components (ChatSessionList/Edit, ChatCommandList/Create/Edit, ChatSkillList/Create/Edit, ChatHookList/Create, ChatMCPConnectionList/Create, ChatFeedbackList) registered in AdminApp.tsx |
 
 ### Phase 4A Architecture (Expanded)
 

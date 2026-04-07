@@ -24,6 +24,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import { AgentNode } from './nodes/AgentNode';
 import { AgentNodePalette } from './panels/AgentNodePalette';
 import { AgentNodeInspector } from './panels/AgentNodeInspector';
@@ -37,11 +38,14 @@ import type { ExecutionTrace } from './utils/execution-trace';
 import type { ValidationResult } from './validation/validateAgentWorkflow';
 import { definitionToFlow, flowToDefinition } from './store/converters';
 import { getNodeType } from './store/node-registry';
+import { computeAgentContextFlow } from './utils/agent-context-flow';
+import type { ContextVariable } from './utils/agent-context-flow';
 import type { AgentNodeTypeDefinition, AgentFlowNode, AgentNodeData, RightPanelMode } from './store/types';
 
 // ─── Props ──────────────────────────────────────────────────
 
 export interface AgentWorkflowCanvasProps {
+  workflowId?: number;
   definition: Record<string, unknown>;
   agentConfig?: Record<string, unknown>;
   memoryConfig?: Record<string, unknown>;
@@ -55,7 +59,7 @@ const nodeTypes = { agentNode: AgentNode };
 
 // ─── Canvas Inner (requires ReactFlowProvider) ──────────────
 
-function AgentWorkflowCanvasInner({ definition, agentConfig: initAgentConfig, memoryConfig: initMemoryConfig, onSave, onExecute }: AgentWorkflowCanvasProps) {
+function AgentWorkflowCanvasInner({ workflowId, definition, agentConfig: initAgentConfig, memoryConfig: initMemoryConfig, onSave, onExecute }: AgentWorkflowCanvasProps) {
   const { nodes: initialNodes, edges: initialEdges } = useMemo(
     () => definitionToFlow(definition as never),
     [definition],
@@ -91,6 +95,10 @@ function AgentWorkflowCanvasInner({ definition, agentConfig: initAgentConfig, me
   const nodeIdCounter = useRef(nodes.length + 1);
 
   const selectedNode = nodes.find(n => n.id === selectedNodeId);
+
+  // Compute context flow — tracks available variables at each node
+  const contextFlow = useMemo(() => computeAgentContextFlow(nodes as AgentFlowNode[], edges), [nodes, edges]);
+  const selectedNodeFlow = selectedNodeId ? contextFlow.get(selectedNodeId) : undefined;
 
   const onConnect: OnConnect = useCallback((params) => {
     setEdges(eds => addEdge({ ...params, type: 'smoothstep' }, eds));
@@ -158,6 +166,23 @@ function AgentWorkflowCanvasInner({ definition, agentConfig: initAgentConfig, me
     onSave({ definition: def as unknown as Record<string, unknown>, agentConfig, memoryConfig });
     setIsDirty(false);
   }, [nodes, edges, agentConfig, memoryConfig, onSave, handleValidate]);
+
+  // Auto-layout function — repositions nodes in clean vertical flow
+  const handleAutoLayout = useCallback(() => {
+    const sorted = [...nodes].sort((a, b) => {
+      if (a.data._isEntry) return -1;
+      if (b.data._isEntry) return 1;
+      if (a.data.nodeSlug === 'end') return 1;
+      if (b.data.nodeSlug === 'end') return -1;
+      return 0;
+    });
+    const updated = sorted.map((node, i) => ({
+      ...node,
+      position: { x: 400, y: 50 + i * 160 },
+    }));
+    setNodes(updated);
+    setIsDirty(true);
+  }, [nodes, setNodes]);
 
   const handleLoadTrace = useCallback((trace: ExecutionTrace) => {
     setExecutionTrace(trace);
@@ -230,6 +255,11 @@ function AgentWorkflowCanvasInner({ definition, agentConfig: initAgentConfig, me
                 <Chip icon={<CheckCircleIcon />} label="Valid" size="small" color="success" sx={{ cursor: 'pointer' }}
                   onClick={() => setShowValidation(!showValidation)} />
               )}
+              <Tooltip title="Auto Layout">
+                <IconButton size="small" onClick={handleAutoLayout}>
+                  <AutoFixHighIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
               <Tooltip title="Validate">
                 <IconButton size="small" onClick={handleValidate}>
                   <CheckCircleIcon fontSize="small" />
@@ -279,6 +309,8 @@ function AgentWorkflowCanvasInner({ definition, agentConfig: initAgentConfig, me
           data={selectedNode.data}
           onUpdate={handleUpdateNodeData}
           onDelete={handleDeleteNode}
+          availableVariables={selectedNodeFlow?.available}
+          producedVariables={selectedNodeFlow?.produced}
         />
       )}
       {rightPanel === 'agentConfig' && (
@@ -289,16 +321,16 @@ function AgentWorkflowCanvasInner({ definition, agentConfig: initAgentConfig, me
           onMemoryChange={c => { setMemoryConfig(prev => ({ ...prev, ...c })); setIsDirty(true); }}
         />
       )}
-      {rightPanel === 'versions' && props.definition && (
+      {rightPanel === 'versions' && definition && (
         <VersionHistoryPanel
-          workflowId={0} // Will be passed from props in real usage
+          workflowId={workflowId ?? 0}
           currentDefinition={props.definition}
           onRestore={handleRestoreVersion}
         />
       )}
       {rightPanel === 'execution' && (
         <ExecutionTracePanel
-          workflowId={0} // Will be passed from props in real usage
+          workflowId={workflowId ?? 0}
           onLoadTrace={handleLoadTrace}
           selectedNodeId={selectedNodeId}
         />

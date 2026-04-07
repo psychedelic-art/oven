@@ -172,6 +172,19 @@ export const agentNodeTypes: AgentNodeTypeDefinition[] = [
     ],
   },
   {
+    slug: 'setVariable',
+    label: 'Set Variable',
+    category: 'Logic',
+    color: '#FFB300',
+    icon: '📌',
+    description: 'Set a variable in the workflow context for use by downstream nodes.',
+    defaultConfig: { variableName: '', value: '' },
+    configFields: [
+      { name: 'variableName', label: 'Variable Name', type: 'text', helperText: 'Name of the variable to set' },
+      { name: 'value', label: 'Value', type: 'text', helperText: 'Value to assign (use $.path to reference context)' },
+    ],
+  },
+  {
     slug: 'end',
     label: 'End',
     category: 'Control',

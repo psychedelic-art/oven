@@ -37,3 +37,9 @@ export { exportWorkflow, downloadWorkflowJSON } from './utils/exportWorkflow';
 export type { ExportedWorkflow } from './utils/exportWorkflow';
 export { importWorkflow } from './utils/importWorkflow';
 export type { ImportResult } from './utils/importWorkflow';
+
+// Context Flow + Variable Mapping
+export { computeAgentContextFlow, groupVariablesBySource } from './utils/agent-context-flow';
+export type { ContextVariable } from './utils/agent-context-flow';
+export { AgentVariablePicker } from './components/AgentVariablePicker';
+export { AgentInputMapper } from './components/AgentInputMapper';

@@ -18,14 +18,25 @@ export async function POST(req: NextRequest, ctx?: { params: Promise<{ id: strin
   const workflow = rows[0];
   if (workflow.status !== 'active') return badRequest('Workflow is not active');
 
+  // Build initial context with trigger wrapper
+  // The payload goes under `trigger` so definitions can reference $.trigger.message, $.trigger.messages etc.
+  const triggerPayload = body.payload ?? {};
+  const conversationMessages = body.messages ?? [];
+  const initialContext = {
+    trigger: {
+      ...triggerPayload,
+      messages: conversationMessages,
+    },
+  };
+
   // Create execution record
   const [execution] = await db.insert(agentWorkflowExecutions).values({
     workflowId: workflow.id,
     tenantId: workflow.tenantId,
     status: 'running',
     triggerSource: body.triggerSource ?? 'api',
-    triggerPayload: body.payload ?? {},
-    context: body.payload ?? {},
+    triggerPayload,
+    context: initialContext,
     currentState: (workflow.definition as AgentWorkflowDefinition).initial,
   }).returning();
 
@@ -35,7 +46,7 @@ export async function POST(req: NextRequest, ctx?: { params: Promise<{ id: strin
   const result = await runAgentWorkflow(
     definition,
     config,
-    body.payload ?? {},
+    initialContext,
     { executionId: execution.id, tenantId: workflow.tenantId ?? undefined },
   );
 

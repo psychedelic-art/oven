@@ -7,6 +7,7 @@ interface AgentWorkflowDefinition {
   id: string;
   initial: string;
   context?: Record<string, unknown>;
+  _meta?: { positions?: Record<string, { x: number; y: number }> };
   states: Record<string, AgentStateDefinition>;
 }
 
@@ -29,16 +30,23 @@ export function definitionToFlow(definition: AgentWorkflowDefinition): {
 } {
   const nodes: AgentFlowNode[] = [];
   const edges: AgentFlowEdge[] = [];
-  const stateNames = Object.keys(definition.states);
+  const savedPositions = definition._meta?.positions ?? {};
 
-  // Layout: simple vertical arrangement
-  let y = 50;
+  // Auto-layout defaults
+  let autoY = 50;
   const X_CENTER = 300;
   const Y_SPACING = 150;
 
   for (const [stateName, stateDef] of Object.entries(definition.states)) {
     const nodeSlug = stateDef.type === 'final' ? 'end' : (stateDef.invoke?.src ?? 'transform');
     const nodeDef = getNodeType(nodeSlug);
+    const isEntry = stateName === definition.initial;
+
+    // Use saved position if available, otherwise auto-layout
+    const position = savedPositions[stateName]
+      ? { x: savedPositions[stateName].x, y: savedPositions[stateName].y }
+      : { x: X_CENTER, y: autoY };
+    autoY += Y_SPACING;
 
     const nodeData: AgentNodeData = {
       label: stateName,
@@ -50,16 +58,10 @@ export function definitionToFlow(definition: AgentWorkflowDefinition): {
       inputMapping: stateDef.invoke?.input ?? {},
       onDoneTarget: extractTarget(stateDef.invoke?.onDone),
       onErrorTarget: stateDef.invoke?.onError,
+      _isEntry: isEntry,
     };
 
-    nodes.push({
-      id: stateName,
-      type: 'agentNode',
-      position: { x: X_CENTER, y },
-      data: nodeData,
-    });
-
-    y += Y_SPACING;
+    nodes.push({ id: stateName, type: 'agentNode', position, data: nodeData });
 
     // Create edges
     if (stateDef.invoke?.onDone) {
@@ -117,16 +119,19 @@ export function definitionToFlow(definition: AgentWorkflowDefinition): {
 export function flowToDefinition(
   nodes: AgentFlowNode[],
   edges: AgentFlowEdge[],
-): AgentWorkflowDefinition {
-  const states: Record<string, AgentStateDefinition> = {};
+): Record<string, unknown> {
+  const states: Record<string, unknown> = {};
+  const positions: Record<string, { x: number; y: number }> = {};
 
-  // Find entry node (topmost or first non-end node)
-  const sortedNodes = [...nodes].sort((a, b) => a.position.y - b.position.y);
-  const entryNode = sortedNodes.find(n => n.data.nodeSlug !== 'end');
+  // Find entry node using _isEntry flag (not Y-position)
+  const entryNode = nodes.find(n => n.data._isEntry) ?? nodes.find(n => n.data.nodeSlug !== 'end');
   const initial = entryNode?.id ?? 'start';
 
   for (const node of nodes) {
     const data = node.data;
+
+    // Save position
+    positions[node.id] = { x: Math.round(node.position.x), y: Math.round(node.position.y) };
 
     if (data.nodeSlug === 'end') {
       states[node.id] = { type: 'final' };
@@ -137,7 +142,7 @@ export function flowToDefinition(
     const doneEdge = edges.find(e => e.source === node.id && e.sourceHandle !== 'error');
     const errorEdge = edges.find(e => e.source === node.id && e.sourceHandle === 'error');
 
-    const stateDef: AgentStateDefinition = {};
+    const stateDef: Record<string, unknown> = {};
 
     if (data.nodeSlug) {
       stateDef.invoke = {
@@ -154,6 +159,7 @@ export function flowToDefinition(
   return {
     id: 'agent-workflow',
     initial,
+    _meta: { positions },
     states,
   };
 }

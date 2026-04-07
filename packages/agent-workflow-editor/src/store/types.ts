@@ -12,6 +12,8 @@ export interface AgentNodeData {
   inputMapping: Record<string, unknown>;
   onDoneTarget?: string;
   onErrorTarget?: string;
+  _isEntry?: boolean; // True for the workflow entry point node
+  [key: string]: unknown; // Allow execution overlay data
 }
 
 export type AgentFlowNode = Node<AgentNodeData>;

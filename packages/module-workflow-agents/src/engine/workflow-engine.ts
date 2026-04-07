@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
 import { eventBus } from '@oven/module-registry';
 import { agentWorkflowExecutions, agentWorkflowNodeExecutions } from '../schema';
@@ -67,6 +68,20 @@ export async function runAgentWorkflow(
           nodeId: currentState,
           nodeType: nodeSlug,
         });
+
+        // Record node execution start in DB
+        const db = getDb();
+        let nodeExecId: number | null = null;
+        try {
+          const [nodeExec] = await db.insert(agentWorkflowNodeExecutions).values({
+            executionId: opts.executionId,
+            nodeId: currentState,
+            nodeType: nodeSlug,
+            status: 'running',
+            input: resolvedInput,
+          }).returning();
+          nodeExecId = nodeExec.id as number;
+        } catch { /* DB write failure should not block execution */ }
 
         // Pre-execution guardrail check (LLM input)
         if (nodeSlug === 'llm' && opts.tenantId) {
@@ -147,6 +162,19 @@ export async function runAgentWorkflow(
             proposal: resolvedInput.proposal,
           });
           return { status: 'paused', context, stepsExecuted };
+        }
+
+        // Record node execution completion in DB
+        if (nodeExecId) {
+          try {
+            await db.update(agentWorkflowNodeExecutions).set({
+              status: output.error ? 'failed' : 'completed',
+              output,
+              error: output.error ? String(output.error) : null,
+              durationMs,
+              completedAt: new Date(),
+            }).where(eq(agentWorkflowNodeExecutions.id, nodeExecId));
+          } catch { /* DB write failure should not block execution */ }
         }
 
         await eventBus.emit('workflow-agents.node.completed', {

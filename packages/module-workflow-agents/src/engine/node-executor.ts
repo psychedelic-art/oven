@@ -86,6 +86,8 @@ export async function executeNode(
       return executeSwitchNode(ctx);
     case 'loop':
       return executeLoopNode(ctx);
+    case 'setVariable':
+      return executeSetVariableNode(ctx);
     default:
       return { error: `Unknown node type: ${nodeSlug}` };
   }
@@ -95,16 +97,52 @@ export async function executeNode(
 
 async function executeLLMNode(ctx: NodeExecutionContext): Promise<Record<string, unknown>> {
   const { aiGenerateText } = await import('@oven/module-ai');
-  const messages = ctx.input.messages as Array<Record<string, unknown>> ?? [];
-  const lastMessage = messages[messages.length - 1];
-  const prompt = typeof lastMessage?.content === 'string'
-    ? lastMessage.content
-    : resolveValue(lastMessage?.content as unknown, ctx.context) as string ?? '';
+
+  // Resolve prompt from multiple input shapes:
+  // 1. messages = [{role, content}, ...] → last user message as prompt, prior as context
+  // 2. messages = "string" → direct prompt text
+  // 3. messages = undefined → fall back to $.trigger.message
+  let prompt = '';
+  let systemPrompt = (ctx.input.systemPrompt as string) ?? ctx.config.systemPrompt ?? '';
+
+  const rawMessages = ctx.input.messages;
+
+  if (Array.isArray(rawMessages) && rawMessages.length > 0) {
+    const userMsgs = rawMessages.filter((m: Record<string, unknown>) => m.role === 'user');
+    prompt = (userMsgs[userMsgs.length - 1]?.content as string) ?? '';
+    // Include prior messages as conversation history
+    if (rawMessages.length > 1) {
+      const history = rawMessages.slice(0, -1)
+        .map((m: Record<string, unknown>) => `${(m.role as string).toUpperCase()}: ${m.content as string}`)
+        .join('\n');
+      systemPrompt = systemPrompt
+        ? `${systemPrompt}\n\nConversation history:\n${history}`
+        : `Conversation history:\n${history}`;
+    }
+  } else if (typeof rawMessages === 'string') {
+    prompt = rawMessages;
+  } else {
+    // Fallback: check trigger.message in context
+    const triggerMsg = resolveValue('$.trigger.message', ctx.context);
+    prompt = typeof triggerMsg === 'string' ? triggerMsg : '';
+  }
+
+  if (!prompt) {
+    return { text: '', toolCalls: null, tokens: { input: 0, output: 0, total: 0 }, error: 'No prompt provided' };
+  }
+
+  // Resolve $.path references inside systemPrompt
+  if (systemPrompt && systemPrompt.includes('$.')) {
+    systemPrompt = systemPrompt.replace(/\$\.\S+/g, (match) => {
+      const resolved = resolveValue(match, ctx.context);
+      return resolved !== undefined ? JSON.stringify(resolved) : match;
+    });
+  }
 
   const result = await aiGenerateText({
     prompt,
     model: (ctx.input.model as string) ?? ctx.config.model ?? 'fast',
-    system: (ctx.input.systemPrompt as string) ?? ctx.config.systemPrompt,
+    system: systemPrompt || undefined,
     temperature: (ctx.input.temperature as number) ?? ctx.config.temperature,
   });
 
@@ -316,4 +354,17 @@ async function executeLoopNode(ctx: NodeExecutionContext): Promise<Record<string
 
   // While loop — just returns the iteration count (actual looping handled by engine)
   return { iterationCount: 0, maxIterations };
+}
+
+// ─── Set Variable Node ──────────────────────────────────────
+// Sets a named variable in the workflow context.
+
+async function executeSetVariableNode(ctx: NodeExecutionContext): Promise<Record<string, unknown>> {
+  const variableName = ctx.input.variableName as string ?? '';
+  const rawValue = ctx.input.value;
+  // Resolve $.path references
+  const value = typeof rawValue === 'string' && rawValue.startsWith('$.')
+    ? resolveValue(rawValue, ctx.context)
+    : rawValue;
+  return { [variableName]: value };
 }

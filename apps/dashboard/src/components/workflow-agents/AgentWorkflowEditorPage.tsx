@@ -103,6 +103,7 @@ export function AgentWorkflowEditorPage() {
       {/* Canvas */}
       <Box sx={{ flex: 1, overflow: 'hidden' }}>
         <AgentWorkflowCanvas
+          workflowId={Number(id)}
           definition={workflow.definition as Record<string, unknown>}
           agentConfig={workflow.agentConfig as Record<string, unknown> | undefined}
           memoryConfig={workflow.memoryConfig as Record<string, unknown> | undefined}

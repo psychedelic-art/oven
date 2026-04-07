@@ -28,17 +28,20 @@ export async function seedWorkflowAgents(db: NeonHttpDatabase<Record<string, nev
     },
 
     // ─── 2. BASIC: RAG Q&A ──────────────────────────────────
+    // Flow: search KB → answer using context
+    // The RAG node outputs { context: [...results], resultCount, query }
+    // The LLM node reads $.trigger.message as prompt and $.retrieve.context as system context
     {
       name: '02 - RAG Q&A Assistant',
       slug: 'example-rag-qa',
-      description: 'Retrieves relevant knowledge from the KB before answering. Demonstrates the RAG pattern: retrieve → generate.',
+      description: 'Retrieves relevant knowledge from the KB before answering. Flow: RAG search → LLM answer with retrieved context.',
       category: 'assistant',
       tags: ['basic', 'rag', 'knowledge-base'],
       definition: {
         id: 'rag-qa', initial: 'retrieve',
         states: {
-          retrieve: { invoke: { src: 'rag', input: { query: '$.trigger.question', tenantId: '$.trigger.tenantId', maxResults: 5 }, onDone: 'answer' } },
-          answer: { invoke: { src: 'llm', input: { messages: [{ role: 'user', content: '$.trigger.question' }], systemPrompt: 'Use this context to answer:\n$.retrieve.context' }, onDone: 'done' } },
+          retrieve: { invoke: { src: 'rag', input: { query: '$.trigger.message', maxResults: 5 }, onDone: 'answer' } },
+          answer: { invoke: { src: 'llm', input: { messages: '$.trigger.messages', systemPrompt: 'You are a helpful assistant. Use the following knowledge base results to answer the question. If the results are not relevant, say so.\n\nKnowledge Base Results: $.retrieve.context' }, onDone: 'done' } },
           done: { type: 'final' },
         },
       },
@@ -55,9 +58,9 @@ export async function seedWorkflowAgents(db: NeonHttpDatabase<Record<string, nev
       definition: {
         id: 'tool-agent', initial: 'think',
         states: {
-          think: { invoke: { src: 'llm', input: { messages: '$.trigger.messages', systemPrompt: 'You can call tools. Decide what to do.' }, onDone: 'act' } },
+          think: { invoke: { src: 'llm', input: { messages: '$.trigger.messages', systemPrompt: 'You can call tools to help answer. Decide what tools to use.' }, onDone: 'act' } },
           act: { invoke: { src: 'tool-executor', input: { toolCalls: '$.think.toolCalls' }, onDone: 'synthesize', onError: 'synthesize' } },
-          synthesize: { invoke: { src: 'llm', input: { messages: [{ role: 'user', content: 'Tool results: $.act.toolResults\nSummarize the findings.' }] }, onDone: 'done' } },
+          synthesize: { invoke: { src: 'llm', input: { messages: '$.trigger.messages', systemPrompt: 'Synthesize the tool results into a helpful answer.\n\nTool Results: $.act.toolResults' }, onDone: 'done' } },
           done: { type: 'final' },
         },
       },
@@ -75,14 +78,13 @@ export async function seedWorkflowAgents(db: NeonHttpDatabase<Record<string, nev
         id: 'approval-gate', initial: 'draft',
         states: {
           draft: { invoke: { src: 'llm', input: { messages: '$.trigger.messages' }, onDone: 'review' } },
-          review: { invoke: { src: 'human-review', input: { proposal: '$.draft.text', reason: 'Review before sending to user' } } },
+          review: { invoke: { src: 'human-review', input: { proposal: '$.draft.text', reason: 'Review this AI response before sending to user' } } },
           checkApproval: { invoke: { src: 'condition', input: { field: 'review.decision', operator: '==', value: 'approve' } },
             always: [
-              { target: 'deliver', guard: { type: 'condition', params: { key: 'checkApproval.branch', operator: '==', value: 'true' } } },
+              { target: 'done', guard: { type: 'condition', params: { key: 'checkApproval.branch', operator: '==', value: 'true' } } },
               { target: 'done' },
             ],
           },
-          deliver: { invoke: { src: 'llm', input: { messages: [{ role: 'assistant', content: '$.draft.text' }] }, onDone: 'done' } },
           done: { type: 'final' },
         },
       },
@@ -99,8 +101,8 @@ export async function seedWorkflowAgents(db: NeonHttpDatabase<Record<string, nev
       definition: {
         id: 'memory-agent', initial: 'recall',
         states: {
-          recall: { invoke: { src: 'memory', input: { mode: 'read', query: '$.trigger.question', key: 'user-context' }, onDone: 'respond' } },
-          respond: { invoke: { src: 'llm', input: { messages: [{ role: 'user', content: '$.trigger.question' }], systemPrompt: 'Previous context: $.recall.memories\nUse this context to personalize your response.' }, onDone: 'remember' } },
+          recall: { invoke: { src: 'memory', input: { mode: 'read', query: '$.trigger.message', key: 'user-context' }, onDone: 'respond' } },
+          respond: { invoke: { src: 'llm', input: { messages: '$.trigger.messages', systemPrompt: 'You are a helpful assistant with memory. Use previous context to personalize responses.\n\nPrevious memories: $.recall.memories' }, onDone: 'remember' } },
           remember: { invoke: { src: 'memory', input: { mode: 'write', content: '$.respond.text', key: 'user-context' }, onDone: 'done' } },
           done: { type: 'final' },
         },
@@ -119,15 +121,15 @@ export async function seedWorkflowAgents(db: NeonHttpDatabase<Record<string, nev
         id: 'support-triage', initial: 'classify',
         states: {
           classify: { invoke: { src: 'llm', input: { messages: '$.trigger.messages', systemPrompt: 'Classify this support request. Reply with exactly one word: "urgent" or "normal".' }, onDone: 'route' } },
-          route: { invoke: { src: 'switch', input: { field: 'classify.text', cases: { urgent: 'escalate', normal: 'selfServe', default: 'selfServe' } } },
+          route: { invoke: { src: 'condition', input: { field: 'classify.text', operator: 'contains', value: 'urgent' } },
             always: [
-              { target: 'escalate', guard: { type: 'condition', params: { key: 'route.matchedCase', operator: '==', value: 'urgent' } } },
+              { target: 'escalate', guard: { type: 'condition', params: { key: 'route.branch', operator: '==', value: 'true' } } },
               { target: 'selfServe' },
             ],
           },
-          escalate: { invoke: { src: 'subagent', input: { agentSlug: 'senior-support', message: '$.trigger.messages' }, onDone: 'done' } },
-          selfServe: { invoke: { src: 'rag', input: { query: '$.trigger.messages', maxResults: 3 }, onDone: 'answer' } },
-          answer: { invoke: { src: 'llm', input: { messages: '$.trigger.messages', systemPrompt: 'Answer using FAQ context: $.selfServe.context' }, onDone: 'done' } },
+          escalate: { invoke: { src: 'llm', input: { messages: '$.trigger.messages', systemPrompt: 'This is an URGENT support request. Provide immediate, detailed help.' }, onDone: 'done' } },
+          selfServe: { invoke: { src: 'rag', input: { query: '$.trigger.message', maxResults: 3 }, onDone: 'answer' } },
+          answer: { invoke: { src: 'llm', input: { messages: '$.trigger.messages', systemPrompt: 'Answer using these FAQ results:\n$.selfServe.context' }, onDone: 'done' } },
           done: { type: 'final' },
         },
       },
@@ -144,9 +146,9 @@ export async function seedWorkflowAgents(db: NeonHttpDatabase<Record<string, nev
       definition: {
         id: 'research-pipeline', initial: 'research',
         states: {
-          research: { invoke: { src: 'rag', input: { query: '$.trigger.topic', maxResults: 10 }, onDone: 'analyze' } },
-          analyze: { invoke: { src: 'llm', input: { messages: [{ role: 'user', content: 'Analyze these findings in depth:\n$.research.context' }], systemPrompt: 'You are a research analyst. Provide detailed analysis with key insights.' }, onDone: 'summarize' } },
-          summarize: { invoke: { src: 'llm', input: { messages: [{ role: 'user', content: 'Summarize this analysis concisely (3-5 bullet points):\n$.analyze.text' }] }, onDone: 'done' } },
+          research: { invoke: { src: 'rag', input: { query: '$.trigger.message', maxResults: 10 }, onDone: 'analyze' } },
+          analyze: { invoke: { src: 'llm', input: { messages: '$.trigger.messages', systemPrompt: 'You are a research analyst. Analyze these findings in depth with key insights.\n\nResearch Results: $.research.context' }, onDone: 'summarize' } },
+          summarize: { invoke: { src: 'llm', input: { messages: '$.trigger.messages', systemPrompt: 'Summarize this analysis concisely in 3-5 bullet points.\n\nAnalysis: $.analyze.text' }, onDone: 'done' } },
           done: { type: 'final' },
         },
       },
@@ -161,89 +163,59 @@ export async function seedWorkflowAgents(db: NeonHttpDatabase<Record<string, nev
       category: 'planning',
       tags: ['advanced', 'planning', 'multi-step', 'tools'],
       definition: {
-        id: 'planner', initial: 'buildPrompt',
+        id: 'planner', initial: 'plan',
         states: {
-          buildPrompt: { invoke: { src: 'prompt', input: { template: 'Create a step-by-step plan to: {{goal}}\nList each step clearly.', variables: { goal: '$.trigger.goal' } }, onDone: 'plan' } },
-          plan: { invoke: { src: 'llm', input: { messages: [{ role: 'user', content: '$.buildPrompt.systemPrompt' }] }, onDone: 'evaluate' } },
-          evaluate: { invoke: { src: 'llm', input: { messages: [{ role: 'user', content: 'Review this plan. Are tools needed? Reply "yes" or "no".\n$.plan.text' }] }, onDone: 'checkTools' } },
+          plan: { invoke: { src: 'llm', input: { messages: '$.trigger.messages', systemPrompt: 'Create a step-by-step plan to accomplish the users goal. List each step clearly.' }, onDone: 'evaluate' } },
+          evaluate: { invoke: { src: 'llm', input: { messages: '$.trigger.messages', systemPrompt: 'Review this plan and determine if tools are needed. Reply "yes" or "no" followed by explanation.\n\nPlan: $.plan.text' }, onDone: 'checkTools' } },
           checkTools: { invoke: { src: 'condition', input: { field: 'evaluate.text', operator: 'contains', value: 'yes' } },
             always: [
-              { target: 'executePlan', guard: { type: 'condition', params: { key: 'checkTools.branch', operator: '==', value: 'true' } } },
+              { target: 'refine', guard: { type: 'condition', params: { key: 'checkTools.branch', operator: '==', value: 'true' } } },
               { target: 'refine' },
             ],
           },
-          executePlan: { invoke: { src: 'tool-executor', input: { toolCalls: '$.evaluate.toolCalls' }, onDone: 'refine', onError: 'refine' } },
-          refine: { invoke: { src: 'llm', input: { messages: [{ role: 'user', content: 'Refine and finalize based on: Plan: $.plan.text\nResults: $.executePlan' }] }, onDone: 'done' } },
+          refine: { invoke: { src: 'llm', input: { messages: '$.trigger.messages', systemPrompt: 'Provide the final refined answer based on:\nPlan: $.plan.text\nEvaluation: $.evaluate.text' }, onDone: 'done' } },
           done: { type: 'final' },
         },
       },
-      agentConfig: { model: 'smart', temperature: 0.5, maxSteps: 25, toolBindings: ['*'] },
+      agentConfig: { model: 'smart', temperature: 0.5, maxSteps: 20 },
     },
 
-    // ─── 9. ADVANCED: Guardrailed Content Generator ──────────
+    // ─── 9. BASIC: System Prompt Customizer ──────────────────
     {
-      name: '09 - Guardrailed Content Generator',
-      slug: 'example-guardrailed-content',
-      description: 'Generates content with safety guardrails: pre-check input → generate → post-check output → deliver or reject.',
+      name: '09 - Custom System Prompt Agent',
+      slug: 'example-custom-prompt',
+      description: 'Assembles a dynamic system prompt from a template, then generates a response. Demonstrates the prompt assembly pattern.',
       category: 'assistant',
-      tags: ['advanced', 'guardrails', 'safety', 'content'],
+      tags: ['basic', 'prompt', 'customization'],
       definition: {
-        id: 'guardrailed-content', initial: 'checkInput',
+        id: 'custom-prompt', initial: 'buildPrompt',
         states: {
-          checkInput: { invoke: { src: 'condition', input: { field: 'trigger.message', operator: 'exists' } },
-            always: [
-              { target: 'generate', guard: { type: 'condition', params: { key: 'checkInput.branch', operator: '==', value: 'true' } } },
-              { target: 'reject' },
-            ],
-          },
-          generate: { invoke: { src: 'llm', input: { messages: '$.trigger.messages', systemPrompt: 'Generate helpful, safe content.' }, onDone: 'validateOutput' } },
-          validateOutput: { invoke: { src: 'condition', input: { field: 'generate.text', operator: 'exists' } },
-            always: [
-              { target: 'deliver', guard: { type: 'condition', params: { key: 'validateOutput.branch', operator: '==', value: 'true' } } },
-              { target: 'reject' },
-            ],
-          },
-          deliver: { invoke: { src: 'transform', input: { mapping: { response: '$.generate.text', safe: 'true' } }, onDone: 'done' } },
-          reject: { invoke: { src: 'transform', input: { mapping: { response: 'Request could not be processed safely.', safe: 'false' } }, onDone: 'done' } },
+          buildPrompt: { invoke: { src: 'prompt', input: { template: 'You are {{role}}. Your expertise is {{expertise}}. Always respond in {{style}} style.', variables: { role: 'a friendly tutor', expertise: 'explaining complex topics simply', style: 'conversational' } }, onDone: 'respond' } },
+          respond: { invoke: { src: 'llm', input: { messages: '$.trigger.messages', systemPrompt: '$.buildPrompt.systemPrompt' }, onDone: 'done' } },
           done: { type: 'final' },
         },
       },
-      agentConfig: { model: 'smart', temperature: 0.3, maxSteps: 15 },
+      agentConfig: { model: 'fast', temperature: 0.7, maxSteps: 5 },
     },
 
     // ─── 10. COMPLEX: Full Agent Orchestrator ────────────────
     {
       name: '10 - Full Agent Orchestrator',
       slug: 'example-full-orchestrator',
-      description: 'Complete agent pipeline: RAG context → memory recall → prompt assembly → LLM generation → tool execution → memory write → human review. The kitchen sink example.',
+      description: 'Complete agent pipeline: RAG context → memory recall → LLM generation → memory write. The kitchen sink example.',
       category: 'planning',
-      tags: ['complex', 'full-pipeline', 'rag', 'memory', 'tools', 'human-review'],
+      tags: ['complex', 'full-pipeline', 'rag', 'memory'],
       definition: {
         id: 'full-orchestrator', initial: 'fetchContext',
         states: {
-          fetchContext: { invoke: { src: 'rag', input: { query: '$.trigger.question', maxResults: 5 }, onDone: 'recallMemory' } },
-          recallMemory: { invoke: { src: 'memory', input: { mode: 'read', query: '$.trigger.question' }, onDone: 'assemblePrompt' } },
-          assemblePrompt: { invoke: { src: 'prompt', input: { template: 'Context: {{context}}\nMemories: {{memories}}\nQuestion: {{question}}', variables: { context: '$.fetchContext.context', memories: '$.recallMemory.memories', question: '$.trigger.question' } }, onDone: 'generate' } },
-          generate: { invoke: { src: 'llm', input: { messages: [{ role: 'user', content: '$.assemblePrompt.systemPrompt' }] }, onDone: 'checkTools' } },
-          checkTools: { invoke: { src: 'condition', input: { field: 'generate.toolCalls', operator: 'exists' } },
-            always: [
-              { target: 'executeTools', guard: { type: 'condition', params: { key: 'checkTools.branch', operator: '==', value: 'true' } } },
-              { target: 'saveMemory' },
-            ],
-          },
-          executeTools: { invoke: { src: 'tool-executor', input: { toolCalls: '$.generate.toolCalls' }, onDone: 'saveMemory', onError: 'saveMemory' } },
-          saveMemory: { invoke: { src: 'memory', input: { mode: 'write', content: '$.generate.text', key: 'conversation' }, onDone: 'review' } },
-          review: { invoke: { src: 'human-review', input: { proposal: '$.generate.text', reason: 'Final review before delivery' } } },
-          checkReview: { invoke: { src: 'condition', input: { field: 'review.decision', operator: '==', value: 'approve' } },
-            always: [
-              { target: 'done', guard: { type: 'condition', params: { key: 'checkReview.branch', operator: '==', value: 'true' } } },
-              { target: 'done' },
-            ],
-          },
+          fetchContext: { invoke: { src: 'rag', input: { query: '$.trigger.message', maxResults: 5 }, onDone: 'recallMemory' } },
+          recallMemory: { invoke: { src: 'memory', input: { mode: 'read', query: '$.trigger.message' }, onDone: 'generate' } },
+          generate: { invoke: { src: 'llm', input: { messages: '$.trigger.messages', systemPrompt: 'You are a comprehensive assistant. Use all available context.\n\nKnowledge Base: $.fetchContext.context\n\nMemories: $.recallMemory.memories' }, onDone: 'saveMemory' } },
+          saveMemory: { invoke: { src: 'memory', input: { mode: 'write', content: '$.generate.text', key: 'conversation' }, onDone: 'done' } },
           done: { type: 'final' },
         },
       },
-      agentConfig: { model: 'smart', temperature: 0.5, maxSteps: 30, toolBindings: ['*'] },
+      agentConfig: { model: 'smart', temperature: 0.5, maxSteps: 20 },
     },
   ];
 
