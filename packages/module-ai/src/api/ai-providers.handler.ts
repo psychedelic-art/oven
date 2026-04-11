@@ -1,11 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql, asc, desc, eq, and, ilike } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
-import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+import { parseListParams, listResponse, badRequest } from '@oven/module-registry/api-utils';
 import { eventBus } from '@oven/module-registry';
 import { aiProviders } from '../schema';
 import { encrypt, isEncrypted, maskApiKey } from '../engine/encryption';
 import { providerRegistry } from '../engine/provider-registry';
+import { getOrderColumn } from './_utils/sort';
+
+// Whitelisted sort columns for GET /api/ai-providers (F-05-02).
+// Keep this array explicit — do NOT reach for Object.keys(aiProviders).
+const ALLOWED_SORTS = [
+  'id',
+  'tenantId',
+  'name',
+  'slug',
+  'type',
+  'defaultModel',
+  'rateLimitRpm',
+  'rateLimitTpm',
+  'enabled',
+  'createdAt',
+  'updatedAt',
+] as const;
 
 function maskProviderRow(row: any) {
   return {
@@ -20,8 +37,13 @@ export async function GET(request: NextRequest) {
   const db = getDb();
   const params = parseListParams(request);
 
-  const orderCol = (aiProviders as any)[params.sort] ?? aiProviders.id;
-  const orderFn = params.order === 'desc' ? desc(orderCol) : asc(orderCol);
+  const resolved = getOrderColumn(aiProviders, params.sort, ALLOWED_SORTS);
+  if (!resolved.ok) {
+    return badRequest(
+      `Invalid sort field "${resolved.received}". Allowed: ${resolved.allowed.join(', ')}`,
+    );
+  }
+  const orderFn = params.order === 'desc' ? desc(resolved.column) : asc(resolved.column);
 
   const conditions: any[] = [];
   if (params.filter.q) {

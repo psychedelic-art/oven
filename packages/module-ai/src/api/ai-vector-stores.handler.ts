@@ -1,17 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql, asc, desc, eq, and, ilike } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
-import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+import { parseListParams, listResponse, badRequest } from '@oven/module-registry/api-utils';
 import { eventBus } from '@oven/module-registry';
 import { aiVectorStores } from '../schema';
+import { getOrderColumn } from './_utils/sort';
+
+// Whitelisted sort columns for GET /api/ai-vector-stores (F-05-02).
+// Keep this array explicit — do NOT reach for Object.keys(aiVectorStores).
+const ALLOWED_SORTS = [
+  'id',
+  'tenantId',
+  'name',
+  'slug',
+  'adapter',
+  'embeddingProviderId',
+  'embeddingModel',
+  'dimensions',
+  'distanceMetric',
+  'documentCount',
+  'enabled',
+  'createdAt',
+  'updatedAt',
+] as const;
 
 // GET /api/ai-vector-stores — List vector stores
 export async function GET(request: NextRequest) {
   const db = getDb();
   const params = parseListParams(request);
 
-  const orderCol = (aiVectorStores as any)[params.sort] ?? aiVectorStores.id;
-  const orderFn = params.order === 'desc' ? desc(orderCol) : asc(orderCol);
+  const resolved = getOrderColumn(aiVectorStores, params.sort, ALLOWED_SORTS);
+  if (!resolved.ok) {
+    return badRequest(
+      `Invalid sort field "${resolved.received}". Allowed: ${resolved.allowed.join(', ')}`,
+    );
+  }
+  const orderFn = params.order === 'desc' ? desc(resolved.column) : asc(resolved.column);
 
   const conditions: any[] = [];
   if (params.filter.q) {

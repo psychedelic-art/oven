@@ -1,17 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql, asc, desc, eq, and } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
-import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+import { parseListParams, listResponse, badRequest } from '@oven/module-registry/api-utils';
 import { eventBus } from '@oven/module-registry';
 import { aiBudgets } from '../schema';
+import { getOrderColumn } from './_utils/sort';
+
+// Whitelisted sort columns for GET /api/ai-budgets (F-05-02).
+// Keep this array explicit — do NOT reach for Object.keys(aiBudgets).
+const ALLOWED_SORTS = [
+  'id',
+  'scope',
+  'scopeId',
+  'periodType',
+  'tokenLimit',
+  'costLimitCents',
+  'currentTokens',
+  'currentCostCents',
+  'alertThresholdPct',
+  'enabled',
+  'createdAt',
+  'updatedAt',
+] as const;
 
 // GET /api/ai-budgets — List budgets
 export async function GET(request: NextRequest) {
   const db = getDb();
   const params = parseListParams(request);
 
-  const orderCol = (aiBudgets as any)[params.sort] ?? aiBudgets.id;
-  const orderFn = params.order === 'desc' ? desc(orderCol) : asc(orderCol);
+  const resolved = getOrderColumn(aiBudgets, params.sort, ALLOWED_SORTS);
+  if (!resolved.ok) {
+    return badRequest(
+      `Invalid sort field "${resolved.received}". Allowed: ${resolved.allowed.join(', ')}`,
+    );
+  }
+  const orderFn = params.order === 'desc' ? desc(resolved.column) : asc(resolved.column);
 
   const conditions: any[] = [];
   if (params.filter.scope) {
