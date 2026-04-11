@@ -1,8 +1,23 @@
 import type { NextRequest } from 'next/server';
 import { sql, asc, desc, eq, and } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
-import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+import { parseListParams, listResponse, badRequest } from '@oven/module-registry/api-utils';
 import { aiTools } from '../schema';
+import { getOrderColumn } from './_utils/sort';
+
+// Whitelisted sort columns for GET /api/ai-tools (F-05-02).
+// Keep this array explicit — do NOT reach for Object.keys(aiTools).
+const ALLOWED_SORTS = [
+  'id',
+  'name',
+  'slug',
+  'category',
+  'handler',
+  'isSystem',
+  'enabled',
+  'createdAt',
+  'updatedAt',
+] as const;
 
 // Built-in tools that are always available
 const BUILT_IN_TOOLS = [
@@ -19,8 +34,13 @@ export async function GET(request: NextRequest) {
   const db = getDb();
   const params = parseListParams(request);
 
-  const orderCol = (aiTools as any)[params.sort] ?? aiTools.id;
-  const orderFn = params.order === 'desc' ? desc(orderCol) : asc(orderCol);
+  const resolved = getOrderColumn(aiTools, params.sort, ALLOWED_SORTS);
+  if (!resolved.ok) {
+    return badRequest(
+      `Invalid sort field "${resolved.received}". Allowed: ${resolved.allowed.join(', ')}`,
+    );
+  }
+  const orderFn = params.order === 'desc' ? desc(resolved.column) : asc(resolved.column);
 
   const conditions: any[] = [];
   if (params.filter.category) {

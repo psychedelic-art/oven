@@ -10,7 +10,7 @@
 | 02 | Memory / context window | 🛑 Blocked | — | Blocked on Q-T-01 — `module-chat` absent on this session branch. |
 | 03 | Workflow engine correctness | ⏳ Planned | — | 4 findings active. F-03-02 path shifted to `engine.ts` (not `engine/engine.ts`). |
 | 04 | Chat & agent-core completion | 🛑 Blocked | — | Blocked on Q-T-01 — `module-agent-core` absent, and F-04-05 depends on `module-chat`. |
-| 05 | Handler type safety | ⏳ Planned | — | 9 AI handlers carry the `as any` sort pattern (audit said "12+"; see Q-T-02). |
+| 05 | Handler type safety | 🟡 In progress | `a5894d9` (cycle-5) | F-05-01 **done** cycle-3 (`ai-playground-executions.handler.ts`). F-05-02 **done** cycle-5: `getOrderColumn` rolled to 8 remaining handlers (`ai-providers`, `ai-aliases`, `ai-vector-stores`, `ai-usage-logs`, `ai-budgets`, `ai-budget-alerts`, `ai-tools`, `ai-guardrails`). `module-ai` suite: 150/150 (40 new rollout tests). F-05-03..05 still ⏳. |
 | 06 | Cross-cutting rule compliance | ⏳ Planned | — | Scope expanded from 5 → 7 findings (F-06-06/07 inherited from Sprint 01). |
 
 **Status legend**: ⏳ Planned · 🟡 In progress · 🔵 Awaiting BO review · ✅ Done · 🛑 Blocked

@@ -11,11 +11,18 @@
     "./api/*": "./src/api/*",
     "./engine/*": "./src/engine/*"
   },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
   "dependencies": {
     "@oven/module-registry": "workspace:*",
     "@vercel/blob": "^2.2.0",
     "drizzle-orm": "^0.38.0",
     "@neondatabase/serverless": "^0.10.0"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0"
   },
   "peerDependencies": {
     "next": ">=15.0.0",

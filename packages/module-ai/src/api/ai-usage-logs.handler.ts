@@ -1,16 +1,39 @@
 import type { NextRequest } from 'next/server';
 import { sql, asc, desc, eq, and, gte, lte } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
-import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+import { parseListParams, listResponse, badRequest } from '@oven/module-registry/api-utils';
 import { aiUsageLogs } from '../schema';
+import { getOrderColumn } from './_utils/sort';
+
+// Whitelisted sort columns for GET /api/ai-usage-logs (F-05-02).
+// Keep this array explicit — do NOT reach for Object.keys(aiUsageLogs).
+const ALLOWED_SORTS = [
+  'id',
+  'tenantId',
+  'providerId',
+  'modelId',
+  'toolName',
+  'inputTokens',
+  'outputTokens',
+  'totalTokens',
+  'costCents',
+  'latencyMs',
+  'status',
+  'createdAt',
+] as const;
 
 // GET /api/ai-usage-logs — List usage logs (read-only)
 export async function GET(request: NextRequest) {
   const db = getDb();
   const params = parseListParams(request);
 
-  const orderCol = (aiUsageLogs as any)[params.sort] ?? aiUsageLogs.id;
-  const orderFn = params.order === 'desc' ? desc(orderCol) : asc(orderCol);
+  const resolved = getOrderColumn(aiUsageLogs, params.sort, ALLOWED_SORTS);
+  if (!resolved.ok) {
+    return badRequest(
+      `Invalid sort field "${resolved.received}". Allowed: ${resolved.allowed.join(', ')}`,
+    );
+  }
+  const orderFn = params.order === 'desc' ? desc(resolved.column) : asc(resolved.column);
 
   const conditions: any[] = [];
   if (params.filter.tenantId) {
