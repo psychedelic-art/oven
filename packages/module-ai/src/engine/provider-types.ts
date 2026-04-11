@@ -12,7 +12,8 @@
  * below. This isolates the widening to ONE place and eliminates
  * every `as any` sprinkled across `packages/module-ai/src/api/`.
  *
- * F-05-03 (see `docs/modules/todo/oven-bug-sprint/sprint-05-handler-typesafety.md`).
+ * F-05-03 + F-05-04 (see
+ * `docs/modules/todo/oven-bug-sprint/sprint-05-handler-typesafety.md`).
  */
 
 export interface AiSdkProvider {
@@ -65,4 +66,63 @@ export function assertCallableProvider(
   if (typeof value !== 'function') {
     throw new ProviderNotCallableError(providerName);
   }
+}
+
+/**
+ * Typed error raised when a sub-client (e.g. `.transcription`,
+ * `.image`, `.embedding`) that should be callable on an
+ * `AiSdkProvider` is absent or is not a function. Handlers that need
+ * a specialised client (transcription, embeddings, images) use
+ * `resolveSubClientModel` and catch this to return a clean HTTP 502.
+ *
+ * Introduced by F-05-04 to replace the
+ * `(provider as any).transcription?.(id) ?? (provider as any)(id)`
+ * pattern in `ai-transcribe.handler.ts`.
+ */
+export class ProviderSubClientNotCallableError extends Error {
+  readonly providerName: string;
+  readonly subClientName: string;
+  constructor(providerName: string, subClientName: string) {
+    super(
+      `AI provider "${providerName}" does not expose a callable ` +
+        `"${subClientName}" sub-client. The SDK factory must return an ` +
+        `object with a callable .${subClientName}(modelId) method for ` +
+        `this endpoint to work.`,
+    );
+    this.name = 'ProviderSubClientNotCallableError';
+    this.providerName = providerName;
+    this.subClientName = subClientName;
+  }
+}
+
+/**
+ * Resolve a specialised sub-client model from an `AiSdkProvider` and
+ * invoke it with the given model id. This is the typed replacement
+ * for `(provider as any).<subClientName>?.(modelId) ?? (provider as any)(modelId)`.
+ *
+ * The SDK pattern is: `createOpenAI()` returns a callable that also
+ * carries `.transcription`, `.image`, `.embedding` sibling factories.
+ * Each sibling is itself a function `(modelId: string) => <model>`.
+ * When the caller wants a specialised model (e.g. Whisper for
+ * transcription), the sibling — not the top-level callable — is the
+ * correct factory: calling the top-level with `"whisper-1"` would
+ * return a language model, not a transcription model, and the
+ * downstream AI SDK call would fail at runtime.
+ *
+ * This helper therefore does NOT silently fall back to the top-level
+ * callable. A missing or non-callable sub-client is a configuration
+ * error and surfaces as `ProviderSubClientNotCallableError`, which
+ * the handler catches and reports as a 502.
+ */
+export function resolveSubClientModel(
+  provider: AiSdkProvider,
+  subClientName: string,
+  modelId: string,
+  providerName: string,
+): unknown {
+  const sub = provider[subClientName];
+  if (typeof sub !== 'function') {
+    throw new ProviderSubClientNotCallableError(providerName, subClientName);
+  }
+  return (sub as (id: string) => unknown)(modelId);
 }

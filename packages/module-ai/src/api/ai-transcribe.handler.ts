@@ -3,6 +3,12 @@ import { badRequest } from '@oven/module-registry/api-utils';
 import { getDb } from '@oven/module-registry/db';
 import { aiUsageLogs } from '../schema';
 import { providerRegistry } from '../engine/provider-registry';
+import {
+  assertCallableProvider,
+  ProviderNotCallableError,
+  ProviderSubClientNotCallableError,
+  resolveSubClientModel,
+} from '../engine/provider-types';
 
 // POST /api/ai/transcribe — Speech-to-Text via Vercel AI SDK
 export async function POST(request: NextRequest) {
@@ -12,13 +18,27 @@ export async function POST(request: NextRequest) {
     return badRequest('audio is required (base64 data URL or HTTP URL)');
   }
 
+  const providerSlug = 'openai';
+  const startTime = Date.now();
+
   try {
     const { experimental_transcribe: transcribe } = await import('ai');
-    const openai = await providerRegistry.resolve('openai') as any;
-    const model = body.model ?? 'whisper-1';
-    const transcriptionModel = openai.transcription?.(model) ?? openai(model);
+    const openai = await providerRegistry.resolve(providerSlug);
 
-    const startTime = Date.now();
+    // F-05-04: narrow the unknown resolver result to AiSdkProvider
+    // and resolve the `.transcription` sub-client through the typed
+    // helper. Both steps replace the `(openai as any)` cast + the
+    // `.transcription?.(...) ?? openai(...)` fallback with a typed
+    // shape guard that throws ProviderSubClientNotCallableError when
+    // the SDK factory is missing its transcription sibling.
+    assertCallableProvider(openai, providerSlug);
+    const model = body.model ?? 'whisper-1';
+    const transcriptionModel = resolveSubClientModel(
+      openai,
+      'transcription',
+      model,
+      providerSlug,
+    );
 
     // Resolve audio input
     let audioInput: string | Uint8Array = body.audio;
@@ -62,6 +82,23 @@ export async function POST(request: NextRequest) {
       latencyMs,
     });
   } catch (err) {
+    // ProviderNotCallableError / ProviderSubClientNotCallableError surface
+    // as 502 with the typed message and the sub-client name embedded,
+    // making misconfigured providers self-diagnosing. Generic errors
+    // (auth, network, SDK) fall through to the same shape.
+    if (
+      err instanceof ProviderNotCallableError ||
+      err instanceof ProviderSubClientNotCallableError
+    ) {
+      return NextResponse.json(
+        {
+          error: err.message,
+          provider: providerSlug,
+          latencyMs: Date.now() - startTime,
+        },
+        { status: 502 },
+      );
+    }
     const message = err instanceof Error ? err.message : 'Unknown transcription error';
     return NextResponse.json({ error: message }, { status: 502 });
   }
