@@ -56,3 +56,4 @@ docs/modules/todo/
 | Slug | Title | Branch | Status |
 |------|-------|--------|--------|
 | `psychedelic-claude-code-migration` | Migrate & integrate `psychedelic-art/claude-code` into OVEN | `feature/psychedelic-claude-code-migration` | Planned |
+| `oven-bug-sprint` | Sprint-organized bug / UX / rule-compliance cleanup of the OVEN monorepo | `feature/bugs` | Planned |
