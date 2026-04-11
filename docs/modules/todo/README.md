@@ -54,6 +54,7 @@ See `PROGRESS.md` for the live state table. Snapshot:
 | `module-knowledge-base` | Module | `claude/eager-curie-LRIhN` | Todo sprints added (sprint-00..05); canonical folder already exists on dev |
 | `oven-bug-sprint` | Program | `claude/eager-curie-0da9Q` | Triage (sprint-00) + 6 sprints imported; ready for execution |
 | `psychedelic-claude-code-migration` | Program | (owned elsewhere) | Planned — NOT touched by this pipeline |
+| `auth` | Module | (scaffolded 2026-04-11, `claude/inspiring-clarke-0OpL4`) | Canonical doc set graduated; sprints 00–04 planned; sprint-00 discovery is ready |
 
 ## Graduation definition of done
 
