@@ -1,5 +1,13 @@
 # Sprint 02 — Memory / context window
 
+> **Triage verdict (sprint-00, HEAD `468ea41`)**: 🛑 **Blocked** —
+> `packages/module-chat` does not exist on the session branch
+> `claude/eager-curie-0da9Q`. All 4 findings are classified
+> `missing-pkg` in `inventory.md`. This sprint can only be executed on
+> a branch that already carries `module-chat`. See Q-T-01 in
+> `business-owner.md`. The finding table below is preserved unchanged
+> so the sprint can be re-run as-is on the correct branch.
+
 ## Goal
 
 Make conversation memory reliable. Ensure context-window truncation

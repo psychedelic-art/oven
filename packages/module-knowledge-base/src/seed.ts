@@ -1,15 +1,19 @@
 import { getDb } from '@oven/module-registry/db';
 import { permissions } from '@oven/module-roles/schema';
 import { tenants } from '@oven/module-tenants/schema';
-import { kbKnowledgeBases, kbCategories, kbEntries, kbEntryVersions } from './schema';
-import { sql, eq } from 'drizzle-orm';
+import { kbKnowledgeBases, kbCategories, kbEntries } from './schema';
+import { sql, eq, and } from 'drizzle-orm';
 
 // ─── Seed Function ──────────────────────────────────────────
 
+/**
+ * Idempotent seed. Safe to run repeatedly. Never deletes or truncates.
+ * Existing rows are matched by (tenantId, slug) and left alone.
+ */
 export async function seedKnowledgeBase(db: ReturnType<typeof getDb>) {
   console.log('[module-knowledge-base] Starting seed...');
 
-  // ─── 1. Permissions (idempotent via onConflictDoNothing) ──
+  // ─── 1. Permissions (idempotent) ──────────────────────────
   const modulePermissions = [
     { resource: 'kb-categories', action: 'read', slug: 'kb-categories.read', description: 'View KB categories' },
     { resource: 'kb-categories', action: 'create', slug: 'kb-categories.create', description: 'Create KB categories' },
@@ -25,7 +29,7 @@ export async function seedKnowledgeBase(db: ReturnType<typeof getDb>) {
     await db.insert(permissions).values(perm).onConflictDoNothing();
   }
 
-  // ─── 2. Vector column + HNSW index (idempotent via IF NOT EXISTS) ──
+  // ─── 2. Vector column + HNSW index (idempotent) ───────────
   try {
     await db.execute(sql`
       DO $$
@@ -47,7 +51,7 @@ export async function seedKnowledgeBase(db: ReturnType<typeof getDb>) {
     console.warn('[KB Seed] Could not create vector column/index:', (err as Error).message);
   }
 
-  // ─── 3. Public endpoint (idempotent via ON CONFLICT DO NOTHING) ──
+  // ─── 3. Public endpoint registration ──────────────────────
   try {
     await db.execute(sql`
       INSERT INTO api_endpoint_permissions (module, route, method, is_public)
@@ -67,30 +71,31 @@ export async function seedKnowledgeBase(db: ReturnType<typeof getDb>) {
   const targetTenantId = allTenants[0].id;
   console.log(`[module-knowledge-base] Seeding for tenant "${allTenants[0].name}" (id=${targetTenantId})`);
 
-  // ─── 5. DELETE all existing KB data for this tenant (FK-safe order) ──
-  // versions → entries → categories → knowledge bases
-  await db.execute(sql`
-    DELETE FROM kb_entry_versions WHERE entry_id IN (
-      SELECT id FROM kb_entries WHERE tenant_id = ${targetTenantId}
-    )
-  `);
-  await db.delete(kbEntries).where(eq(kbEntries.tenantId, targetTenantId));
-  await db.delete(kbCategories).where(eq(kbCategories.tenantId, targetTenantId));
-  await db.delete(kbKnowledgeBases).where(eq(kbKnowledgeBases.tenantId, targetTenantId));
-  console.log('[module-knowledge-base] Cleared existing KB data');
+  // ─── 5. Default Knowledge Base (upsert by (tenant, slug)) ──
+  const kbSlug = 'clinica-dental-faq';
+  const existingKb = await db
+    .select()
+    .from(kbKnowledgeBases)
+    .where(and(eq(kbKnowledgeBases.tenantId, targetTenantId), eq(kbKnowledgeBases.slug, kbSlug)))
+    .limit(1);
 
-  // ─── 6. Create default Knowledge Base ─────────────────────
-  const [kb] = await db.insert(kbKnowledgeBases).values({
-    tenantId: targetTenantId,
-    name: 'Clínica Dental FAQ',
-    slug: 'clinica-dental-faq',
-    description: 'Preguntas frecuentes para clínica dental — agendamiento, horarios, servicios, pagos, urgencias',
-    enabled: true,
-  }).returning();
-  const kbId = kb.id;
-  console.log(`[module-knowledge-base] Created KB: "${kb.name}" (id=${kbId})`);
+  let kbId: number;
+  if (existingKb.length > 0) {
+    kbId = existingKb[0].id;
+    console.log(`[module-knowledge-base] Reusing KB: "${existingKb[0].name}" (id=${kbId})`);
+  } else {
+    const [kb] = await db.insert(kbKnowledgeBases).values({
+      tenantId: targetTenantId,
+      name: 'Clínica Dental FAQ',
+      slug: kbSlug,
+      description: 'Preguntas frecuentes para clínica dental — agendamiento, horarios, servicios, pagos, urgencias',
+      enabled: true,
+    }).returning();
+    kbId = kb.id;
+    console.log(`[module-knowledge-base] Created KB: "${kb.name}" (id=${kbId})`);
+  }
 
-  // ─── 7. Seed 10 dental FAQ categories ─────────────────────
+  // ─── 6. Categories (insert missing only) ──────────────────
   const dentalCategories = [
     { name: 'Agendamiento', slug: 'agendamiento', description: 'Cómo agendar, cancelar, reagendar citas', icon: 'EventNote', order: 1 },
     { name: 'Horarios', slug: 'horarios', description: 'Horarios de atención, días festivos', icon: 'Schedule', order: 2 },
@@ -104,17 +109,19 @@ export async function seedKnowledgeBase(db: ReturnType<typeof getDb>) {
     { name: 'Atención humana', slug: 'atencion-humana', description: 'Cómo hablar con un humano, escalar consulta', icon: 'SupportAgent', order: 10 },
   ];
 
-  for (const cat of dentalCategories) {
-    await db.insert(kbCategories).values({
+  await db.insert(kbCategories).values(
+    dentalCategories.map((cat) => ({
       tenantId: targetTenantId,
       knowledgeBaseId: kbId,
       ...cat,
       enabled: true,
-    });
-  }
-  console.log('[module-knowledge-base] Seeded 10 categories');
+    })),
+  ).onConflictDoNothing({
+    target: [kbCategories.tenantId, kbCategories.knowledgeBaseId, kbCategories.slug],
+  });
+  console.log('[module-knowledge-base] Upserted 10 categories');
 
-  // ─── 8. Seed 15 sample FAQ entries ────────────────────────
+  // ─── 7. Sample FAQ entries (check-then-insert by question) ──
   const allCats = await db.select().from(kbCategories).where(eq(kbCategories.knowledgeBaseId, kbId));
   const catBySlug = new Map(allCats.map((c) => [c.slug, c.id]));
 
@@ -136,8 +143,15 @@ export async function seedKnowledgeBase(db: ReturnType<typeof getDb>) {
     { slug: 'atencion-humana', question: '¿Cómo puedo hablar con una persona?', answer: 'Escriba "agente" en este chat, llame al (555) 123-4567, WhatsApp (555) 123-4568, o email contacto@clinica-dental.com.\n\nL-V 8AM-6PM, Sáb 9AM-1PM. Respuesta promedio: 5 min.', keywords: ['humano', 'agente', 'persona', 'hablar', 'contacto'], priority: 10 },
   ];
 
+  const existingEntries = await db
+    .select({ question: kbEntries.question })
+    .from(kbEntries)
+    .where(and(eq(kbEntries.tenantId, targetTenantId), eq(kbEntries.knowledgeBaseId, kbId)));
+  const existingQuestions = new Set(existingEntries.map((e) => e.question));
+
   let entryCount = 0;
   for (const entry of sampleEntries) {
+    if (existingQuestions.has(entry.question)) continue;
     const categoryId = catBySlug.get(entry.slug);
     if (!categoryId) continue;
     await db.insert(kbEntries).values({
@@ -156,6 +170,6 @@ export async function seedKnowledgeBase(db: ReturnType<typeof getDb>) {
     entryCount++;
   }
 
-  console.log(`[module-knowledge-base] Seeded ${entryCount} entries`);
-  console.log('[module-knowledge-base] Seed complete: 1 KB, 10 categories, 15 entries');
+  console.log(`[module-knowledge-base] Inserted ${entryCount} new entries (${sampleEntries.length - entryCount} already present)`);
+  console.log('[module-knowledge-base] Seed complete (idempotent)');
 }

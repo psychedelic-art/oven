@@ -1,59 +1,72 @@
-# OVEN — Todo / Project Plans
+# Module Todo Workflow
 
-This folder is the home of **multi-sprint project plans** that turn large
-initiatives into iterable, async-runnable work packages.
+This folder holds the in-flight graduation queue for OVEN modules. Each
+subfolder represents one module being worked on between its top-level
+spec (`docs/modules/NN-<module>.md`) and its canonical doc folder
+(`docs/modules/<module>/`), plus two cross-cutting programs
+(`oven-bug-sprint`, `psychedelic-claude-code-migration`) that run on
+the same sprint-based rhythm.
 
-Every plan in this folder is structured so that:
+## Per-module folder shape
 
-1. A human (or a Claude Code session) can read the project README and
-   immediately understand scope, owner, and current sprint.
-2. A long-running Claude Code agent can take the project's `PROMPT.md`,
-   run it on a dedicated `feature/<folder_name>` branch, and incrementally
-   execute one sprint at a time without losing context between runs.
-3. A **Business Owner** (BO) document proposes integrations and answers
-   "why" questions when ambiguity arises.
+Every active todo folder contains:
 
----
+- `README.md` — What the module/program is, why it is in the queue,
+  links to spec + code.
+- `STATUS.md` — Current sprint, % complete, blockers, QA outcomes,
+  backup branches, PR / merge commit links.
+- `PROMPT.md` *(optional)* — The long-running agent prompt for this
+  module/program.
+- `business-owner.md` *(optional)* — Business priority and acceptance
+  criteria from the BO.
+- `sprint-NN-<slug>.md` — One per sprint. Always includes
+  `sprint-00-discovery` (or `-triage`), `sprint-01-foundation`, and a
+  terminal `sprint-NN-acceptance`.
+- `QA-REPORT.md` *(when audited)* — Produced when a feature branch is
+  reviewed.
+- `CODE-REVIEW.md` *(when reviewed)* — Produced during senior code
+  review.
 
-## Folder layout
+## Canonical module doc shape
+
+Graduated modules live under `docs/modules/<module>/` with the exact
+11-file shape:
 
 ```
-docs/modules/todo/
-  README.md                                  ← this file
-  <project-slug>/
-    README.md                                ← scope, BO, sprint index, status
-    business-owner.md                        ← BO role + integration proposals
-    sprint-00-<name>.md
-    sprint-01-<name>.md
-    ...
-    sprint-NN-<name>.md
-    PROMPT.md                                ← async runner prompt
-    STATUS.md                                ← updated after every sprint run
+Readme.md, UI.md, api.md, architecture.md, database.md,
+detailed-requirements.md, module-design.md, prompts.md,
+references.md, secure.md, use-case-compliance.md
 ```
 
-## Naming rules
+Reference examples: `docs/modules/agent-core/`, `docs/modules/ai/`,
+`docs/modules/chat/`, `docs/modules/knowledge-base/`,
+`docs/modules/workflow-agents/`, `docs/modules/ui-flows/`.
 
-- Project folder = kebab-case slug (used as branch name suffix).
-- Branch convention: `feature/<project-slug>`.
-- Sprints are 0-padded (`sprint-00`, `sprint-01`, …) and ordered by number.
-- Each sprint file declares: **Goal**, **Scope**, **Out of scope**,
-  **Deliverables**, **Acceptance criteria**, **Touched packages**, **Risks**.
+## Active queue
 
-## How a project gets executed
+See `PROGRESS.md` for the live state table. Snapshot:
 
-1. Open the project folder, read `README.md` and `business-owner.md`.
-2. Open `PROMPT.md` — copy it into a new Claude Code session (or trigger
-   an async run). The prompt is self-contained: it knows the branch, the
-   sprint sequence, the rules under `docs/`, and the stop conditions.
-3. The agent updates `STATUS.md` after every sprint, commits with a
-   `[sprint-NN] <summary>` prefix, and pushes to
-   `feature/<project-slug>`.
-4. The BO reviews the diff and either approves the next sprint or
-   posts integration proposals back into `business-owner.md`.
+| Slug | Type | Branch origin | Status |
+|------|------|---------------|--------|
+| `ui-flows` | Module | `claude/eager-curie-TXjZZ` | Canonical doc set graduated; sprints in review |
+| `config` | Module | `claude/eager-curie-INifN` | Canonical doc set graduated; cascade resolver tests (24) passing |
+| `notifications` | Module | `claude/eager-curie-4GaQC` | Canonical doc set graduated; `@oven/module-notifications` package scaffolded, tests (37) passing — NOT YET registered in `apps/dashboard/src/lib/modules.ts` |
+| `module-knowledge-base` | Module | `claude/eager-curie-LRIhN` | Todo sprints added (sprint-00..05); canonical folder already exists on dev |
+| `oven-bug-sprint` | Program | `claude/eager-curie-0da9Q` | Triage (sprint-00) + 6 sprints imported; ready for execution |
+| `psychedelic-claude-code-migration` | Program | (owned elsewhere) | Planned — NOT touched by this pipeline |
 
-## Active projects
+## Graduation definition of done
 
-| Slug | Title | Branch | Status |
-|------|-------|--------|--------|
-| `psychedelic-claude-code-migration` | Migrate & integrate `psychedelic-art/claude-code` into OVEN | `feature/psychedelic-claude-code-migration` | Planned |
-| `oven-bug-sprint` | Sprint-organized bug / UX / rule-compliance cleanup of the OVEN monorepo | `feature/bugs` | Planned |
+A module leaves `docs/modules/todo/<module>/` only when:
+
+1. All sprint files have their acceptance checklists marked complete.
+2. The canonical doc folder `docs/modules/<module>/` contains all 11
+   files with real content (no placeholders).
+3. `docs/modules/IMPLEMENTATION-STATUS.md` lists the module as live.
+4. Unit tests exist in the module's package(s) at a level comparable
+   to a graduated sibling.
+5. The dashboard UI is reachable and the primary golden path has been
+   manually verified.
+
+The todo folder is then deleted in the same commit that publishes the
+graduation.

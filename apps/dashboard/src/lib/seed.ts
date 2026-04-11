@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import './proxy-bootstrap';
 import './modules'; // Register modules
 import { db } from './db';
 import { registry } from '@oven/module-registry';

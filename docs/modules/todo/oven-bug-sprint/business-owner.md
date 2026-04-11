@@ -92,7 +92,47 @@ question — never into the current sprint's diff.
 > Format: `### Q-NNN — <one-line title>` followed by context, options,
 > and a `**BO answer:**` line that the BO fills in.
 
-_(none yet)_
+### Q-T-01 — Sprint 02 / Sprint 04 missing packages
+
+Triage was run on `claude/eager-curie-0da9Q` at HEAD `468ea41`. On that
+branch, `packages/module-chat/**` and `packages/module-agent-core/**`
+do not exist. All 8 findings in Sprint 02 (F-02-01…04) and the bulk of
+Sprint 04 (F-04-01…05) reference files inside those packages.
+
+**Options**:
+
+1. Run Sprints 02 and 04 only on a branch that already carries those
+   packages — e.g. merge `feature/bugs` on top of
+   `feature/chat-and-agent-core` once it lands.
+2. Wait for the downstream feature branches to merge into `dev`, then
+   rebase `feature/bugs` onto `dev` and re-run triage before Sprint 02.
+3. Split the bug sprint into two tracks: the one running on
+   `claude/eager-curie-0da9Q` skips 02/04, and a follow-up track picks
+   them up once the packages exist.
+
+**BO answer:** _(pending)_
+
+### Q-T-02 — F-05-02 handler count drift
+
+The original audit said "12+ siblings". Triage found exactly 9 handlers
+with the `(table as any)[params.sort]` pattern on this branch. The
+discrepancy is either (a) the audit counted handlers that never existed,
+(b) some handlers were renamed, or (c) the audit was run on a different
+branch. None of that changes the fix — `resolveSortColumn` covers all
+existing handlers — but the BO should acknowledge the count change so
+Sprint 05's acceptance criteria can be updated.
+
+**BO answer:** _(pending)_
+
+### Q-T-03 — Sprint 01 reclassification
+
+Triage moved F-01-05 → F-06-06 and F-01-06 → F-06-07 because the cast
+pattern belongs to the cross-cutting rule sprint. Sprint 01 is now 8
+findings (was 10), and Sprint 06 grows to 7. The sprint files have
+been updated in the same triage commit. BO only needs to confirm the
+move is acceptable.
+
+**BO answer:** _(pending)_
 
 ## Sign-off
 

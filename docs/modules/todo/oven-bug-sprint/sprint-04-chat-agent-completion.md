@@ -1,5 +1,12 @@
 # Sprint 04 — Chat & agent-core completion
 
+> **Triage verdict (sprint-00, HEAD `468ea41`)**: 🛑 **Blocked** —
+> `packages/module-agent-core` and `packages/module-chat` do not exist
+> on `claude/eager-curie-0da9Q`. Findings F-04-01..04 classified
+> `missing-pkg` (agent-core) and F-04-05 classified `missing-pkg`
+> (chat). See Q-T-01 in `business-owner.md`. The finding table below
+> is preserved unchanged for re-run on the correct branch.
+
 ## Goal
 
 Finish the half-built chat → agent wiring and close the permission hole

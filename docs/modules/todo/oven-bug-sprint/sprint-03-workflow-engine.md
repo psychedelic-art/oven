@@ -8,12 +8,17 @@ swallowing malformed payloads.
 
 ## Scope
 
+> **Triage update (sprint-00)**: path shifts recorded below; no
+> findings dropped. F-03-02 lives in `src/engine.ts`, not
+> `src/engine/engine.ts`. F-03-04 line is `57`, not `43`, on this
+> branch.
+
 Findings to resolve (one commit each):
 
-- [ ] **F-03-01** — `packages/module-workflows/src/api/workflows-by-id.handler.ts:47` Use a canonicalized structural compare (sort keys, strip insignificant whitespace) before bumping the version. Extract the helper into `packages/module-workflows/src/engine/canonicalize.ts`.
-- [ ] **F-03-02** — `packages/module-workflows/src/engine/engine.ts:237` Replace `JSON.stringify(machineContext)` with a `Set<stateId>` visited set (see BO IP-7).
-- [ ] **F-03-03** — `packages/module-workflows/src/api/workflows-execute.handler.ts:20-23` Distinguish empty body (`""`) from parse error. Return `400 Invalid JSON` on failure, empty object on empty body only.
-- [ ] **F-03-04** — `packages/module-config/src/api/module-configs.handler.ts:43` Mirror the safe-parse pattern from `workflows-compile.handler.ts` (`.catch(() => ({}))`).
+- [ ] **F-03-01** — `packages/module-workflows/src/api/workflows-by-id.handler.ts:47` Use a canonicalized structural compare (sort keys, strip insignificant whitespace) before bumping the version. Extract the helper into `packages/module-workflows/src/canonicalize.ts`.
+- [ ] **F-03-02** — `packages/module-workflows/src/engine.ts:237` Replace `JSON.stringify(machineContext)` with a `Set<stateId>` visited set (see BO IP-7). *(Path corrected by triage.)*
+- [ ] **F-03-03** — `packages/module-workflows/src/api/workflows-execute.handler.ts:18-23` Distinguish empty body (`""`) from parse error. Return `400 Invalid JSON` on failure, empty object on empty body only.
+- [ ] **F-03-04** — `packages/module-config/src/api/module-configs.handler.ts:57` Wrap `await request.json()` in a try/catch that returns `400 Invalid JSON`. *(Line shifted from 43.)*
 
 ## Out of scope
 

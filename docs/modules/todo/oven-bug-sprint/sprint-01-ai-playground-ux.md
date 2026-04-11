@@ -8,18 +8,23 @@ history-load failures to the user.
 
 ## Scope
 
+> **Triage update (sprint-00)**: F-01-03 struck — already fixed on
+> `HEAD` (`468ea41`); the `catch` block already returns early.
+> F-01-05 and F-01-06 moved to Sprint 06 as F-06-06 / F-06-07 (they
+> belong to the cross-cutting `record: any` sweep).
+
 Findings to resolve (one commit each):
 
-- [ ] **F-01-01** — `apps/dashboard/src/components/ai/AIPlayground.tsx:591` Replace `as any` on image output URL with an `ImageOutput` type guard.
-- [ ] **F-01-02** — `apps/dashboard/src/components/ai/AIPlayground.tsx:775` Type the `generate` response so `tokens.input/output/total` are required.
-- [ ] **F-01-03** — `apps/dashboard/src/components/ai/AIPlayground.tsx:1220-1227` Exit early after `setError('Invalid JSON schema')`; never pass undefined to the downstream call.
-- [ ] **F-01-04** — `apps/dashboard/src/components/ai/AIPlayground.tsx:49-62` Wrap `sessionStorage.setItem` in try/catch with in-memory fallback.
-- [ ] **F-01-05** — `apps/dashboard/src/components/ai/PlaygroundExecutionShow.tsx:24` Type the `record` prop as `PlaygroundExecution`.
-- [ ] **F-01-06** — `apps/dashboard/src/components/ai/PlaygroundExecutionList.tsx:60,71` Same. Only extract a typed `FunctionField` wrapper if a third call site appears (see BO IP-5).
-- [ ] **F-01-07** — `apps/dashboard/src/components/ai/AIPlayground.tsx:812-821` Add `disabled={!model || loading}` to the Generate button.
-- [ ] **F-01-08** — `apps/dashboard/src/components/ai/AIPlayground.tsx:381-383` Set an `historyError` state and render a MUI `Alert` with a retry button.
+- [ ] **F-01-01** — `apps/dashboard/src/components/ai/AIPlayground.tsx:590-593` Replace `as any` on image output URL with an `ImageOutput` type guard.
+- [ ] **F-01-02** — `apps/dashboard/src/components/ai/AIPlayground.tsx:774` Type the `generate` response so `tokens.input/output/total` are required.
+- [ ] ~~**F-01-03**~~ — struck by sprint-00 triage; already fixed.
+- [ ] **F-01-04** — `apps/dashboard/src/components/ai/AIPlayground.tsx:43-64` Wrap `sessionStorage.setItem` in try/catch with in-memory fallback and a user-visible toast when quota is exceeded.
+- [ ] ~~**F-01-05**~~ — moved to **F-06-06** (Sprint 06).
+- [ ] ~~**F-01-06**~~ — moved to **F-06-07** (Sprint 06).
+- [ ] **F-01-07** — `apps/dashboard/src/components/ai/AIPlayground.tsx:812-821` Add `disabled={!model || !prompt || loading}` to the Generate button.
+- [ ] **F-01-08** — `apps/dashboard/src/components/ai/AIPlayground.tsx:380-382` Set an `historyError` state and render a MUI `Alert` with a retry button.
 - [ ] **F-01-09** — Wrap the root `AIPlayground` return in an `ErrorBoundary` with a retry CTA.
-- [ ] **F-01-10** — `apps/dashboard/src/components/ai/AIPlayground.tsx:163-171` Add `AbortController` cleanup to the alias/providers fetch effect.
+- [ ] **F-01-10** — `apps/dashboard/src/components/ai/AIPlayground.tsx:158-179` Add `AbortController` cleanup to the alias/providers fetch effect (currently uses a `cancelled` flag only).
 
 ## Out of scope
 
@@ -30,7 +35,7 @@ Findings to resolve (one commit each):
 
 ## Deliverables
 
-- 10 commits, one per finding, on `feature/bugs`.
+- 7 commits, one per active finding, on `feature/bugs`.
 - A new `ErrorBoundary` component, co-located under
   `apps/dashboard/src/components/ai/` if it does not already exist.
 - A typed `PlaygroundExecution` interface (placed next to its usages
@@ -38,7 +43,8 @@ Findings to resolve (one commit each):
 
 ## Acceptance criteria
 
-- [ ] All 10 findings checked `[x]` in this file.
+- [ ] All 7 active findings checked `[x]` in this file (F-01-03/05/06
+      are struck, not checked).
 - [ ] Zero new `as any` introduced anywhere in the diff.
 - [ ] Zero inline `style={{}}` introduced.
 - [ ] `pnpm -F dashboard typecheck` green.

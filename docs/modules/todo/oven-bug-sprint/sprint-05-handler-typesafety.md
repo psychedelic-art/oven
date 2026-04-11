@@ -7,10 +7,14 @@ add real type guards around SDK responses.
 
 ## Scope
 
+> **Triage update (sprint-00)**: F-05-02's "12+ siblings" is actually
+> **9** on this branch (see `inventory.md` and Q-T-02). The fix is
+> identical — `getOrderColumn` covers all 9 call sites.
+
 Findings to resolve (one commit each):
 
 - [ ] **F-05-01** — `packages/module-ai/src/api/ai-playground-executions.handler.ts:13` Replace `(table as any)[params.sort]` with a whitelist lookup.
-- [ ] **F-05-02** — Extract a shared `getOrderColumn(table, field, allowed)` helper into `packages/module-ai/src/api/_utils/sort.ts` and apply across all 12+ sibling handlers (`ai-providers`, `ai-guardrails`, `ai-budgets`, `ai-aliases`, `ai-usage-logs`, `ai-vector-stores`, …). Per BO IP-4 the helper stays package-private — do NOT export it from `packages/module-ai/src/index.ts`.
+- [ ] **F-05-02** — Extract a shared `getOrderColumn(table, field, allowed)` helper into `packages/module-ai/src/api/_utils/sort.ts` and apply across **all 9** sibling handlers on this branch: `ai-tools.handler.ts`, `ai-guardrails.handler.ts`, `ai-playground-executions.handler.ts`, `ai-usage-logs.handler.ts`, `ai-aliases.handler.ts`, `ai-budgets.handler.ts`, `ai-providers.handler.ts`, `ai-vector-stores.handler.ts`, `ai-budget-alerts.handler.ts`. Per BO IP-4 the helper stays package-private — do NOT export it from `packages/module-ai/src/index.ts`.
 - [ ] **F-05-03** — `packages/module-ai/src/api/ai-providers-test.handler.ts:53,62,71` Type `sdkProvider` via a proper interface and throw a typed `Error` when it is undefined.
 - [ ] **F-05-04** — `packages/module-ai/src/api/ai-transcribe.handler.ts:17` Add a shape guard on the resolved provider before calling its client.
 - [ ] **F-05-05** — `packages/module-ai/src/api/ai-generate-object.handler.ts:26` Run the schema through `zod` before passing it to the AI SDK.
