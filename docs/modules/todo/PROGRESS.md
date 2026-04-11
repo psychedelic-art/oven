@@ -27,6 +27,7 @@ all of `claude/inspiring-clarke-0OpL4` and
 | `module-knowledge-base` | 5 (sprint-00..05) | partial (`Readme.md` only — 10 files missing) | — | Fill missing canonical doc files; execute `sprint-02` embedding pipeline. |
 | `ui-flows` | 5 (sprint-00..03, 99-acceptance) | complete (11/11) | — | Execute `sprint-01-foundation`. |
 | `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | F-05-01 landed (sort allowlist helper in `module-ai`) | Execute `sprint-00` triage outputs; F-05-01 / F-05-02 still open for the remaining handlers. |
+| `files` | 6 (sprint-00..05-acceptance) | complete (11/11) — scaffolded cycle-4 Phase 3 | LIVE package, 0 tests | Execute `sprint-01-security-hardening` (F-05-01 sort allowlist on `GET /api/files`). |
 | `dashboard-ux-system` | 8 (sprint-00..07) | N/A (program) | — | Execute `sprint-01-foundation`. |
 | `psychedelic-claude-code-migration` | 12 (sprint-00..11) | N/A (program) | — | Owned elsewhere — do not touch. |
 
