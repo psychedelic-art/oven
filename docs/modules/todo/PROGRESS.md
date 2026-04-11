@@ -1,100 +1,117 @@
 # Todo Queue Progress
 
-Regenerated after the 2026-04-11 merge pipeline landed five feature
-branches onto the session branch `claude/qa-test-todo-module-K2tpT`.
+Regenerated after the 2026-04-11 merge pipeline landed two additional
+feature branches onto the session branch `claude/inspiring-clarke-GA0Ok`,
+on top of the five branches that were already rolled up by PR #25
+(`bafe894`).
 
-## Merge audit
+## Merge audit — 2026-04-11 (cycle 2)
 
-All branches were diffed against the shared ancestor `d4865d2` (PR #21,
-"Docs/feature module ai conventions") which was superseded by PR #22
-`2a7d63d` already on `dev`. Only the per-branch unique content was
-cherry-picked onto the session branch; the PR #21 payload was
-intentionally dropped so each merge is a clean docs/tests addition
-with no 36k-line infra replay.
+| # | Branch | Module / Program | Backup | Unique content | Tests | Verdict |
+|---|--------|------------------|--------|----------------|-------|---------|
+| 1 | `claude/qa-test-todo-module-K2tpT` | — (build artifact) | `bk/claude-qa-test-todo-module-K2tpT-20260411` | `apps/dashboard/tsconfig.tsbuildinfo` only (1 byte) | — | **BLOCK** — TypeScript incremental build cache, should be gitignored |
+| 2 | `claude/dashboard-ux-system-nESUZ` | `dashboard-ux-system` (program) | `bk/claude-dashboard-ux-system-nESUZ-20260411` | 13 docs files: README, STATUS, PROMPT, CODE-REVIEW, business-owner + 8 sprint files (`sprint-00-discovery` → `sprint-07-acceptance`) | — (docs only) | **MERGED** → `a3bfcdc` |
+| 3 | `claude/inspiring-clarke-0OpL4` | `auth` (scaffold) + `ai` (F-05-01) | `bk/claude-inspiring-clarke-0OpL4-20260411` | `docs/modules/auth/` canonical 11-file shape, `docs/modules/todo/auth/` sprint plan, `packages/module-ai/src/api/_utils/sort.ts` + handler fix + 8 new vitest cases, oven-bug-sprint cross-links, K2tpT block QA report | **8 new** (110 total) pass | **MERGED** → `de5036f` |
 
-| # | Branch | Module / Program | Backup | Unique content | Tests | Typecheck | Verdict |
-|---|--------|------------------|--------|----------------|-------|-----------|---------|
-| 1 | `claude/eager-curie-TXjZZ` | `ui-flows` | `bk/claude-eager-curie-TXjZZ-20260411` | canonical 11-file doc shape + 5 sprint files + STATUS + README | — (docs only) | 460 (baseline) | MERGED to session |
-| 2 | `claude/eager-curie-LRIhN` | `module-knowledge-base` | `bk/claude-eager-curie-LRIhN-20260411` | todo folder with 5 sprints + PROMPT + STATUS | — (docs only) | 460 | MERGED to session |
-| 3 | `claude/eager-curie-INifN` | `config` | `bk/claude-eager-curie-INifN-20260411` | canonical 11-file doc shape + 4 sprint files + CODE-REVIEW + **24 cascade-resolver tests** + vitest wiring | 24/24 pass | 460 | MERGED to session |
-| 4 | `claude/eager-curie-4GaQC` | `notifications` | `bk/claude-eager-curie-4GaQC-20260411` | canonical 11-file doc shape + 5 sprint files + CODE-REVIEW + **new `@oven/module-notifications` package** + **37 tests** | 37/37 pass | 460 | MERGED to session |
-| 5 | `claude/eager-curie-0da9Q` | `oven-bug-sprint` | `bk/claude-eager-curie-0da9Q-20260411` | triage + inventory + 6 sprint files | — (docs only) | 460 | MERGED to session |
-| 6 | `claude/eager-curie-3Wkp7` | (redundant `PROGRESS.md` only) | `bk/claude-eager-curie-3Wkp7-20260411` | — | — | — | DROPPED (superseded) |
+Cycle 2 cumulative test additions: **8 new unit tests** in
+`@oven/module-ai` (allowlist enforcement, prototype-key guard,
+SQL-shaped input, empty string, case sensitivity, column identity).
 
-Cumulative test additions: **61 new unit tests** across
-`@oven/module-config` and `@oven/module-notifications`.
-Cumulative typecheck delta: **0** (stays at the 460-error dev baseline
-which is all pre-existing `packages/workflow-editor` peer-dep noise).
+### Previous merge cycle (PR #25 — already on `dev`)
+
+| # | Branch | Module | Backup |
+|---|--------|--------|--------|
+| 1 | `claude/eager-curie-TXjZZ` | `ui-flows` | `bk/claude-eager-curie-TXjZZ-20260411` |
+| 2 | `claude/eager-curie-LRIhN` | `module-knowledge-base` | `bk/claude-eager-curie-LRIhN-20260411` |
+| 3 | `claude/eager-curie-INifN` | `config` (+ 24 tests) | `bk/claude-eager-curie-INifN-20260411` |
+| 4 | `claude/eager-curie-4GaQC` | `notifications` (+ 37 tests, new `@oven/module-notifications`) | `bk/claude-eager-curie-4GaQC-20260411` |
+| 5 | `claude/eager-curie-0da9Q` | `oven-bug-sprint` | `bk/claude-eager-curie-0da9Q-20260411` |
+| 6 | `claude/eager-curie-3Wkp7` | — (dropped, redundant PROGRESS.md) | `bk/claude-eager-curie-3Wkp7-20260411` |
+
+Lifetime test additions across both cycles: **69 new unit tests**
+(`@oven/module-config` 24, `@oven/module-notifications` 37,
+`@oven/module-ai` 8).
+
+## Tracking-file rule
+
+`PROGRESS.md` and `docs/modules/todo/README.md` are regenerated at the
+**end** of each merge cycle from the freshly merged session branch, not
+on individual feature branches. Any incoming branch edits to these two
+files are dropped during merge per the Phase-1 pipeline rule.
 
 ## DB state
 
-Seed pipeline refactored for idempotency:
+Unchanged since cycle 1 — the cycle-2 merges did not touch seed or
+reset scripts. Seed pipeline is still idempotent:
 
-- `packages/module-subscriptions/src/seed.ts` — now `INSERT … ON
-  CONFLICT DO UPDATE` across categories/services/providers/
-  provider-services/billing-plans/plan-quotas; no more truncate.
-- `packages/module-knowledge-base/src/seed.ts` — reuses existing KB by
-  `(tenantId, slug)`, upserts categories, check-then-inserts entries by
-  question; no more delete.
-- `apps/dashboard/src/lib/reset-indexes.ts` — new script
-  (`pnpm db:reindex`) running `REINDEX TABLE` + `ANALYZE` across every
-  `public` table with an `--vacuum` optional flag; identifier validation
-  enforces `^[a-zA-Z_][a-zA-Z0-9_]*$` on table names.
-- `apps/dashboard/src/lib/proxy-bootstrap.ts` — CLI-only undici
-  `ProxyAgent` bootstrap so Neon HTTP driver works from environments
-  without direct DNS egress (dynamic require, no production impact).
+- `packages/module-subscriptions/src/seed.ts` — `INSERT … ON CONFLICT DO UPDATE`.
+- `packages/module-knowledge-base/src/seed.ts` — reuse-by-slug, upsert categories, check-then-insert entries.
+- `apps/dashboard/src/lib/reset-indexes.ts` — `pnpm db:reindex` script.
+- `apps/dashboard/src/lib/proxy-bootstrap.ts` — CLI-only undici `ProxyAgent` bootstrap.
 
-Verified on Neon (`neondb`, 91 public tables):
-
-- `pnpm db:seed` runs clean twice in a row with "Inserted 0 new entries
-  (15 already present)".
-- `pnpm db:reindex` walks all 91 tables without error.
-
-## Active queue (after merges)
+## Active queue (after cycle 2 merges)
 
 | Module / Program | Sprint files | Canonical doc set | Package / tests | Next action |
 |---|---|---|---|---|
-| `ui-flows` | 5 (sprint-00..03, 99-acceptance) | ✅ complete | — | Execute sprint-01 foundation |
-| `config` | 4 (sprint-00..04) | ✅ complete | 24 tests green | Execute sprint-02 dashboard UI |
-| `notifications` | 5 (sprint-00..05) | ✅ complete | 37 tests green; package NOT registered in dashboard `modules.ts` | Register in dashboard; execute sprint-02 WhatsApp Meta adapter |
+| `ui-flows` | 5 (sprint-00..03, 99-acceptance) | complete | — | Execute sprint-01 foundation |
+| `config` | 4 (sprint-00..04) | complete | 24 tests green | Execute sprint-02 dashboard UI |
+| `notifications` | 5 (sprint-00..05) | complete | 37 tests green; package NOT registered in dashboard `modules.ts` | Register in dashboard; execute sprint-02 WhatsApp Meta adapter |
 | `module-knowledge-base` | 5 (sprint-00..05) | partial (`Readme.md` only — needs 10 more files) | — | Fill missing canonical doc files; execute sprint-02 embedding pipeline |
-| `oven-bug-sprint` | 6 (sprint-00..06) | N/A (program, not module) | — | Execute sprint-00 triage outputs |
+| `oven-bug-sprint` | 6 (sprint-00..06) | N/A (program, not module) | F-05-01 landed this cycle | Execute sprint-06 (remaining handler typesafety items) |
+| `auth` | 5 (sprint-00..04) | complete (**new this cycle**) | — | Execute sprint-01 foundation (`packages/module-auth/` scaffold) |
+| `dashboard-ux-system` | 8 (sprint-00..07) | N/A (program, not module) | — | Execute sprint-01 foundation (`packages/dashboard-ui/` scaffold) |
 | `psychedelic-claude-code-migration` | 12 (sprint-00..11) | N/A | — | Owned elsewhere — do not touch |
 
-## Known issues
+## Known issues (cycle 2)
 
-1. **Pre-existing typecheck baseline of 460 errors on `dev`.** All
-   from `packages/workflow-editor/` which lists `react` as a peer dep
-   but has no dev dep, so TS can't resolve `react` when dashboard
-   compiles through the workspace. Not caused by this merge pipeline.
-   Fix is independent: add `react`/`react-dom` as dev deps to
-   `packages/workflow-editor`.
+1. **Pre-existing typecheck baseline of 460 errors on `dev`.** Carried
+   over from cycle 1. All from `packages/workflow-editor/` — `react`
+   listed as peer dep with no dev dep. Not caused by this merge.
 
-2. **`@oven/module-notifications` is not registered.** The package
-   scaffolded by branch `4GaQC` is not listed in
-   `apps/dashboard/src/lib/modules.ts`. A follow-up commit should
-   register it once sprint-02 (WhatsApp Meta adapter) lands.
+2. **`@oven/module-notifications` is not registered.** Still pending
+   from cycle 1. Follow-up commit should register it once sprint-02
+   (WhatsApp Meta adapter) lands.
 
 3. **`module-knowledge-base` canonical doc shape is incomplete.** Only
    `docs/modules/knowledge-base/Readme.md` exists. The other 10 files
-   in the canonical shape are missing.
+   in the canonical shape are missing. Candidate for Phase-3 research.
 
 4. **`ui-flows` canonical shape uses `sprint-99-acceptance.md`** while
-   every other module uses `sprint-NN-acceptance.md` where `NN` is the
-   next sequential number. Minor naming inconsistency — not blocking.
+   every other module uses `sprint-NN-acceptance.md`. Minor, not blocking.
 
-5. **Drizzle `getDb()` returns `any`.** This forces the new idempotent
-   seeds to cast intermediate row arrays via `as Array<{ id, slug }>`
-   to keep `id` lookups type-safe. The clean fix is to type `getDb`
-   against a composed drizzle schema. Tracked as tech debt.
+5. **Drizzle `getDb()` returns `any`.** Cycle-1 tech debt — still open.
 
-## Backup inventory
+6. **`claude/qa-test-todo-module-K2tpT` branch carries
+   `tsconfig.tsbuildinfo`.** Build artifact should be added to
+   `.gitignore` and stripped from the tree. Tracked under
+   `oven-bug-sprint` as a follow-up.
 
-Every feature branch has a pushed backup under `bk/<original>-20260411`:
+7. **`pnpm-lock.yaml` corruption on upstream session branches.** Cycle
+   2's inspiring-clarke branch arrived with a duplicated
+   `packages/module-files:` mapping and a duplicated `dequal@2.0.3`
+   entry. The corrupt lockfile was dropped from the merge; the
+   session-branch lockfile was untouched and `pnpm install` still works.
+   Root cause investigation tracked under `oven-bug-sprint`.
+
+## Backup inventory (cumulative)
+
+Cycle 1 (all pushed to `origin`):
 
 - `bk/claude-eager-curie-TXjZZ-20260411`
 - `bk/claude-eager-curie-LRIhN-20260411`
 - `bk/claude-eager-curie-INifN-20260411`
 - `bk/claude-eager-curie-4GaQC-20260411`
 - `bk/claude-eager-curie-0da9Q-20260411`
-- `bk/claude-eager-curie-3Wkp7-20260411` (redundant, dropped but preserved)
+- `bk/claude-eager-curie-3Wkp7-20260411`
+
+Cycle 2 (pushed to `origin` on 2026-04-11):
+
+- `bk/claude-qa-test-todo-module-K2tpT-20260411`
+- `bk/claude-dashboard-ux-system-nESUZ-20260411`
+- `bk/claude-inspiring-clarke-0OpL4-20260411`
+
+## QA reports
+
+- `docs/modules/todo/qa-reports/claude-qa-test-todo-module-K2tpT-QA-REPORT.md` — BLOCK
+- `docs/modules/todo/qa-reports/claude-dashboard-ux-system-nESUZ-QA-REPORT.md` — MERGE
+- `docs/modules/todo/qa-reports/claude-inspiring-clarke-0OpL4-QA-REPORT.md` — MERGE

@@ -52,7 +52,9 @@ See `PROGRESS.md` for the live state table. Snapshot:
 | `config` | Module | `claude/eager-curie-INifN` | Canonical doc set graduated; cascade resolver tests (24) passing |
 | `notifications` | Module | `claude/eager-curie-4GaQC` | Canonical doc set graduated; `@oven/module-notifications` package scaffolded, tests (37) passing — NOT YET registered in `apps/dashboard/src/lib/modules.ts` |
 | `module-knowledge-base` | Module | `claude/eager-curie-LRIhN` | Todo sprints added (sprint-00..05); canonical folder already exists on dev |
-| `oven-bug-sprint` | Program | `claude/eager-curie-0da9Q` | Triage (sprint-00) + 6 sprints imported; ready for execution |
+| `oven-bug-sprint` | Program | `claude/eager-curie-0da9Q` | Triage (sprint-00) + 6 sprints imported; F-05-01 helper shipped cycle-2 |
+| `auth` | Module | `claude/inspiring-clarke-0OpL4` | Canonical 11-file doc set graduated cycle-2; 5 sprint files (00-discovery..04-acceptance); package not yet implemented |
+| `dashboard-ux-system` | Program | `claude/dashboard-ux-system-nESUZ` | Discovery + 8 sprints authored cycle-2; program plans `packages/dashboard-ui/`; ready for sprint-01 foundation |
 | `psychedelic-claude-code-migration` | Program | (owned elsewhere) | Planned — NOT touched by this pipeline |
 
 ## Graduation definition of done
