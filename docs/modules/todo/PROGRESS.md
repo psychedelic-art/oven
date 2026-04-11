@@ -60,6 +60,7 @@ reset scripts. Seed pipeline is still idempotent:
 | `oven-bug-sprint` | 6 (sprint-00..06) | N/A (program, not module) | F-05-01 landed this cycle | Execute sprint-06 (remaining handler typesafety items) |
 | `auth` | 5 (sprint-00..04) | complete (**new this cycle**) | — | Execute sprint-01 foundation (`packages/module-auth/` scaffold) |
 | `dashboard-ux-system` | 8 (sprint-00..07) | N/A (program, not module) | — | Execute sprint-01 foundation (`packages/dashboard-ui/` scaffold) |
+| `tenants` | 5 (sprint-00..04) | complete (**new this cycle**) | package implemented on dev; **0 tests** (sprint-02 shipping this cycle) | Execute sprint-02 `computeBusinessHours` unit tests (this cycle); sprint-03 security hardening next |
 | `psychedelic-claude-code-migration` | 12 (sprint-00..11) | N/A | — | Owned elsewhere — do not touch |
 
 ## Known issues (cycle 2)
