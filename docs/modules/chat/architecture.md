@@ -1,6 +1,96 @@
 # Architecture: module-chat + agent-ui
 
 > Design patterns, message flow, and structural decisions for both packages.
+> **Last Updated**: 2026-04-05
+> **Reference analysis**: See `claude-code-feature-inventory.md` and `newsan-patterns.md` for source patterns.
+
+---
+
+## 0. Engine Components Overview (9 files in `src/engine/`)
+
+Inspired by Claude Code's architecture (section-based prompting, multi-source skills, lifecycle hooks, MCP integration) and adapted for a web-first, DB-stored, multi-tenant platform.
+
+| Component | Responsibility | Key Dependencies |
+|-----------|---------------|-----------------|
+| `session-manager.ts` | Create/resume/archive sessions, resolve backing agent (cascade: explicit > tenant config > platform default), validate access | DB (chatSessions), eventBus |
+| `message-processor.ts` | Mediator: validate → record user msg → assemble prompt → invoke agent → stream → record response → update context | session-manager, prompt-builder, streaming-handler, context-manager, hook-manager, agent-core.invokeAgent |
+| `streaming-handler.ts` | Transform agent stream to SSE events (token, toolCallStart, toolCallEnd, done, error) | ai.aiStreamText |
+| `command-registry.ts` | 15 built-in + DB-stored custom commands. Resolve, parse args, execute, return CommandResult | DB (chatCommands) |
+| `skill-loader.ts` | 6 built-in + DB-stored skills. Load, resolve, render prompt templates with `{{var}}` substitution | DB (chatSkills) |
+| `hook-manager.ts` | 4 handler types (condition, api/webhook, event-bus, guardrail) on 8 lifecycle events. Execute in priority order | DB (chatHooks), eventBus, ai.evaluateGuardrails |
+| `mcp-connector.ts` | DB-stored MCP connections. Connect (SSE/HTTP), discover tools, bridge into agent tool catalog | DB (chatMcpConnections), @modelcontextprotocol/sdk |
+| `prompt-builder.ts` | Section-based system prompt assembly with caching. 9 sections: base + agent + tenant + commands + skills + MCP + tools + KB + session | command-registry, skill-loader, mcp-connector, kb.semanticSearch |
+| `context-manager.ts` | Token counting, sliding window, message summarization, entity tracking in session.context JSONB | ai.aiGenerateText, DB (chatMessages) |
+
+### Implementation Status (Sprint 4A.3)
+
+| Component | Status | Tests | Notes |
+|-----------|--------|-------|-------|
+| `session-manager.ts` | DONE | 12 | create, resume, archive, validateAccess, resolveBackingAgent |
+| `message-processor.ts` | DONE | 4 | recordUser/AssistantMessage, processMessage orchestrator (hooks + command routing) |
+| `streaming-handler.ts` | DONE | 5 | formatSSEEvent, createSSEStream, createSSEResponse |
+| `command-registry.ts` | DONE | 9 | resolveCommand, executeCommand (15 builtin handlers), listCommands |
+| `skill-loader.ts` | DONE | 9 | resolveSkill, renderSkillPrompt ({{var}} substitution), executeSkill, listSkills |
+| `hook-manager.ts` | DONE | 8 | loadHooks, executeHooks (chain with short-circuit), 4 handler types |
+| `mcp-connector.ts` | DONE | 10 | getDiscoveredTools, bridgeToolsForAgent, executeMCPTool (HTTP+timeout), getConnectionStatus |
+| `prompt-builder.ts` | DONE | 8 | buildSystemPrompt (7 sections, priority-ordered, token budget), formatMCPToolsForPrompt |
+| `context-manager.ts` | DONE | 9 | getRecentMessages, estimateTokens, truncateToTokenBudget (oldest-first drop), buildContextMessages, dbMessagesToHistory |
+
+### Runtime Execution Flow (implemented in processMessage)
+
+```
+User sends text
+  → loadHooks('pre-message') → executeHooks (chain, can block)
+  → if blocked → return error
+  → isCommand(text)?
+    → YES: parseCommandInput → resolveCommand(slug) → executeCommand → return CommandResult
+    → NO:  recordUserMessage
+           → getRecentMessages(sessionId, windowSize)
+           → dbMessagesToHistory(messages)
+           → truncateToTokenBudget(history, budget)
+           → buildSystemPrompt(agent, tenant, commands, skills, MCP, session)
+           → buildContextMessages(systemPrompt, history, userMessage)
+           → aiGenerateText(messages) [module-ai integration point]
+           → recordAssistantMessage(response)
+  → loadHooks('post-message') → executeHooks
+  → return result
+```
+
+### Full AI Pipeline (Sprint 4A.4 Complete)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                       processMessage()                          │
+│                                                                 │
+│  1. PRE-HOOKS                                                   │
+│     loadHooks('pre-message') → executeHooks (can block)         │
+│                                                                 │
+│  2. COMMAND ROUTING                                             │
+│     isCommand? → resolveCommand → executeCommand → CommandResult│
+│                                                                 │
+│  3. CONTEXT ASSEMBLY                                            │
+│     getRecentMessages() → dbMessagesToHistory()                 │
+│     → truncateToTokenBudget(maxTokens)                          │
+│                                                                 │
+│  4. PROMPT BUILDING                                             │
+│     buildSystemPrompt({                                         │
+│       agent, tenant, commands, skills,                          │
+│       mcpTools, session context                                 │
+│     }) → section assembly → token budget enforcement            │
+│                                                                 │
+│  5. AI INVOCATION                                               │
+│     buildContextMessages(system + history + user)               │
+│     → module-ai.aiGenerateText()                                │
+│     → recordAssistantMessage()                                  │
+│                                                                 │
+│  6. POST-HOOKS                                                  │
+│     loadHooks('post-message') → executeHooks                    │
+│                                                                 │
+│  7. MCP TOOLS (when agent requests)                             │
+│     getDiscoveredTools() → bridgeToolsForAgent()                │
+│     → executeMCPTool() → recordToolAction()                     │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ---
 

@@ -1,0 +1,16 @@
+/*
+ * AI Playground — scoped Tailwind utilities.
+ *
+ * The dashboard globally does NOT load Tailwind because React Admin uses MUI
+ * and Tailwind v4's preflight reset conflicts with MUI component styles.
+ * The playground surface (@oven/agent-ui) is Tailwind-based, so we need
+ * utilities here — but only utilities. Preflight is intentionally NOT imported
+ * so MUI resets are preserved.
+ */
+
+@import "tailwindcss/theme";
+@import "tailwindcss/utilities";
+
+/* Scan agent-ui sources so their Tailwind classes get extracted into the bundle. */
+@source "../../../../../packages/agent-ui/src";
+@source "../../../../../packages/oven-ui/src";

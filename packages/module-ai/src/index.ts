@@ -23,6 +23,12 @@ import * as aiGuardrailsByIdHandler from './api/ai-guardrails-by-id.handler';
 import * as aiPlaygroundExecutionsHandler from './api/ai-playground-executions.handler';
 import * as aiPlaygroundExecutionsByIdHandler from './api/ai-playground-executions-by-id.handler';
 import * as aiProvidersTestHandler from './api/ai-providers-test.handler';
+import * as aiSpeechHandler from './api/ai-speech.handler';
+import * as aiGenerateMultimodalHandler from './api/ai-generate-multimodal.handler';
+import * as aiTranscribeHandler from './api/ai-transcribe.handler';
+import * as aiDescribeVideoHandler from './api/ai-describe-video.handler';
+import * as aiToolsAllHandler from './api/ai-tools-all.handler';
+import * as aiVectorStoreOpsHandler from './api/ai-vector-store-ops.handler';
 
 // ─── Event Schemas ───────────────────────────────────────────
 
@@ -180,6 +186,10 @@ export const aiModule: ModuleDefinition = {
       PUT: aiVectorStoresByIdHandler.PUT,
       DELETE: aiVectorStoresByIdHandler.DELETE,
     },
+    // Vector Store Operations
+    'ai-vector-stores/[id]/query': { POST: aiVectorStoreOpsHandler.queryPOST },
+    'ai-vector-stores/[id]/upsert': { POST: aiVectorStoreOpsHandler.upsertPOST },
+    'ai-vector-stores/[id]/documents': { DELETE: aiVectorStoreOpsHandler.documentsDELETE },
     // CRUD — Budgets
     'ai-budgets': { GET: aiBudgetsHandler.GET, POST: aiBudgetsHandler.POST },
     'ai-budgets/[id]': {
@@ -197,6 +207,11 @@ export const aiModule: ModuleDefinition = {
     'ai/generate-image': { POST: aiGenerateImageHandler.POST },
     'ai/generate-object': { POST: aiGenerateObjectHandler.POST },
     'ai/tools': { GET: aiToolsHandler.GET },
+    'ai/tools/all': { GET: aiToolsAllHandler.GET },
+    'ai/generate-multimodal': { POST: aiGenerateMultimodalHandler.POST },
+    'ai/transcribe': { POST: aiTranscribeHandler.POST },
+    'ai/speech': { POST: aiSpeechHandler.POST },
+    'ai/describe-video': { POST: aiDescribeVideoHandler.POST },
     'ai/usage/summary': { GET: aiUsageSummaryHandler.GET },
     // CRUD — Guardrails
     'ai-guardrails': { GET: aiGuardrailsHandler.GET, POST: aiGuardrailsHandler.POST },

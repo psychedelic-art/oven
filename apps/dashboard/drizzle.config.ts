@@ -20,6 +20,10 @@ export default defineConfig({
     '../../packages/module-ui-flows/src/schema.ts',
     '../../packages/module-ai/src/schema.ts',
     '../../packages/module-files/src/schema.ts',
+    '../../packages/module-knowledge-base/src/schema.ts',
+    '../../packages/module-agent-core/src/schema.ts',
+    '../../packages/module-chat/src/schema.ts',
+    '../../packages/module-workflow-agents/src/schema.ts',
   ],
   out: './drizzle',
   dbCredentials: {

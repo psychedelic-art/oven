@@ -218,6 +218,70 @@ import {
   PlaygroundExecutionShow,
 } from './ai';
 
+// Knowledge Base
+import {
+  KnowledgeBaseList,
+  KnowledgeBaseCreate,
+  KnowledgeBaseEdit,
+  CategoryList as KBCategoryList,
+  CategoryCreate as KBCategoryCreate,
+  CategoryEdit as KBCategoryEdit,
+  EntryList as KBEntryList,
+  EntryCreate as KBEntryCreate,
+  EntryEdit as KBEntryEdit,
+  EntryShow as KBEntryShow,
+  KBPlayground,
+} from './knowledge-base';
+
+// Agents
+import {
+  AgentList, AgentCreate, AgentEdit,
+  NodeList as AgentNodeList,
+  NodeCreate as AgentNodeCreate,
+  NodeEdit as AgentNodeEdit,
+  SessionList as AgentSessionList,
+  ExecutionList as AgentExecutionList,
+} from './agents';
+
+// Workflow Agents
+import { AgentWorkflowList } from './workflow-agents/AgentWorkflowList';
+import { AgentWorkflowCreate } from './workflow-agents/AgentWorkflowCreate';
+import { AgentWorkflowEdit } from './workflow-agents/AgentWorkflowEdit';
+import { AgentWorkflowExecutionList } from './workflow-agents/AgentWorkflowExecutionList';
+import { AgentWorkflowExecutionShow } from './workflow-agents/AgentWorkflowExecutionShow';
+import { AgentWorkflowEditorPage } from './workflow-agents/AgentWorkflowEditorPage';
+import { AIPlaygroundPage } from './workflow-agents/AIPlaygroundPage';
+import { AgentMemoryList } from './workflow-agents/AgentMemoryList';
+import { MCPServerList } from './workflow-agents/MCPServerList';
+import RouteIcon from '@mui/icons-material/Route';
+import MemoryIcon from '@mui/icons-material/Memory';
+import DnsIcon from '@mui/icons-material/Dns';
+import PlaylistPlayIcon from '@mui/icons-material/PlaylistPlay';
+
+// Chat
+import { ChatSessionList } from './chat/ChatSessionList';
+import { ChatSessionEdit } from './chat/ChatSessionEdit';
+import { ChatCommandList } from './chat/ChatCommandList';
+import { ChatCommandCreate } from './chat/ChatCommandCreate';
+import { ChatCommandEdit } from './chat/ChatCommandEdit';
+import { ChatSkillList } from './chat/ChatSkillList';
+import { ChatSkillCreate } from './chat/ChatSkillCreate';
+import { ChatSkillEdit } from './chat/ChatSkillEdit';
+import { ChatHookList } from './chat/ChatHookList';
+import { ChatHookCreate } from './chat/ChatHookCreate';
+import { ChatMCPConnectionList } from './chat/ChatMCPConnectionList';
+import { ChatMCPConnectionCreate } from './chat/ChatMCPConnectionCreate';
+import { ChatFeedbackList } from './chat/ChatFeedbackList';
+
+import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
+import AccountTreeOutlined from '@mui/icons-material/AccountTreeOutlined';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import TerminalIcon from '@mui/icons-material/Terminal';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import WebhookIcon from '@mui/icons-material/Webhook';
+import CableIcon from '@mui/icons-material/Cable';
+import ThumbsUpDownIcon from '@mui/icons-material/ThumbsUpDown';
+
 // Icons
 import GridViewIcon from '@mui/icons-material/GridView';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -261,6 +325,8 @@ import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import WarningIcon from '@mui/icons-material/Warning';
 import GppGoodIcon from '@mui/icons-material/GppGood';
 import HistoryIcon from '@mui/icons-material/History';
+import QuestionAnswerIcon from '@mui/icons-material/QuestionAnswer';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 
 const CustomLayout = (props: any) => <Layout {...props} menu={CustomMenu} />;
 
@@ -649,6 +715,125 @@ export default function AdminApp() {
         show={PlaygroundExecutionShow}
       />
 
+      {/* Knowledge Base Module Resources */}
+      <Resource
+        name="kb-knowledge-bases"
+        options={{ label: 'Knowledge Bases' }}
+        icon={LibraryBooksIcon}
+        list={KnowledgeBaseList}
+        edit={KnowledgeBaseEdit}
+        create={KnowledgeBaseCreate}
+      />
+      <Resource
+        name="kb-categories"
+        options={{ label: 'KB Categories' }}
+        icon={LibraryBooksIcon}
+        list={KBCategoryList}
+        edit={KBCategoryEdit}
+        create={KBCategoryCreate}
+      />
+      <Resource
+        name="kb-entries"
+        options={{ label: 'KB Entries' }}
+        icon={QuestionAnswerIcon}
+        list={KBEntryList}
+        edit={KBEntryEdit}
+        create={KBEntryCreate}
+        show={KBEntryShow}
+      />
+
+      {/* Agent Core Module Resources */}
+      <Resource
+        name="agents"
+        options={{ label: 'Agents' }}
+        icon={SmartToyOutlinedIcon}
+        list={AgentList}
+        create={AgentCreate}
+        edit={AgentEdit}
+      />
+      <Resource
+        name="agent-nodes"
+        options={{ label: 'Node Definitions' }}
+        icon={AccountTreeOutlined}
+        list={AgentNodeList}
+        create={AgentNodeCreate}
+        edit={AgentNodeEdit}
+      />
+      <Resource
+        name="agent-sessions"
+        options={{ label: 'Agent Sessions' }}
+        list={AgentSessionList}
+      />
+      <Resource
+        name="agent-executions"
+        options={{ label: 'Agent Executions' }}
+        list={AgentExecutionList}
+      />
+
+      {/* Chat Module Resources */}
+      <Resource
+        name="chat-sessions"
+        options={{ label: 'Chat Sessions' }}
+        icon={ChatBubbleOutlineIcon}
+        list={ChatSessionList}
+        edit={ChatSessionEdit}
+      />
+      <Resource
+        name="chat-commands"
+        options={{ label: 'Commands' }}
+        icon={TerminalIcon}
+        list={ChatCommandList}
+        create={ChatCommandCreate}
+        edit={ChatCommandEdit}
+      />
+      <Resource
+        name="chat-skills"
+        options={{ label: 'Skills' }}
+        icon={AutoFixHighIcon}
+        list={ChatSkillList}
+        create={ChatSkillCreate}
+        edit={ChatSkillEdit}
+      />
+      <Resource
+        name="chat-hooks"
+        options={{ label: 'Hooks' }}
+        icon={WebhookIcon}
+        list={ChatHookList}
+        create={ChatHookCreate}
+      />
+      <Resource
+        name="chat-mcp-connections"
+        options={{ label: 'MCP Connections' }}
+        icon={CableIcon}
+        list={ChatMCPConnectionList}
+        create={ChatMCPConnectionCreate}
+      />
+      <Resource
+        name="chat-feedback"
+        options={{ label: 'Feedback' }}
+        icon={ThumbsUpDownIcon}
+        list={ChatFeedbackList}
+      />
+
+      {/* Workflow Agents Module Resources */}
+      <Resource
+        name="agent-workflows"
+        options={{ label: 'Agent Workflows' }}
+        icon={RouteIcon}
+        list={AgentWorkflowList}
+        create={AgentWorkflowCreate}
+        edit={AgentWorkflowEdit}
+      />
+      <Resource
+        name="agent-workflow-executions"
+        options={{ label: 'Workflow Runs' }}
+        icon={PlaylistPlayIcon}
+        list={AgentWorkflowExecutionList}
+        show={AgentWorkflowExecutionShow}
+      />
+      <Resource name="agent-memory" options={{ label: 'Agent Memory' }} icon={MemoryIcon} list={AgentMemoryList} />
+      <Resource name="mcp-server-definitions" options={{ label: 'MCP Servers' }} icon={DnsIcon} list={MCPServerList} />
+
       {/* Files Module Resources */}
       <Resource
         name="files"
@@ -672,7 +857,10 @@ export default function AdminApp() {
         <Route path="/ai/usage-dashboard" element={<AIUsageDashboard />} />
         <Route path="/ai/tool-catalog" element={<AIToolCatalog />} />
         <Route path="/ai/extensions" element={<AIExtensions />} />
+        <Route path="/knowledge-base/playground" element={<KBPlayground />} />
         <Route path="/file-manager" element={<FileManager />} />
+        <Route path="/agent-workflows/:id/editor" element={<AgentWorkflowEditorPage />} />
+        <Route path="/ai-playground" element={<AIPlaygroundPage />} />
       </CustomRoutes>
     </Admin>
   );

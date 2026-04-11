@@ -35,7 +35,8 @@ import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import SaveIcon from '@mui/icons-material/Save';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { FileUploader, FilePickerCombobox, useFileUpload } from '../files';
+import { FileUploader, FilePickerCombobox, FilePicker, useFileUpload } from '../files';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import type { SyntheticEvent, Dispatch, SetStateAction } from 'react';
 
 // ─── Session State Persistence ───────────────────────────────
@@ -1376,6 +1377,7 @@ function VisionTab({
   const [model, setModel] = useState('');
   const [response, setResponse] = useState('');
   const [error, setError] = useState('');
+  const [filePickerOpen, setFilePickerOpen] = useState(false);
   const [usage, setUsage] = useState<UsageInfo | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -1447,15 +1449,25 @@ function VisionTab({
           <AliasSelect aliases={textAliases} value={model} onChange={setModel} label="Model (Vision)" loading={aliasLoading} />
           <DynamicParameterForm schema={schema} values={params} onChange={setParam} />
         </Box>
-        <FilePickerCombobox
-          value={imageUrl}
-          onChange={setImageUrl}
-          folder="ai-images"
-          accept="image/*"
-          label="Image"
-          placeholder="Search images, paste URL, or drop below..."
-          helperText="Select from file library, paste a URL, or drag and drop an image below"
-        />
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+          <FilePickerCombobox
+            value={imageUrl}
+            onChange={setImageUrl}
+            folder="ai-images"
+            accept="image/*"
+            label="Image"
+            placeholder="Search images, paste URL, or browse..."
+            helperText="Select from file library, paste a URL, or drag and drop an image below"
+          />
+          <Button
+            variant="outlined"
+            startIcon={<FolderOpenIcon />}
+            onClick={() => setFilePickerOpen(true)}
+            sx={{ mt: 0.5, textTransform: 'none', whiteSpace: 'nowrap' }}
+          >
+            Browse
+          </Button>
+        </Box>
         <FileUploader
           compact
           folder="ai-images"
@@ -1463,6 +1475,17 @@ function VisionTab({
           accept={{ 'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp'] }}
           maxFiles={1}
           onUploadComplete={(file) => setImageUrl(file.publicUrl)}
+        />
+        <FilePicker
+          open={filePickerOpen}
+          onClose={() => setFilePickerOpen(false)}
+          onSelect={(file) => {
+            setImageUrl(file.publicUrl);
+            setFilePickerOpen(false);
+          }}
+          folder="ai-images"
+          accept="image/*"
+          title="Select Image from Library"
         />
         {imageUrl && (
           <Box component="img" src={imageUrl} alt="Preview" sx={{ maxHeight: 200, maxWidth: '100%', borderRadius: 1, objectFit: 'contain' }} />
@@ -1522,10 +1545,12 @@ function SpeechToTextPanel({
   const [audioUrl, setAudioUrl] = useState('');
   const [model, setModel] = useState('');
   const [language, setLanguage] = useState('');
+  const [filePickerOpen, setFilePickerOpen] = useState(false);
 
   const [result, setResult] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [audioPickerOpen, setAudioPickerOpen] = useState(false);
   const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage } = useHistory('stt');
 
   useEffect(() => {
@@ -1581,15 +1606,25 @@ function SpeechToTextPanel({
         {sttAliases.length > 0 && (
           <AliasSelect aliases={sttAliases} value={model} onChange={setModel} label="STT Model" loading={aliasLoading} />
         )}
-        <FilePickerCombobox
-          value={audioUrl}
-          onChange={setAudioUrl}
-          folder="ai-audio"
-          accept="audio/*"
-          label="Audio File"
-          placeholder="Search audio files, paste URL, or drop below..."
-          helperText="Select from file library, paste a URL, or drag and drop audio below"
-        />
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+          <FilePickerCombobox
+            value={audioUrl}
+            onChange={setAudioUrl}
+            folder="ai-audio"
+            accept="audio/*"
+            label="Audio File"
+            placeholder="Search audio files, paste URL, or browse..."
+            helperText="Select from file library, paste a URL, or drag and drop audio below"
+          />
+          <Button
+            variant="outlined"
+            startIcon={<FolderOpenIcon />}
+            onClick={() => setAudioPickerOpen(true)}
+            sx={{ mt: 0.5, textTransform: 'none', whiteSpace: 'nowrap' }}
+          >
+            Browse
+          </Button>
+        </Box>
         <FileUploader
           compact
           folder="ai-audio"
@@ -1597,6 +1632,17 @@ function SpeechToTextPanel({
           accept={{ 'audio/*': ['.mp3', '.wav', '.m4a', '.flac', '.webm', '.ogg'] }}
           maxFiles={1}
           onUploadComplete={(file) => setAudioUrl(file.publicUrl)}
+        />
+        <FilePicker
+          open={audioPickerOpen}
+          onClose={() => setAudioPickerOpen(false)}
+          onSelect={(file) => {
+            setAudioUrl(file.publicUrl);
+            setAudioPickerOpen(false);
+          }}
+          folder="ai-audio"
+          accept="audio/*"
+          title="Select Audio from Library"
         />
         <TextField label="Language (optional)" value={language} onChange={(e) => setLanguage(e.target.value)} size="small" helperText="ISO-639-1 code (e.g., en, es). Auto-detected if empty." sx={{ maxWidth: 200 }} />
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>

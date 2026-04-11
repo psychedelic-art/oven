@@ -1,7 +1,18 @@
 # OVEN — Future Modules Architecture
 
-> **Last Updated**: 2026-03-08
-> **Status**: Specification (pre-implementation, except Forms which is In Progress)
+> **Last Updated**: 2026-04-05
+> **Status**: Mixed — Phases 1-3 Implemented, Phases 4-5 Planned
+>
+> | Module | Phase | Status | Tests | Tables | Routes |
+> |--------|-------|--------|-------|--------|--------|
+> | **module-ai** | 1 | DONE | 102 | 9 | 32+ |
+> | **module-knowledge-base** | 2 | DONE | 19 | 4 | 15+ |
+> | **module-agent-core** | 3 | BACKEND DONE | 15 | 6 | 22 |
+> | **module-chat** | 4A | IN PROGRESS | — | 8 (planned) | ~30 (planned) |
+> | **agent-ui** | 4B | NEXT | — | 0 (editor pkg) | 0 |
+> | **module-workflow-agents** | 5 | FUTURE | — | 6 (planned) | 17 (planned) |
+>
+> See [IMPLEMENTATION-STATUS.md](./IMPLEMENTATION-STATUS.md) for detailed per-module tracking.
 > **Base Architecture**: Next.js 15 + React Admin 5 + Drizzle ORM + Neon Postgres + Turbo + pnpm
 > **Module Rules**: All modules must comply with [module-rules.md](../module-rules.md) — 12 hard requirements for registration, discoverability, pluggability, loose coupling, multi-tenancy, RLS, UX, and more.
 

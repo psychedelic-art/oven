@@ -290,18 +290,48 @@ The two systems work together:
 
 ---
 
+## Implementation Cross-Check (Phase 1 Audit)
+
+> Cross-checked against actual implementation on 2026-04-03.
+> Module AI has 9 tables (not 8 — includes `aiPlaygroundExecutions`), 15 events (not 14 — includes `ai.playground.executed`).
+
+### Gaps Found
+
+| Use Case | Gap | Severity | Resolution |
+|----------|-----|----------|------------|
+| **UC-7** | `seedAI()` does NOT seed subscription service catalog entries. Only seeds permissions, tools, providers, aliases. The 6 services listed in the doc are not auto-seeded. | **HIGH** | Add service catalog seeding in `seed.ts` or document that services must be manually created |
+| **UC-AI-2** | Vector store operation endpoints (query/upsert/delete documents) are NOT registered in `apiHandlers`. The adapter interface has the methods but no API handlers expose them. Steps 6-7 of the use case cannot be completed via API. | **HIGH** | Create `POST /api/ai/vector-stores/[id]/query`, `POST /api/ai/vector-stores/[id]/upsert`, `DELETE /api/ai/vector-stores/[id]/documents` handlers |
+| **UC-AI-5** | `POST /api/ai-tools` for dynamic tool creation is NOT registered — only `GET /api/ai/tools` is exposed. Custom tools can only be added via seed, not via API. | **MEDIUM** | Register POST handler or document seed-only approach |
+| **UC-8 L2** | `providerRegistry.resolve()` does NOT filter by tenantId. Tenant-scoped providers with unique slugs work, but the doc implies tenant priority resolution which is not implemented. | **MEDIUM** | Add tenantId parameter to resolve() and prioritize tenant-scoped providers |
+| **UC-AI-2** | `POST /api/ai/extensions/install` (pgvector extension) is not implemented — no handler exists. | **LOW** | pgvector is typically installed at DB setup; remove from use case steps or add handler |
+| **UC-AI-4** | Usage Dashboard UI components not implemented (React Admin resources exist but no custom dashboard views). | **LOW** | Phase 2 UI work |
+| **UC-AI-6** | FTUE wizard not implemented. | **LOW** | Phase 2 UI work |
+
+### What IS Working (Verified)
+
+- UC-4: Provider CRUD + encrypted storage + test connection endpoint
+- UC-8 L1: Config cascade works for all 8 configSchema keys
+- UC-8 L3: Alias CRUD with tenant-scoped aliases works
+- UC-10: Full provider CRUD + connection test
+- UC-12: Budget CRUD + alert threshold detection in usage-tracker
+- UC-AI-1: All 4 steps functional (create provider, test, set default, create alias)
+- UC-AI-3: Budget CRUD + scope-based limits work
+- UC-AI-5: GET /api/ai/tools returns all 16+ built-in tools from seed
+
+---
+
 ## Compliance Summary
 
-| Platform Use Case | Module AI Support | Requirements |
-|------------------|-------------------|-------------|
-| UC-4 (Provider Credentials) | Fully supported | FR-AI-001 |
-| UC-7 (New Service) | Auto-seeded | FR-AI-012, FR-AI-014 |
-| UC-8 (Config Override) | Multi-level overrides | FR-AI-001, FR-AI-002 |
-| UC-10 (New Provider) | Full CRUD + test | FR-AI-001 |
-| UC-12 (VIP Quotas) | Subscription + budget | FR-AI-010, FR-AI-014 |
-| UC-AI-1 (Configure Provider) | New | FR-AI-001 |
-| UC-AI-2 (Test Embeddings) | New | FR-AI-004, FR-AI-007, FR-AI-008 |
-| UC-AI-3 (Set Budgets) | New | FR-AI-010 |
-| UC-AI-4 (Monitor Usage) | New | FR-AI-009 |
-| UC-AI-5 (Custom Tool) | New | FR-AI-012 |
-| UC-AI-6 (FTUE) | New | FR-AI-001, FR-AI-002 |
+| Platform Use Case | Module AI Support | Implementation Status | Requirements |
+|------------------|-------------------|----------------------|-------------|
+| UC-4 (Provider Credentials) | Fully supported | **Verified** | FR-AI-001 |
+| UC-7 (New Service) | Documented as auto-seeded | **GAP: not seeded** | FR-AI-012, FR-AI-014 |
+| UC-8 (Config Override) | Multi-level overrides | **Partial: L1+L3 work, L2 gap** | FR-AI-001, FR-AI-002 |
+| UC-10 (New Provider) | Full CRUD + test | **Verified** | FR-AI-001 |
+| UC-12 (VIP Quotas) | Subscription + budget | **Verified** | FR-AI-010, FR-AI-014 |
+| UC-AI-1 (Configure Provider) | New | **Verified** | FR-AI-001 |
+| UC-AI-2 (Test Embeddings) | New | **GAP: no vector ops API** | FR-AI-004, FR-AI-007, FR-AI-008 |
+| UC-AI-3 (Set Budgets) | New | **Verified** | FR-AI-010 |
+| UC-AI-4 (Monitor Usage) | New | **GAP: no dashboard UI** | FR-AI-009 |
+| UC-AI-5 (Custom Tool) | New | **GAP: no POST /api/ai-tools** | FR-AI-012 |
+| UC-AI-6 (FTUE) | New | **GAP: no wizard UI** | FR-AI-001, FR-AI-002 |
