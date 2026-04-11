@@ -62,14 +62,34 @@ land value in one commit.
 
 ## Deliverables
 
-- [ ] `vitest.config.ts` in the package
-- [ ] `test` + `test:watch` scripts in `package.json`
-- [ ] `__tests__/compute-business-hours.test.ts` with all R9.1
-  cases green
-- [ ] `computeBusinessHours` takes an optional `now` parameter with
-  a default of `new Date()` (additive — no caller change required)
-- [ ] `pnpm --filter @oven/module-tenants test` exits 0 with **all
-  cases passing**
+- [x] `vitest.config.ts` in the package
+- [x] `test` + `test:watch` scripts in `package.json`
+- [x] `__tests__/compute-business-hours.test.ts` with all R9.1
+  cases green — **28 tests passing**
+- [x] `computeBusinessHours` takes an optional `now` parameter with
+  a default of `new Date()` (additive — `tenants-public.handler.ts`
+  L88 and `tenants-business-hours.handler.ts` L83 unchanged)
+- [x] `pnpm --filter @oven/module-tenants test` exits 0 with **all
+  28 cases passing** (cycle-2, 2026-04-11)
+
+## Additional helper refinements (shipped with the tests)
+
+While writing the tests, two small correctness improvements were
+lifted into the helper:
+
+1. **Timezone validation at the `Intl` boundary.** `new Intl.DateTimeFormat(...)`
+   throws `RangeError` on an unknown IANA zone. The helper now catches
+   that specific throw and returns `false`, matching the rest of its
+   sentinel posture. This is the one try/catch in the file — justified
+   under the root `CLAUDE.md` "error handling at boundaries" rule
+   because `Intl` is an external API surface.
+
+2. **`hour === '24'` normalisation.** Some older runtimes emit "24"
+   at midnight under `hour12: false`. The helper now normalises
+   `"24"` to `"00"` so the lexicographic `HH:MM` compare stays
+   correct on every runtime the workspace targets.
+
+Both changes are additive and do not alter existing caller behaviour.
 
 ## Acceptance criteria
 

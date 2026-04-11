@@ -4,8 +4,8 @@
 |---|---|
 | Module | `tenants` |
 | Package | `packages/module-tenants/` |
-| Current sprint | `sprint-02-unit-tests.md` |
-| Sprint state | **in progress** — `computeBusinessHours` coverage shipping this cycle |
+| Current sprint | `sprint-03-security-hardening.md` (next); sprint-02 complete |
+| Sprint state | **sprint-02 complete** — 28 unit tests green; sprint-03 security hardening queued |
 | Active branch | `claude/inspiring-clarke-GA0Ok` (cycle-2 session) |
 | Backup branch | none — no prior feature work |
 | Open PR | none (do not create without explicit user approval) |
@@ -44,15 +44,17 @@
 
 ## Test coverage
 
-- **Unit tests**: 0 (cycle-2 adds the first batch — see sprint-02).
+- **Unit tests**: **28** (cycle-2 shipped `compute-business-hours.test.ts`
+  covering every R9.1 case).
 - **Integration tests**: 0 (sprint-03).
-- **Seed tests**: 0 (sprint-02 wires the idempotency assertion).
+- **Seed tests**: 0 (sprint-03 — deferred from sprint-02 to keep the
+  cycle-2 commit focused on the pure helper).
 
 ## Known gaps
 
 | # | Gap | Severity | Sprint |
 |---|---|---|---|
-| 1 | `computeBusinessHours` has no unit tests | HIGH | sprint-02 (this cycle) |
+| 1 | ~~`computeBusinessHours` has no unit tests~~ — **CLOSED cycle-2, 28 tests** | — | — |
 | 2 | `id` leaked in public endpoint response (R3.5) | HIGH | sprint-03 |
 | 3 | Last-owner guard missing on member DELETE / PUT | HIGH | sprint-03 |
 | 4 | `MAX_MEMBERS_PER_TENANT` not enforced on POST members | MEDIUM | sprint-03 |
@@ -68,7 +70,7 @@
 Mirrors the gate in
 [`sprint-04-acceptance.md`](./sprint-04-acceptance.md). Updated each sprint.
 
-- [ ] `computeBusinessHours` unit-tested per R9.1 (in progress this cycle)
+- [x] `computeBusinessHours` unit-tested per R9.1 — 28 tests green (cycle-2)
 - [ ] `seedTenants` idempotency verified by a test
 - [ ] Public endpoint no longer leaks `id`
 - [ ] Last-owner guard enforced on member DELETE and PUT (role change)

@@ -13,9 +13,14 @@ on top of the five branches that were already rolled up by PR #25
 | 2 | `claude/dashboard-ux-system-nESUZ` | `dashboard-ux-system` (program) | `bk/claude-dashboard-ux-system-nESUZ-20260411` | 13 docs files: README, STATUS, PROMPT, CODE-REVIEW, business-owner + 8 sprint files (`sprint-00-discovery` → `sprint-07-acceptance`) | — (docs only) | **MERGED** → `a3bfcdc` |
 | 3 | `claude/inspiring-clarke-0OpL4` | `auth` (scaffold) + `ai` (F-05-01) | `bk/claude-inspiring-clarke-0OpL4-20260411` | `docs/modules/auth/` canonical 11-file shape, `docs/modules/todo/auth/` sprint plan, `packages/module-ai/src/api/_utils/sort.ts` + handler fix + 8 new vitest cases, oven-bug-sprint cross-links, K2tpT block QA report | **8 new** (110 total) pass | **MERGED** → `de5036f` |
 
-Cycle 2 cumulative test additions: **8 new unit tests** in
-`@oven/module-ai` (allowlist enforcement, prototype-key guard,
-SQL-shaped input, empty string, case sensitivity, column identity).
+Cycle 2 cumulative test additions: **36 new unit tests** total —
+**8 in `@oven/module-ai`** (allowlist enforcement, prototype-key
+guard, SQL-shaped input, empty string, case sensitivity, column
+identity) + **28 in `@oven/module-tenants`**
+(`computeBusinessHours` R9.1 coverage: open-window per weekday,
+boundary conditions, closed states, null/undefined inputs,
+invalid-timezone handling, timezone awareness, midnight edges,
+default-parameter smoke test).
 
 ### Previous merge cycle (PR #25 — already on `dev`)
 
@@ -28,9 +33,9 @@ SQL-shaped input, empty string, case sensitivity, column identity).
 | 5 | `claude/eager-curie-0da9Q` | `oven-bug-sprint` | `bk/claude-eager-curie-0da9Q-20260411` |
 | 6 | `claude/eager-curie-3Wkp7` | — (dropped, redundant PROGRESS.md) | `bk/claude-eager-curie-3Wkp7-20260411` |
 
-Lifetime test additions across both cycles: **69 new unit tests**
+Lifetime test additions across both cycles: **97 new unit tests**
 (`@oven/module-config` 24, `@oven/module-notifications` 37,
-`@oven/module-ai` 8).
+`@oven/module-ai` 8, `@oven/module-tenants` 28).
 
 ## Tracking-file rule
 
@@ -60,7 +65,7 @@ reset scripts. Seed pipeline is still idempotent:
 | `oven-bug-sprint` | 6 (sprint-00..06) | N/A (program, not module) | F-05-01 landed this cycle | Execute sprint-06 (remaining handler typesafety items) |
 | `auth` | 5 (sprint-00..04) | complete (**new this cycle**) | — | Execute sprint-01 foundation (`packages/module-auth/` scaffold) |
 | `dashboard-ux-system` | 8 (sprint-00..07) | N/A (program, not module) | — | Execute sprint-01 foundation (`packages/dashboard-ui/` scaffold) |
-| `tenants` | 5 (sprint-00..04) | complete (**new this cycle**) | package implemented on dev; **0 tests** (sprint-02 shipping this cycle) | Execute sprint-02 `computeBusinessHours` unit tests (this cycle); sprint-03 security hardening next |
+| `tenants` | 5 (sprint-00..04) | complete (**new this cycle**) | **28 tests green** — `computeBusinessHours` R9.1 coverage shipped cycle-2 | Execute sprint-03 security hardening (remove `id` leak, last-owner guard, MAX_MEMBERS enforcement, sort allowlist, seed idempotency test) |
 | `psychedelic-claude-code-migration` | 12 (sprint-00..11) | N/A | — | Owned elsewhere — do not touch |
 
 ## Known issues (cycle 2)
