@@ -45,7 +45,8 @@ Neither is introduced by this branch.
 | `notifications` | 5 (sprint-00..05) | complete (11/11) | 37 tests green; package NOT registered in `apps/dashboard/src/lib/modules.ts` | Register module in dashboard, then execute `sprint-02` WhatsApp Meta adapter. |
 | `module-knowledge-base` | 5 (sprint-00..05) | **partial** (`Readme.md` only — 10 files missing) | — | Fill missing canonical doc files; then execute `sprint-02` embedding pipeline. |
 | `ui-flows` | 5 (sprint-00..03, 99-acceptance) | complete (11/11) | — | Execute `sprint-01-foundation`. |
-| `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | F-05-01 landed in 2 packages | **F-05-02 remains open** — 8 remaining AI list handlers still use `(table as any)[params.sort]`. See Phase 4 in this cycle. |
+| `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | F-05-01 + F-05-02 done in `module-ai` (9/9 handlers) and `module-files` (1/1 handler) | **F-05-02 done cycle-5 Phase 4.** Next open: F-05-03 (`ai-providers-test.handler.ts` sdkProvider typing), F-05-04 (`ai-transcribe.handler.ts` shape guard), F-05-05 (`ai-generate-object.handler.ts` zod schema). |
+| `agent-ui` | 6 (sprint-00..05-acceptance) | complete (11/11) — scaffolded cycle-5 Phase 3 | LIVE package, existing tests (vitest + @testing-library/react) | Execute `sprint-00-discovery` drift audit, then `sprint-01-foundation` (type tighten + MUI-ban lint). |
 | `dashboard-ux-system` | 8 (sprint-00..07) | N/A (program) | — | Execute `sprint-01-foundation`. |
 | `psychedelic-claude-code-migration` | 12 (sprint-00..11) | N/A (program) | — | Owned elsewhere — do not touch. |
 
@@ -67,12 +68,14 @@ Neither is introduced by this branch.
 4. **`ui-flows` canonical shape uses `sprint-99-acceptance.md`** while
    every other module uses `sprint-NN-acceptance.md`. Minor naming
    inconsistency.
-5. **`oven-bug-sprint/sprint-05-handler-typesafety` F-05-02 is open.**
-   The `getOrderColumn` helper is now in `module-ai` and `module-files`,
-   but the remaining 8 AI list handlers (`ai-tools`, `ai-guardrails`,
+5. **`oven-bug-sprint/sprint-05-handler-typesafety` F-05-02 DONE cycle-5.**
+   The `getOrderColumn` helper is rolled to all 9 `module-ai` list
+   handlers (`ai-playground-executions`, `ai-tools`, `ai-guardrails`,
    `ai-usage-logs`, `ai-aliases`, `ai-budgets`, `ai-providers`,
-   `ai-vector-stores`, `ai-budget-alerts`) still carry the unsafe
-   idiom. Scheduled for Phase 4 in this cycle.
+   `ai-vector-stores`, `ai-budget-alerts`). New `ai-sort-guard-rollout.test.ts`
+   adds 40 tests (5 scenarios × 8 handlers). `module-ai` suite: 150/150
+   green (was 110). Remaining open items in sprint-05: F-05-03, F-05-04,
+   F-05-05.
 6. **Drizzle `getDb()` returns `any`.** Forces casts in seed paths.
    Still unaddressed, tracked as tech debt.
 7. **Rebase + commit-signing incompatibility.** The code-sign server
