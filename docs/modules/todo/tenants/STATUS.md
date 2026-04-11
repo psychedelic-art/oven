@@ -4,10 +4,10 @@
 |---|---|
 | Module | `tenants` |
 | Package | `packages/module-tenants/` |
-| Current sprint | `sprint-03-security-hardening.md` (next); sprint-02 complete |
-| Sprint state | **sprint-02 complete** — 28 unit tests green; sprint-03 security hardening queued |
-| Active branch | `claude/inspiring-clarke-GA0Ok` (cycle-2 session) |
-| Backup branch | none — no prior feature work |
+| Current sprint | `sprint-04-acceptance.md` (next); sprint-03 complete on session |
+| Sprint state | **sprint-03 complete on session branch (cycle-8)** — DRIFT-2/3/4/5 closed; 78 unit tests green (28 compute-business-hours + 23 sort-guard + 15 member-guards + 12 public-response) |
+| Active branch | `claude/inspiring-clarke-JGiXk` (cycle-8 session) |
+| Backup branch | `bk/claude-inspiring-clarke-JGiXk-20260411` (will be created at next Phase 2 gate) |
 | Open PR | none (do not create without explicit user approval) |
 | Test framework | `vitest` 3.2.4 (matches module-config / module-notifications / module-ai) |
 | Canonical doc set | **complete (11/11)** — scaffolded cycle-2 |
@@ -16,14 +16,28 @@
 
 ## Last updates
 
+- 2026-04-11 (cycle-8) — **sprint-03 security hardening** shipped on
+  session branch `claude/inspiring-clarke-JGiXk`. DRIFT-2 (public
+  endpoint no-id guard via pure `assembleTenantPublicResponse`),
+  DRIFT-3 (`checkLastOwnerRemoval` + handler wiring on
+  `tenant-members-by-id.handler.ts` DELETE), DRIFT-4
+  (`checkMemberLimit` + config resolution + handler wiring on
+  `tenant-members.handler.ts` POST), DRIFT-5 (F-05-01-pattern
+  `getOrderColumn` helper copied into
+  `packages/module-tenants/src/api/_utils/sort.ts`, allowlists
+  applied to `tenants.handler.ts` GET and
+  `tenant-members.handler.ts` GET). 50 new vitest tests (23
+  sort-guard + 15 member-guards + 12 public-response) bring the
+  module total to **78/78 green**. Dashboard `tsc --noEmit` baseline
+  460 unchanged. DRIFT-6 seed idempotency deferred — requires DB
+  mock infra that is not yet present in the module.
 - 2026-04-11 (cycle-2) — Canonical `docs/modules/tenants/` 11-file
   shape scaffolded: `Readme.md`, `UI.md`, `api.md`, `architecture.md`,
   `database.md`, `detailed-requirements.md`, `module-design.md`,
   `prompts.md`, `references.md`, `secure.md`,
   `use-case-compliance.md`. Todo sprint plan created with 5 sprints
-  (00..04). `sprint-02-unit-tests.md` is the current work target —
-  `computeBusinessHours` unit tests ship this cycle to close the
-  test coverage gap and provide a regression bed for the R9.1 cases.
+  (00..04). `sprint-02-unit-tests.md` closed: `computeBusinessHours`
+  unit tests shipped (28 tests) covering every R9.1 case.
 
 ## Implementation status (on `dev`)
 
@@ -44,25 +58,26 @@
 
 ## Test coverage
 
-- **Unit tests**: **28** (cycle-2 shipped `compute-business-hours.test.ts`
-  covering every R9.1 case).
-- **Integration tests**: 0 (sprint-03).
-- **Seed tests**: 0 (sprint-03 — deferred from sprint-02 to keep the
-  cycle-2 commit focused on the pure helper).
+- **Unit tests**: **78** — 28 compute-business-hours (cycle-2) + 23
+  sort-guard (cycle-8) + 15 member-guards (cycle-8) + 12
+  public-response (cycle-8).
+- **Integration tests**: 0 (scheduled separately; DB mock infra
+  needed).
+- **Seed tests**: 0 (DRIFT-6 deferred).
 
 ## Known gaps
 
 | # | Gap | Severity | Sprint |
 |---|---|---|---|
 | 1 | ~~`computeBusinessHours` has no unit tests~~ — **CLOSED cycle-2, 28 tests** | — | — |
-| 2 | `id` leaked in public endpoint response (R3.5) | HIGH | sprint-03 |
-| 3 | Last-owner guard missing on member DELETE / PUT | HIGH | sprint-03 |
-| 4 | `MAX_MEMBERS_PER_TENANT` not enforced on POST members | MEDIUM | sprint-03 |
-| 5 | Sort-field allowlist not applied (F-05-01 pattern) | MEDIUM | sprint-03 |
-| 6 | Seed idempotency unverified by a test | MEDIUM | sprint-02 |
+| 2 | ~~`id` leaked in public endpoint response (R3.5)~~ — **CLOSED cycle-8, 12 public-response tests lock the shape** | — | — |
+| 3 | ~~Last-owner guard missing on member DELETE~~ — **CLOSED cycle-8, 6 member-guard tests + handler wiring** | — | — |
+| 4 | ~~`MAX_MEMBERS_PER_TENANT` not enforced on POST members~~ — **CLOSED cycle-8, 9 member-guard tests + config resolution + handler wiring** | — | — |
+| 5 | ~~Sort-field allowlist not applied (F-05-01 pattern)~~ — **CLOSED cycle-8, 23 sort-guard tests** | — | — |
+| 6 | Seed idempotency unverified by a test | MEDIUM | deferred — needs DB mock infra |
 | 7 | RLS policies planned but not applied | MEDIUM | blocked on `module-auth` |
-| 8 | Handler integration tests missing | MEDIUM | sprint-03 |
-| 9 | Optimistic concurrency check on PUT missing | LOW | sprint-03 |
+| 8 | Handler integration tests missing | MEDIUM | sprint-04 (needs DB mock infra) |
+| 9 | Optimistic concurrency check on PUT missing | LOW | sprint-04 |
 | 10 | Midnight-wrap schedule not supported in business-hours util | LOW | sprint-04 enhancement |
 
 ## Acceptance checklist
@@ -72,12 +87,19 @@ Mirrors the gate in
 
 - [x] `computeBusinessHours` unit-tested per R9.1 — 28 tests green (cycle-2)
 - [ ] `seedTenants` idempotency verified by a test
-- [ ] Public endpoint no longer leaks `id`
-- [ ] Last-owner guard enforced on member DELETE and PUT (role change)
-- [ ] `MAX_MEMBERS_PER_TENANT` enforced on POST members
-- [ ] Sort-field allowlist applied to every list handler
+- [x] Public endpoint no longer leaks `id` — 12 tests + pure
+  `assembleTenantPublicResponse` with typed shape that structurally
+  forbids `id` (cycle-8)
+- [x] Last-owner guard enforced on member DELETE — `checkLastOwnerRemoval`
+  + handler wiring, 6 tests (cycle-8). PUT role-change path: handler
+  does not currently expose PUT; deferred to sprint-04.
+- [x] `MAX_MEMBERS_PER_TENANT` enforced on POST members — 9 tests + config
+  resolution (tenant override → platform → schema default) (cycle-8)
+- [x] Sort-field allowlist applied to every list handler — `tenants`
+  + `tenant-members` both wired through `getOrderColumn`; 23 tests
+  (cycle-8)
 - [ ] Integration tests cover every handler at `NextRequest` level
 - [ ] No `style={}` in dashboard components
-- [ ] `import type` for every type-only import in the package
+- [x] `import type` for every type-only import in the package
 - [ ] `docs/modules/IMPLEMENTATION-STATUS.md` lists tenants as live
 - [ ] `docs/modules/todo/PROGRESS.md` updated with graduation row

@@ -68,13 +68,15 @@ F-05-01/F-05-02 rollout landed on `origin/dev` as merge commit
 240 total green, zero typecheck regressions (460 baseline). See
 `PROGRESS.md` and `qa-reports/claude-inspiring-clarke-e8QUu-QA-REPORT.md`.
 
-Cycle-7 session (2026-04-11): `module-ai` F-05-03 typed SDK provider
-guard landed on session branch `claude/inspiring-clarke-LSksg` from
-`claude/inspiring-clarke-bYhvx`. 11 new regression tests
-(`provider-callable-guard.test.ts`), `@oven/module-ai` 161/161 green,
-dashboard `tsc --noEmit` delta 0 (460 baseline unchanged). User
-approval required to land on `dev` — see
-`qa-reports/claude-inspiring-clarke-bYhvx-QA-REPORT.md`.
+Cycle-7 landing (2026-04-11): `module-ai` F-05-03 (typed SDK provider
+guard) **and** F-05-04 (typed transcription sub-client guard) landed
+on `origin/dev` as merge commit `26d6e1b` from
+`claude/inspiring-clarke-LSksg` (strict linear superset of
+`claude/inspiring-clarke-bYhvx`). 23 new regression tests across
+`provider-callable-guard.test.ts` (11) + `provider-sub-client-guard.test.ts`
+(12), `@oven/module-ai` **173/173** green, dashboard `tsc --noEmit`
+delta 0 (460 baseline unchanged). See
+`qa-reports/claude-inspiring-clarke-LSksg-QA-REPORT.md`.
 
 ## Graduation definition of done
 

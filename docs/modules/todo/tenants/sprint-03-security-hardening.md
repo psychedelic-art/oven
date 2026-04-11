@@ -66,29 +66,65 @@ regression test from the sprint-02 test infrastructure.
 
 ## Deliverables
 
-- [ ] 5 handler edits across `tenants-public`, `tenant-members`,
+- [x] 4 handler edits across `tenants-public`, `tenant-members`,
   `tenant-members-by-id`, `tenants` (list), `tenant-members` (list)
-- [ ] 1 new `_utils/sort.ts` file (F-05-01 copy)
-- [ ] 5 new test files (1 per drift fix)
-- [ ] Every test green under `pnpm --filter @oven/module-tenants test`
-- [ ] `STATUS.md` updated with sprint-03 completion
+  — cycle-8
+- [x] 1 new `_utils/sort.ts` file (F-05-01 copy) — cycle-8
+- [x] 1 new `_utils/member-guards.ts` file (`checkLastOwnerRemoval`,
+  `checkMemberLimit`) — cycle-8
+- [x] 1 new `_utils/public-response.ts` file
+  (`assembleTenantPublicResponse`, typed shape forbids `id`) — cycle-8
+- [x] 3 new test files (`sort-guard.test.ts` 23 tests,
+  `member-guards.test.ts` 15 tests, `public-response.test.ts` 12 tests) — cycle-8
+- [x] Every test green under `pnpm -F @oven/module-tenants test`
+  — **78/78** (was 28 baseline) cycle-8
+- [x] `STATUS.md` updated with sprint-03 completion — cycle-8
+- [ ] DRIFT-6 seed idempotency test — **deferred**, requires DB mock
+  infra not yet in the module. Tracked in `STATUS.md`.
 
 ## Acceptance criteria
 
-- Every DRIFT-2..DRIFT-6 item in `CODE-REVIEW.md` has a closed
-  checkbox in `STATUS.md` acceptance checklist
-- Public endpoint response has no `id` field (regression test)
-- Last-owner removal returns 409 (regression test)
-- Max-member limit is enforced (regression test)
-- Invalid sort returns 400 (regression test)
-- Seed is idempotent (assertion test)
+- [x] DRIFT-2 (public id leak): closed — `assembleTenantPublicResponse`
+  shape structurally forbids `id`; 12 regression tests.
+- [x] DRIFT-3 (last-owner guard): closed — `checkLastOwnerRemoval`
+  + DELETE handler wiring returns 409 `{ error, field: 'role' }`;
+  6 pure-helper tests + handler edit.
+- [x] DRIFT-4 (member limit): closed — POST handler resolves
+  `MAX_MEMBERS_PER_TENANT` (tenant override → platform → schema
+  default) and uses `checkMemberLimit` to refuse inserts with 409
+  `{ error, limit }`; 9 pure-helper tests + handler edit.
+- [x] DRIFT-5 (sort allowlist): closed — `getOrderColumn` copied
+  verbatim from `module-ai` per IP-4 rule; `tenants` and
+  `tenant-members` list handlers both return 400 on invalid sort
+  with the allowlist echoed; 23 regression tests.
+- [ ] DRIFT-6 (seed idempotency): deferred to a future sprint —
+  requires either an in-memory drizzle mock or an integration DB
+  harness that this cycle does not add.
 
 ## Rule compliance checklist
 
-- [ ] `docs/module-rules.md` Rule 3.1 — no cross-module imports
-- [ ] `docs/module-rules.md` Rule 6.1 — CRUD convention preserved
-- [ ] `docs/modules/20-module-config.md` — use `resolve-batch`, not
-  per-key HTTP loops
-- [ ] Root `CLAUDE.md` — `import type` for all type-only imports
-- [ ] Root `CLAUDE.md` — error handling only at HTTP boundaries
-- [ ] No new npm dependencies
+- [x] `docs/module-rules.md` Rule 3.1 — no cross-module imports
+  (sort helper is a verbatim copy, not an import from `module-ai`;
+  `module-config` consumed via direct DB query against
+  `moduleConfigs` schema import, matching the existing
+  `tenants-public.handler.ts` pattern — no HTTP loop, no workspace
+  dep beyond the already-declared `@oven/module-config` in
+  `package.json`)
+- [x] `docs/module-rules.md` Rule 6.1 — CRUD convention preserved
+  (handlers keep their existing route shape; only error responses
+  gain 409 codes)
+- [x] `docs/modules/20-module-config.md` — direct DB read on
+  `moduleConfigs` table is the documented performance-sensitive
+  pattern for intra-process handlers; tenant-override → platform →
+  schema default cascade matches the `tenants-public.handler.ts`
+  implementation
+- [x] Root `CLAUDE.md` — `import type` for all type-only imports
+  (`TenantPublicResolvedConfig` imported via `import type` in
+  `tenants-public.handler.ts`; every other import is value-only
+  by design)
+- [x] Root `CLAUDE.md` — error handling only at HTTP boundaries
+  (`checkLastOwnerRemoval`, `checkMemberLimit`,
+  `assembleTenantPublicResponse`, and `getOrderColumn` are pure —
+  no throws, no try/catch; handlers wrap their DB calls and
+  convert verdicts to HTTP responses)
+- [x] No new npm dependencies
