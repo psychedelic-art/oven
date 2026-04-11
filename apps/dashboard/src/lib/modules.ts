@@ -13,6 +13,12 @@ import { authJsAdapter } from '@oven/auth-authjs';
 import { formsModule } from '@oven/module-forms';
 import { flowsModule } from '@oven/module-flows';
 import { uiFlowsModule } from '@oven/module-ui-flows';
+import { aiModule } from '@oven/module-ai';
+import { filesModule } from '@oven/module-files';
+import { knowledgeBaseModule } from '@oven/module-knowledge-base';
+import { agentCoreModule } from '@oven/module-agent-core';
+import { chatModule } from '@oven/module-chat';
+import { workflowAgentsModule } from '@oven/module-workflow-agents';
 
 // Register auth adapter before module registration
 registerAuthAdapter(authJsAdapter);
@@ -26,7 +32,13 @@ registry.register(workflowsModule);              // No deps
 registry.register(rolesModule);                  // No deps (scans others for API discovery)
 registry.register(configModule);                 // No deps
 registry.register(tenantsModule);                // Depends on: config
+registry.register(filesModule);                  // Depends on: tenants
 registry.register(subscriptionsModule);          // Depends on: config, tenants
+registry.register(aiModule);                     // Depends on: subscriptions
+registry.register(knowledgeBaseModule);          // Depends on: ai
+registry.register(agentCoreModule);             // Depends on: ai
+registry.register(chatModule);                  // Depends on: agent-core, ai
+registry.register(workflowAgentsModule);        // Depends on: workflows, agent-core, ai
 registry.register(authModule);                   // Depends on: roles
 registry.register(formsModule);                  // Depends on: roles
 registry.register(flowsModule);                  // Depends on: roles

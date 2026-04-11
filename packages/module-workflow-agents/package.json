@@ -1,0 +1,35 @@
+{
+  "name": "@oven/module-workflow-agents",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts",
+    "./api/*": "./src/api/*"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.0",
+    "@oven/module-agent-core": "workspace:*",
+    "@oven/module-ai": "workspace:*",
+    "@oven/module-chat": "workspace:*",
+    "@oven/module-knowledge-base": "workspace:*",
+    "@oven/module-registry": "workspace:*",
+    "@oven/module-workflows": "workspace:*",
+    "drizzle-orm": "^0.38.0",
+    "langsmith": "^0.5.16"
+  },
+  "peerDependencies": {
+    "next": ">=15.0.0",
+    "react": ">=19.0.0"
+  },
+  "devDependencies": {
+    "@oven/agent-workflow-editor": "workspace:*",
+    "typescript": "^5.0.0",
+    "vitest": "^3.0.0"
+  }
+}

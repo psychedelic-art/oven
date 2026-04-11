@@ -1,0 +1,327 @@
+import { eq, and, sql } from 'drizzle-orm';
+import { getDb } from '@oven/module-registry/db';
+import { eventBus } from '@oven/module-registry';
+import {
+  usageRecords,
+  services,
+  tenantSubscriptions,
+  billingPlans,
+  planQuotas,
+  subscriptionQuotaOverrides,
+} from '../schema';
+
+export interface TrackUsageParams {
+  tenantId: number;
+  serviceSlug: string;
+  amount: number;
+  upstreamCostCents?: number;
+  metadata?: Record<string, unknown>;
+}
+
+export interface TrackUsageResult {
+  recorded: boolean;
+  remaining: number;
+  exceeded: boolean;
+}
+
+export interface CheckQuotaResult {
+  allowed: boolean;
+  remaining: number;
+  limit: number;
+  used: number;
+}
+
+export interface ServiceUsage {
+  serviceSlug: string;
+  serviceName: string;
+  unit: string;
+  used: number;
+  limit: number;
+  remaining: number;
+  period: string;
+  source: 'plan' | 'override';
+}
+
+/**
+ * Compute billing cycle string for current month (e.g., "2026-04")
+ */
+function getCurrentBillingCycle(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+/**
+ * Resolve a service by slug, returning its id and unit.
+ */
+async function resolveService(db: ReturnType<typeof getDb>, slug: string) {
+  const [service] = await db
+    .select({ id: services.id, unit: services.unit, name: services.name })
+    .from(services)
+    .where(eq(services.slug, slug))
+    .limit(1);
+  return service ?? null;
+}
+
+/**
+ * Get the effective quota limit for a tenant + service.
+ * Cascade: override → plan quota → 0 (not in plan)
+ */
+async function getEffectiveLimit(
+  db: ReturnType<typeof getDb>,
+  tenantId: number,
+  serviceId: number
+): Promise<{ limit: number; period: string; source: 'plan' | 'override' } | null> {
+  // 1. Find active subscription
+  const [subscription] = await db
+    .select({
+      subscriptionId: tenantSubscriptions.id,
+      planId: tenantSubscriptions.planId,
+    })
+    .from(tenantSubscriptions)
+    .where(
+      and(
+        eq(tenantSubscriptions.tenantId, tenantId),
+        eq(tenantSubscriptions.status, 'active')
+      )
+    )
+    .limit(1);
+
+  if (!subscription) return null;
+
+  // 2. Check override first
+  const [override] = await db
+    .select({ quota: subscriptionQuotaOverrides.quota })
+    .from(subscriptionQuotaOverrides)
+    .where(
+      and(
+        eq(subscriptionQuotaOverrides.subscriptionId, subscription.subscriptionId),
+        eq(subscriptionQuotaOverrides.serviceId, serviceId)
+      )
+    )
+    .limit(1);
+
+  if (override) {
+    return { limit: override.quota, period: 'monthly', source: 'override' };
+  }
+
+  // 3. Fall back to plan quota
+  const [quota] = await db
+    .select({ quota: planQuotas.quota, period: planQuotas.period })
+    .from(planQuotas)
+    .where(
+      and(
+        eq(planQuotas.planId, subscription.planId),
+        eq(planQuotas.serviceId, serviceId)
+      )
+    )
+    .limit(1);
+
+  if (quota) {
+    return { limit: quota.quota, period: quota.period, source: 'plan' };
+  }
+
+  // Service not in plan
+  return null;
+}
+
+/**
+ * Sum usage for a tenant + service in the current billing cycle.
+ */
+async function getCurrentUsage(
+  db: ReturnType<typeof getDb>,
+  tenantId: number,
+  serviceId: number,
+  billingCycle: string
+): Promise<number> {
+  const [result] = await db
+    .select({ total: sql<number>`COALESCE(SUM(${usageRecords.amount}), 0)` })
+    .from(usageRecords)
+    .where(
+      and(
+        eq(usageRecords.tenantId, tenantId),
+        eq(usageRecords.serviceId, serviceId),
+        eq(usageRecords.billingCycle, billingCycle)
+      )
+    );
+  return Number(result?.total ?? 0);
+}
+
+export class UsageMeteringService {
+  /**
+   * Record a usage event and check if the tenant has exceeded their quota.
+   */
+  async trackUsage(params: TrackUsageParams): Promise<TrackUsageResult> {
+    const db = getDb();
+    const { tenantId, serviceSlug, amount, upstreamCostCents, metadata } = params;
+
+    const service = await resolveService(db, serviceSlug);
+    if (!service) {
+      return { recorded: false, remaining: 0, exceeded: false };
+    }
+
+    const billingCycle = getCurrentBillingCycle();
+
+    // Get active subscription ID for the record
+    const [subscription] = await db
+      .select({ id: tenantSubscriptions.id })
+      .from(tenantSubscriptions)
+      .where(
+        and(
+          eq(tenantSubscriptions.tenantId, tenantId),
+          eq(tenantSubscriptions.status, 'active')
+        )
+      )
+      .limit(1);
+
+    // Insert usage record
+    await db.insert(usageRecords).values({
+      tenantId,
+      subscriptionId: subscription?.id ?? null,
+      serviceId: service.id,
+      amount,
+      unit: service.unit,
+      billingCycle,
+      upstreamCostCents: upstreamCostCents ?? null,
+      metadata: metadata ?? null,
+    });
+
+    // Check quota
+    const effectiveLimit = await getEffectiveLimit(db, tenantId, service.id);
+    if (!effectiveLimit) {
+      return { recorded: true, remaining: 0, exceeded: false };
+    }
+
+    const used = await getCurrentUsage(db, tenantId, service.id, billingCycle);
+    const remaining = Math.max(0, effectiveLimit.limit - used);
+    const exceeded = used > effectiveLimit.limit;
+
+    if (exceeded) {
+      await eventBus.emit('subscriptions.quota.exceeded', {
+        tenantId,
+        serviceSlug,
+        currentUsage: used,
+        quota: effectiveLimit.limit,
+      });
+    }
+
+    return { recorded: true, remaining, exceeded };
+  }
+
+  /**
+   * Check if a tenant has enough quota for an estimated operation.
+   */
+  async checkQuota(
+    tenantId: number,
+    serviceSlug: string,
+    estimatedAmount: number = 0
+  ): Promise<CheckQuotaResult> {
+    const db = getDb();
+
+    const service = await resolveService(db, serviceSlug);
+    if (!service) {
+      return { allowed: false, remaining: 0, limit: 0, used: 0 };
+    }
+
+    const effectiveLimit = await getEffectiveLimit(db, tenantId, service.id);
+    if (!effectiveLimit) {
+      return { allowed: false, remaining: 0, limit: 0, used: 0 };
+    }
+
+    const billingCycle = getCurrentBillingCycle();
+    const used = await getCurrentUsage(db, tenantId, service.id, billingCycle);
+    const remaining = Math.max(0, effectiveLimit.limit - used);
+    const allowed = remaining >= estimatedAmount;
+
+    return { allowed, remaining, limit: effectiveLimit.limit, used };
+  }
+
+  /**
+   * Get aggregated usage summary for a tenant across all services.
+   */
+  async getUsageSummary(
+    tenantId: number,
+    billingCycle?: string
+  ): Promise<ServiceUsage[]> {
+    const db = getDb();
+    const cycle = billingCycle ?? getCurrentBillingCycle();
+
+    // Get all usage for this tenant in the billing cycle
+    const usage = await db
+      .select({
+        serviceId: usageRecords.serviceId,
+        total: sql<number>`COALESCE(SUM(${usageRecords.amount}), 0)`,
+      })
+      .from(usageRecords)
+      .where(
+        and(
+          eq(usageRecords.tenantId, tenantId),
+          eq(usageRecords.billingCycle, cycle)
+        )
+      )
+      .groupBy(usageRecords.serviceId);
+
+    const usageMap = new Map(usage.map((u) => [u.serviceId, Number(u.total)]));
+
+    // Get all plan quotas for this tenant
+    const [subscription] = await db
+      .select({
+        subscriptionId: tenantSubscriptions.id,
+        planId: tenantSubscriptions.planId,
+      })
+      .from(tenantSubscriptions)
+      .where(
+        and(
+          eq(tenantSubscriptions.tenantId, tenantId),
+          eq(tenantSubscriptions.status, 'active')
+        )
+      )
+      .limit(1);
+
+    if (!subscription) return [];
+
+    const quotas = await db
+      .select({
+        serviceId: planQuotas.serviceId,
+        serviceSlug: services.slug,
+        serviceName: services.name,
+        unit: services.unit,
+        quota: planQuotas.quota,
+        period: planQuotas.period,
+      })
+      .from(planQuotas)
+      .innerJoin(services, eq(planQuotas.serviceId, services.id))
+      .where(eq(planQuotas.planId, subscription.planId));
+
+    // Get overrides
+    const overrides = await db
+      .select({
+        serviceId: subscriptionQuotaOverrides.serviceId,
+        quota: subscriptionQuotaOverrides.quota,
+      })
+      .from(subscriptionQuotaOverrides)
+      .where(eq(subscriptionQuotaOverrides.subscriptionId, subscription.subscriptionId));
+
+    const overrideMap = new Map(overrides.map((o) => [o.serviceId, o.quota]));
+
+    return quotas.map((q) => {
+      const overrideQuota = overrideMap.get(q.serviceId);
+      const limit = overrideQuota ?? q.quota;
+      const used = usageMap.get(q.serviceId) ?? 0;
+      return {
+        serviceSlug: q.serviceSlug,
+        serviceName: q.serviceName,
+        unit: q.unit,
+        used,
+        limit,
+        remaining: Math.max(0, limit - used),
+        period: q.period,
+        source: overrideQuota !== undefined ? 'override' as const : 'plan' as const,
+      };
+    });
+  }
+}
+
+/** Singleton instance */
+export const usageMeteringService = new UsageMeteringService();

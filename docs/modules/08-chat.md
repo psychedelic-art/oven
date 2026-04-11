@@ -117,6 +117,214 @@ When a new module is registered (e.g., `module-exams`), the backing agent discov
 
 ---
 
+## 4A. Command System
+
+### Inspired by Claude Code's command system
+
+Chat supports `/slash` commands that provide quick actions without LLM reasoning.
+
+**Command Interface**:
+```typescript
+interface ChatCommand {
+  name: string;
+  slug: string;
+  description: string;
+  category: 'navigation' | 'agent' | 'tools' | 'export' | 'settings';
+  parameters?: JsonSchema;
+  permissions?: string[];
+  execute: (args: CommandArgs, context: ChatContext) => Promise<CommandResult>;
+}
+
+interface CommandResult {
+  type: 'message' | 'action' | 'redirect';
+  content?: string;
+  data?: unknown;
+  systemMessage?: string;
+}
+```
+
+**Built-in Commands** (15):
+| Command | Description | Category |
+|---------|-------------|----------|
+| `/help` | List available commands | navigation |
+| `/clear` | Clear conversation | navigation |
+| `/agent <slug>` | Switch backing agent | agent |
+| `/tools` | List available tools | tools |
+| `/search <query>` | Search KB directly | tools |
+| `/mode <mode>` | Set creative/precise/balanced | settings |
+| `/export [format]` | Export conversation (json/md/txt) | export |
+| `/status` | Show session stats (tokens, cost) | navigation |
+| `/feedback` | Submit session feedback | navigation |
+| `/reset` | Reset session context | navigation |
+| `/model <alias>` | Override model for session | settings |
+| `/temperature <n>` | Override temperature | settings |
+| `/skill <name>` | Invoke a skill | tools |
+| `/mcp` | List connected MCP servers | tools |
+| `/pin` | Pin/unpin current session | navigation |
+
+**Command Resolution**: When a message starts with `/`, the command registry intercepts it before it reaches the agent. The command executes locally and returns a result message. Custom commands can be registered per-tenant via the `chat_commands` table.
+
+---
+
+## 4B. Skill System
+
+### Inspired by Claude Code's skill system
+
+Skills are reusable prompt templates that enhance the agent's capabilities.
+
+**Skill Interface**:
+```typescript
+interface ChatSkill {
+  name: string;
+  slug: string;
+  description: string;
+  whenToUse: string;
+  promptTemplate: string;
+  allowedTools?: string[];
+  parameters?: JsonSchema;
+  source: 'builtin' | 'custom' | 'mcp' | 'plugin';
+}
+```
+
+**Built-in Skills** (6):
+| Skill | Description | When To Use |
+|-------|-------------|-------------|
+| `summarize` | Summarize conversation or document | When user asks to summarize |
+| `translate` | Translate content between languages | When user asks to translate |
+| `extract` | Extract structured data from text | When user asks to extract data |
+| `analyze` | Analyze data, generate insights | When user provides data for analysis |
+| `faq-create` | Create KB entry from conversation | When user wants to save Q&A to KB |
+| `report` | Generate formatted report | When user asks for a report |
+
+**Skill Loading Pipeline**:
+1. Load built-in skills from `skills/builtin/`
+2. Load custom skills from `chat_skills` table (per-tenant)
+3. Load MCP-provided skills from connected MCP servers
+4. Merge and deduplicate by slug
+5. Inject skill descriptions into system prompt for auto-selection
+
+**Auto-invocation**: Skills include a `whenToUse` field that is included in the system prompt. The LLM can automatically select the right skill based on user intent without the user typing `/skill`.
+
+---
+
+## 4C. Hook System
+
+### Inspired by Claude Code's hook system
+
+Hooks allow extending chat behavior at key lifecycle points.
+
+**Hook Events**:
+| Event | When | Can Modify |
+|-------|------|-----------|
+| `pre-message` | Before processing user message | message content, abort |
+| `post-message` | After generating response | response content |
+| `pre-tool-use` | Before executing a tool | tool params, approve/block |
+| `post-tool-use` | After tool execution | tool result |
+| `on-error` | When an error occurs | error handling, retry |
+| `on-escalation` | When agent escalates to human | escalation routing |
+| `session-start` | When new session created | initial context |
+| `session-end` | When session archived | cleanup actions |
+
+**Hook Handler Types**:
+```typescript
+type HookHandler =
+  | { type: 'condition'; expression: string; action: 'approve' | 'block' | 'modify' }
+  | { type: 'api'; endpoint: string; method: string; transform?: string }
+  | { type: 'event'; eventName: string; payload?: Record<string, string> }
+  | { type: 'guardrail'; guardrailId: number }
+```
+
+**Execution Order**: Hooks execute in priority order (lower number = higher priority). Multiple hooks on the same event run sequentially. If any hook returns `abort: true`, processing stops.
+
+**Use Cases**:
+- **Content moderation**: `pre-message` hook with `guardrail` handler to filter input before it reaches the agent
+- **Audit logging**: `post-message` hook with `api` handler that posts to an external audit service
+- **Tool approval**: `pre-tool-use` hook with `condition` handler that blocks certain tools for certain tenants
+- **Escalation routing**: `on-escalation` hook with `event` handler that notifies the on-call team
+
+---
+
+## 4D. MCP Integration
+
+### Inspired by Claude Code's MCP system
+
+Chat supports connecting to external MCP (Model Context Protocol) servers, enabling agents to use tools from external AI systems.
+
+**Supported Transports**:
+| Transport | Use Case |
+|-----------|----------|
+| `stdio` | Local command-line MCP servers |
+| `sse` | Remote HTTP servers with Server-Sent Events |
+| `http` | Standard HTTP-based MCP servers |
+| `ws` | WebSocket-based real-time MCP servers |
+
+**MCP Connection Config**:
+```typescript
+interface MCPConnectionConfig {
+  stdio?: { command: string; args?: string[]; env?: Record<string, string> };
+  sse?: { url: string; headers?: Record<string, string> };
+  http?: { url: string; headers?: Record<string, string> };
+  ws?: { url: string };
+}
+```
+
+**Tool Discovery**: When an MCP server is connected, the system:
+1. Queries the server for available tools
+2. Caches tool definitions in `chat_mcp_connections.toolDefinitions`
+3. Bridges MCP tools into the agent's tool catalog
+4. Agent can invoke MCP tools during reasoning (proxied through chat module)
+5. Tool results flow back through the normal execution pipeline
+
+**MCP Endpoints**:
+| Method | Route | Purpose |
+|--------|-------|---------|
+| GET | `/api/chat-mcp-servers` | List MCP connections |
+| POST | `/api/chat-mcp-servers` | Add MCP server |
+| DELETE | `/api/chat-mcp-servers/[id]` | Remove MCP server |
+| POST | `/api/chat-mcp-servers/[id]/connect` | Connect to server |
+| POST | `/api/chat-mcp-servers/[id]/disconnect` | Disconnect |
+| GET | `/api/chat-mcp-servers/[id]/tools` | List discovered tools |
+
+---
+
+## 4E. Prompt Engineering
+
+### Inspired by Claude Code's system prompt construction
+
+Chat uses a dynamic prompt builder that assembles the system prompt from multiple sections with a caching strategy.
+
+**Prompt Sections**:
+```typescript
+async function buildSystemPrompt(session: ChatSession, agent: Agent): Promise<string[]> {
+  return [
+    // --- CACHED SECTIONS (stable across turns) ---
+    agent.systemPrompt,                      // 1. Base agent instructions
+    await getTenantContext(session.tenantId), // 2. Tenant config (hours, tone, schedule)
+    formatCommandDescriptions(commands),      // 3. Available /commands
+    formatSkillDescriptions(skills),          // 4. Available skills
+    formatMCPCapabilities(mcpConnections),    // 5. MCP server capabilities
+    // --- DYNAMIC BOUNDARY ---
+    formatToolDescriptions(tools),            // 6. Available tools (may change per turn)
+    await getRelevantKBContext(session),      // 7. KB context (query-dependent)
+    formatSessionContext(session.context),    // 8. Session memory
+    await getHookInstructions(session),       // 9. Hook-injected instructions
+  ].filter(Boolean);
+}
+```
+
+**Caching Strategy**:
+- Sections 1-5 are stable across turns — cached at session level
+- Sections 6-9 are dynamic — recomputed per turn
+- Reduces prompt token cost by ~40-60%
+
+**Context Accumulation**: The session's `context` JSONB field accumulates:
+- Referenced entities (e.g., "Exam A", "the dental clinic")
+- User preferences detected during conversation
+- Key facts from prior turns
+- Active filters or scopes
+
+---
+
 ## 5. Database Schema
 
 ### Tables
@@ -128,6 +336,10 @@ When a new module is registered (e.g., `module-exams`), the backing agent discov
 - `title` (varchar, nullable) — auto-generated or user-set
 - `context` (JSONB) — accumulated session context (referenced entities, prior intents)
 - `status` (varchar) — active, archived
+- `sessionToken` (varchar, nullable) — for anonymous widget sessions
+- `isAnonymous` (boolean, default false)
+- `isPinned` (boolean, default false)
+- `settings` (JSONB, nullable) — per-session settings overrides
 - `createdAt`, `updatedAt` (timestamps)
 
 **`chat_messages`** — Individual messages in a session
@@ -138,6 +350,8 @@ When a new module is registered (e.g., `module-exams`), the backing agent discov
 - `toolCalls` (JSONB, nullable) — tool calls the agent made in this response
 - `toolResults` (JSONB, nullable) — tool execution results
 - `metadata` (JSONB) — model used, tokens consumed, latency, cost
+- `feedbackState` (varchar, nullable) — liked, disliked, null
+- `checkpointId` (varchar, nullable) — for conversation branching
 - `createdAt` (timestamp)
 
 **`chat_actions`** — Actions executed by the agent (denormalized view of tool calls for easy querying)
@@ -149,6 +363,69 @@ When a new module is registered (e.g., `module-exams`), the backing agent discov
 - `output` (JSONB) — result received
 - `status` (varchar) — success, error
 - `executedAt` (timestamp)
+
+**`chat_commands`** — Registered /slash commands
+- `id` (serial, PK)
+- `tenantId` (integer, nullable) — null = platform-wide
+- `name` (varchar) — display name
+- `slug` (varchar, unique) — command identifier
+- `description` (text)
+- `category` (varchar) — navigation, agent, tools, export, settings
+- `handler` (varchar) — module + function reference
+- `parameters` (JSONB) — JSON Schema for args
+- `permissions` (JSONB) — required permission slugs
+- `isSystem` (boolean, default false)
+- `enabled` (boolean, default true)
+- `createdAt`, `updatedAt` (timestamps)
+
+**`chat_skills`** — Loadable skill definitions
+- `id` (serial, PK)
+- `tenantId` (integer, nullable) — null = platform-wide
+- `name` (varchar)
+- `slug` (varchar, unique)
+- `description` (text)
+- `whenToUse` (text) — LLM instruction for auto-invocation
+- `promptTemplate` (text) — Handlebars template
+- `allowedTools` (JSONB) — tool subset this skill can use
+- `parameters` (JSONB) — configurable params
+- `source` (varchar) — builtin, custom, mcp, plugin
+- `enabled` (boolean, default true)
+- `metadata` (JSONB)
+- `createdAt`, `updatedAt` (timestamps)
+
+**`chat_hooks`** — Lifecycle hook definitions
+- `id` (serial, PK)
+- `tenantId` (integer, nullable) — null = platform-wide
+- `event` (varchar) — pre-message, post-message, pre-tool-use, etc.
+- `name` (varchar)
+- `description` (text)
+- `handler` (JSONB) — { type, config }
+- `priority` (integer, default 100) — execution order
+- `enabled` (boolean, default true)
+- `createdAt`, `updatedAt` (timestamps)
+
+**`chat_mcp_connections`** — MCP server connections per tenant
+- `id` (serial, PK)
+- `tenantId` (integer, nullable)
+- `name` (varchar)
+- `slug` (varchar, unique)
+- `transport` (varchar) — stdio, sse, http, ws
+- `config` (JSONB) — connection config (encrypted sensitive fields)
+- `toolDefinitions` (JSONB) — cached discovered tools
+- `status` (varchar) — connected, disconnected, error
+- `lastConnectedAt` (timestamp, nullable)
+- `enabled` (boolean, default true)
+- `createdAt`, `updatedAt` (timestamps)
+
+**`chat_feedback`** — Message feedback for quality tracking
+- `id` (serial, PK)
+- `messageId` (integer)
+- `sessionId` (integer)
+- `userId` (integer)
+- `isHelpful` (boolean)
+- `feedbackType` (varchar) — accuracy, relevance, completeness, tone
+- `comment` (text, nullable)
+- `createdAt` (timestamp)
 
 ---
 
@@ -166,6 +443,28 @@ When a new module is registered (e.g., `module-exams`), the backing agent discov
 | GET | `/api/chat/capabilities` | List all discovered module capabilities (from registry) |
 | GET | `/api/chat/agents` | List available agents that can back a chat session |
 | PUT | `/api/chat/sessions/[id]/agent` | Change the backing agent for a session |
+| PUT | `/api/chat/sessions/[id]/pin` | Pin/unpin a session |
+| POST | `/api/chat/sessions/[id]/export` | Export session (json/md/txt) |
+| POST | `/api/chat/sessions/[id]/feedback` | Submit feedback for a message |
+| GET | `/api/chat/commands` | List available commands |
+| POST | `/api/chat/commands` | Register a custom command |
+| PUT | `/api/chat/commands/[id]` | Update a command |
+| DELETE | `/api/chat/commands/[id]` | Remove a custom command |
+| GET | `/api/chat/skills` | List available skills |
+| POST | `/api/chat/skills` | Register a custom skill |
+| PUT | `/api/chat/skills/[id]` | Update a skill |
+| DELETE | `/api/chat/skills/[id]` | Remove a custom skill |
+| GET | `/api/chat/hooks` | List hook definitions |
+| POST | `/api/chat/hooks` | Create a hook |
+| PUT | `/api/chat/hooks/[id]` | Update a hook |
+| DELETE | `/api/chat/hooks/[id]` | Remove a hook |
+| GET | `/api/chat/mcp-servers` | List MCP connections |
+| POST | `/api/chat/mcp-servers` | Add MCP server |
+| DELETE | `/api/chat/mcp-servers/[id]` | Remove MCP server |
+| POST | `/api/chat/mcp-servers/[id]/connect` | Connect to MCP server |
+| POST | `/api/chat/mcp-servers/[id]/disconnect` | Disconnect MCP server |
+| GET | `/api/chat/mcp-servers/[id]/tools` | List discovered MCP tools |
+| GET | `/api/chat/feedback` | List feedback entries (filterable) |
 
 ### Message Endpoint Behavior (`POST /api/chat/sessions/[id]/messages`)
 
@@ -250,6 +549,12 @@ Modules that don't declare a `chat` block are still discoverable through their `
 | `chat.session.agent-changed` | id, previousAgentId, newAgentId |
 | `chat.message.sent` | id, sessionId, role |
 | `chat.action.executed` | id, sessionId, moduleSlug, actionName, status |
+| `chat.command.executed` | id, sessionId, commandSlug, args |
+| `chat.skill.invoked` | id, sessionId, skillSlug |
+| `chat.hook.triggered` | id, sessionId, event, hookName |
+| `chat.mcp.connected` | id, tenantId, serverSlug |
+| `chat.mcp.disconnected` | id, tenantId, serverSlug |
+| `chat.feedback.submitted` | id, messageId, sessionId, isHelpful |
 
 ---
 
@@ -275,17 +580,26 @@ Modules that don't declare a `chat` block are still discoverable through their `
 ```typescript
 // chat_sessions
 tenantId: integer('tenant_id'),  // nullable — platform-wide sessions have no tenant
+sessionToken: varchar('session_token'),
+isAnonymous: boolean('is_anonymous').default(false),
+isPinned: boolean('is_pinned').default(false),
+settings: jsonb('settings'),
 }, (table) => [
   index('cs_tenant_id_idx').on(table.tenantId),
   index('cs_user_id_idx').on(table.userId),
   index('cs_agent_id_idx').on(table.agentId),
   index('cs_status_idx').on(table.status),
+  index('cs_session_token_idx').on(table.sessionToken),
+  index('cs_is_pinned_idx').on(table.isPinned),
 ]);
 
 // chat_messages
+feedbackState: varchar('feedback_state'),
+checkpointId: varchar('checkpoint_id'),
 }, (table) => [
   index('cm_session_id_idx').on(table.sessionId),
   index('cm_role_idx').on(table.role),
+  index('cm_checkpoint_id_idx').on(table.checkpointId),
 ]);
 
 // chat_actions
@@ -293,6 +607,45 @@ tenantId: integer('tenant_id'),  // nullable — platform-wide sessions have no 
   index('ca_message_id_idx').on(table.messageId),
   index('ca_module_slug_idx').on(table.moduleSlug),
   index('ca_status_idx').on(table.status),
+]);
+
+// chat_commands
+tenantId: integer('tenant_id'),
+}, (table) => [
+  index('cc_tenant_id_idx').on(table.tenantId),
+  index('cc_slug_idx').on(table.slug),
+  index('cc_category_idx').on(table.category),
+]);
+
+// chat_skills
+tenantId: integer('tenant_id'),
+}, (table) => [
+  index('csk_tenant_id_idx').on(table.tenantId),
+  index('csk_slug_idx').on(table.slug),
+  index('csk_source_idx').on(table.source),
+]);
+
+// chat_hooks
+tenantId: integer('tenant_id'),
+}, (table) => [
+  index('ch_tenant_id_idx').on(table.tenantId),
+  index('ch_event_idx').on(table.event),
+  index('ch_priority_idx').on(table.priority),
+]);
+
+// chat_mcp_connections
+tenantId: integer('tenant_id'),
+}, (table) => [
+  index('cmc_tenant_id_idx').on(table.tenantId),
+  index('cmc_slug_idx').on(table.slug),
+  index('cmc_status_idx').on(table.status),
+]);
+
+// chat_feedback
+}, (table) => [
+  index('cf_message_id_idx').on(table.messageId),
+  index('cf_session_id_idx').on(table.sessionId),
+  index('cf_user_id_idx').on(table.userId),
 ]);
 ```
 
@@ -336,6 +689,12 @@ configSchema: [
   { key: 'MAX_MESSAGES_PER_SESSION', type: 'number', description: 'Maximum messages per chat session', defaultValue: 500, instanceScoped: true },
   { key: 'DEFAULT_AGENT_SLUG', type: 'string', description: 'Default backing agent slug for new sessions', defaultValue: 'platform-assistant', instanceScoped: true },
   { key: 'ENABLE_CHAT_SIDEBAR', type: 'boolean', description: 'Show collapsible chat sidebar on all pages', defaultValue: true, instanceScoped: false },
+  { key: 'ENABLE_COMMANDS', type: 'boolean', description: 'Enable /slash commands', defaultValue: true, instanceScoped: false },
+  { key: 'ENABLE_SKILLS', type: 'boolean', description: 'Enable skill system', defaultValue: true, instanceScoped: false },
+  { key: 'ENABLE_HOOKS', type: 'boolean', description: 'Enable hook system', defaultValue: true, instanceScoped: false },
+  { key: 'ENABLE_MCP', type: 'boolean', description: 'Enable MCP integration', defaultValue: false, instanceScoped: false },
+  { key: 'MAX_MCP_CONNECTIONS', type: 'number', description: 'Max MCP servers per tenant', defaultValue: 5, instanceScoped: true },
+  { key: 'COMMAND_PREFIX', type: 'string', description: 'Command prefix character', defaultValue: '/', instanceScoped: false },
 ],
 ```
 
@@ -363,6 +722,30 @@ events: {
       id: { type: 'number', required: true }, sessionId: { type: 'number', required: true },
       moduleSlug: { type: 'string' }, actionName: { type: 'string' }, status: { type: 'string' },
     },
+    'chat.command.executed': {
+      id: { type: 'number', required: true }, sessionId: { type: 'number', required: true },
+      commandSlug: { type: 'string' }, args: { type: 'object' },
+    },
+    'chat.skill.invoked': {
+      id: { type: 'number', required: true }, sessionId: { type: 'number', required: true },
+      skillSlug: { type: 'string' },
+    },
+    'chat.hook.triggered': {
+      id: { type: 'number', required: true }, sessionId: { type: 'number', required: true },
+      event: { type: 'string' }, hookName: { type: 'string' },
+    },
+    'chat.mcp.connected': {
+      id: { type: 'number', required: true }, tenantId: { type: 'number' },
+      serverSlug: { type: 'string' },
+    },
+    'chat.mcp.disconnected': {
+      id: { type: 'number', required: true }, tenantId: { type: 'number' },
+      serverSlug: { type: 'string' },
+    },
+    'chat.feedback.submitted': {
+      id: { type: 'number', required: true }, messageId: { type: 'number', required: true },
+      sessionId: { type: 'number', required: true }, isHelpful: { type: 'boolean' },
+    },
   },
 },
 ```
@@ -378,9 +761,53 @@ export async function seedChat(db: any) {
     { resource: 'chat-messages', action: 'read', slug: 'chat-messages.read', description: 'Read messages' },
     { resource: 'chat-messages', action: 'create', slug: 'chat-messages.create', description: 'Send messages' },
     { resource: 'chat-actions', action: 'read', slug: 'chat-actions.read', description: 'View action history' },
+    { resource: 'chat-commands', action: 'read', slug: 'chat-commands.read', description: 'View commands' },
+    { resource: 'chat-commands', action: 'create', slug: 'chat-commands.create', description: 'Register custom commands' },
+    { resource: 'chat-skills', action: 'read', slug: 'chat-skills.read', description: 'View skills' },
+    { resource: 'chat-skills', action: 'create', slug: 'chat-skills.create', description: 'Register custom skills' },
+    { resource: 'chat-hooks', action: 'read', slug: 'chat-hooks.read', description: 'View hooks' },
+    { resource: 'chat-hooks', action: 'create', slug: 'chat-hooks.create', description: 'Create hooks' },
+    { resource: 'chat-mcp', action: 'read', slug: 'chat-mcp.read', description: 'View MCP connections' },
+    { resource: 'chat-mcp', action: 'create', slug: 'chat-mcp.create', description: 'Manage MCP connections' },
+    { resource: 'chat-feedback', action: 'create', slug: 'chat-feedback.create', description: 'Submit feedback' },
   ];
   for (const perm of modulePermissions) {
     await db.insert(permissions).values(perm).onConflictDoNothing();
+  }
+
+  // Seed built-in commands
+  const builtinCommands = [
+    { slug: 'help', name: 'Help', description: 'List available commands', category: 'navigation', handler: 'chat/commands/help', isSystem: true },
+    { slug: 'clear', name: 'Clear', description: 'Clear conversation', category: 'navigation', handler: 'chat/commands/clear', isSystem: true },
+    { slug: 'agent', name: 'Agent', description: 'Switch backing agent', category: 'agent', handler: 'chat/commands/agent', isSystem: true },
+    { slug: 'tools', name: 'Tools', description: 'List available tools', category: 'tools', handler: 'chat/commands/tools', isSystem: true },
+    { slug: 'search', name: 'Search', description: 'Search KB directly', category: 'tools', handler: 'chat/commands/search', isSystem: true },
+    { slug: 'mode', name: 'Mode', description: 'Set creative/precise/balanced', category: 'settings', handler: 'chat/commands/mode', isSystem: true },
+    { slug: 'export', name: 'Export', description: 'Export conversation (json/md/txt)', category: 'export', handler: 'chat/commands/export', isSystem: true },
+    { slug: 'status', name: 'Status', description: 'Show session stats (tokens, cost)', category: 'navigation', handler: 'chat/commands/status', isSystem: true },
+    { slug: 'feedback', name: 'Feedback', description: 'Submit session feedback', category: 'navigation', handler: 'chat/commands/feedback', isSystem: true },
+    { slug: 'reset', name: 'Reset', description: 'Reset session context', category: 'navigation', handler: 'chat/commands/reset', isSystem: true },
+    { slug: 'model', name: 'Model', description: 'Override model for session', category: 'settings', handler: 'chat/commands/model', isSystem: true },
+    { slug: 'temperature', name: 'Temperature', description: 'Override temperature', category: 'settings', handler: 'chat/commands/temperature', isSystem: true },
+    { slug: 'skill', name: 'Skill', description: 'Invoke a skill', category: 'tools', handler: 'chat/commands/skill', isSystem: true },
+    { slug: 'mcp', name: 'MCP', description: 'List connected MCP servers', category: 'tools', handler: 'chat/commands/mcp', isSystem: true },
+    { slug: 'pin', name: 'Pin', description: 'Pin/unpin current session', category: 'navigation', handler: 'chat/commands/pin', isSystem: true },
+  ];
+  for (const cmd of builtinCommands) {
+    await db.insert(chatCommands).values({ ...cmd, enabled: true }).onConflictDoNothing();
+  }
+
+  // Seed built-in skills
+  const builtinSkills = [
+    { slug: 'summarize', name: 'Summarize', description: 'Summarize conversation or document', whenToUse: 'When user asks to summarize', source: 'builtin', promptTemplate: 'Summarize the following content concisely:\n\n{{content}}' },
+    { slug: 'translate', name: 'Translate', description: 'Translate content between languages', whenToUse: 'When user asks to translate', source: 'builtin', promptTemplate: 'Translate the following to {{targetLanguage}}:\n\n{{content}}' },
+    { slug: 'extract', name: 'Extract', description: 'Extract structured data from text', whenToUse: 'When user asks to extract data', source: 'builtin', promptTemplate: 'Extract structured data from the following text. Output as JSON:\n\n{{content}}' },
+    { slug: 'analyze', name: 'Analyze', description: 'Analyze data, generate insights', whenToUse: 'When user provides data for analysis', source: 'builtin', promptTemplate: 'Analyze the following data and provide key insights:\n\n{{content}}' },
+    { slug: 'faq-create', name: 'FAQ Create', description: 'Create KB entry from conversation', whenToUse: 'When user wants to save Q&A to KB', source: 'builtin', promptTemplate: 'Create a knowledge base FAQ entry from this conversation:\n\nQuestion: {{question}}\nAnswer: {{answer}}' },
+    { slug: 'report', name: 'Report', description: 'Generate formatted report', whenToUse: 'When user asks for a report', source: 'builtin', promptTemplate: 'Generate a formatted report on the following topic:\n\n{{topic}}\n\nInclude: {{sections}}' },
+  ];
+  for (const skill of builtinSkills) {
+    await db.insert(chatSkills).values({ ...skill, enabled: true }).onConflictDoNothing();
   }
 }
 ```

@@ -127,6 +127,18 @@ class ModuleRegistry {
       }
     }
   }
+
+  async seedModule(db: any, moduleName: string): Promise<void> {
+    const mod = this.modules.get(moduleName);
+    if (!mod) {
+      throw new Error(`Module "${moduleName}" not registered`);
+    }
+    if (!mod.seed) {
+      console.log(`Module "${moduleName}" has no seed function, skipping.`);
+      return;
+    }
+    await mod.seed(db);
+  }
 }
 
 export const registry = new ModuleRegistry();

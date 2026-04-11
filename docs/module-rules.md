@@ -710,19 +710,54 @@ enabled: boolean('enabled').notNull().default(true),
 
 ## Rule 12: Seed Data
 
-### 12.1 — Seed function is idempotent
+### 12.1 — Seed function is fully idempotent (delete + recreate)
 
-The seed function must be safe to run multiple times without creating duplicates:
+The seed function **must** be safe to run any number of times, always producing the same result. Use the **delete + recreate** pattern for content data, and `onConflictDoNothing` for permissions.
+
+**Strategy by data type:**
+
+| Data Type | Strategy | Why |
+|-----------|----------|-----|
+| Permissions | `onConflictDoNothing` | Append-only, never changes, unique on `slug` |
+| DB extensions/indexes | `IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS` | Schema-level, safe to retry |
+| Content data (categories, entries, plans, etc.) | **Delete all → re-insert** | Ensures schema changes, new columns, and updated seed data always apply cleanly |
+
+**Delete order must respect foreign keys** (children first):
+```
+versions → entries → categories → knowledge_bases
+quotas → plans → provider_services → services → categories → providers
+```
 
 ```typescript
-export async function seedKnowledgeBase(db: any) {
-  const existing = await db.select().from(kbCategories).limit(1);
-  if (existing.length > 0) return; // already seeded
+// CORRECT: Delete + recreate pattern
+export async function seedMyModule(db: any) {
+  // 1. Permissions — idempotent via onConflictDoNothing
+  for (const perm of modulePermissions) {
+    await db.insert(permissions).values(perm).onConflictDoNothing();
+  }
 
-  await db.insert(kbCategories).values([
-    { name: 'Agendamiento', slug: 'agendamiento', order: 1, ... },
-    // ...
-  ]);
+  // 2. Content data — delete all, then re-insert fresh
+  await db.delete(childTable).where(eq(childTable.tenantId, tenantId));
+  await db.delete(parentTable).where(eq(parentTable.tenantId, tenantId));
+
+  const [parent] = await db.insert(parentTable).values({ ... }).returning();
+  await db.insert(childTable).values({ parentId: parent.id, ... });
+
+  console.log('[module-name] Seeded N items');
+}
+```
+
+**Anti-patterns (DO NOT USE):**
+
+```typescript
+// BAD: Skip if exists — blocks re-seeding after schema changes
+const existing = await db.select().from(table).limit(1);
+if (existing.length > 0) return; // ← Never do this
+
+// BAD: Query-then-insert — N+1 queries, race conditions
+const existing = await db.select().from(table).where(eq(table.slug, slug));
+if (existing.length === 0) {
+  await db.insert(table).values({ ... }); // ← No onConflict!
 }
 ```
 
@@ -736,17 +771,25 @@ Built-in entities that users shouldn't delete:
 
 ### 12.3 — Seed permissions for the module
 
+Always use `onConflictDoNothing` — permissions accumulate across modules and must never duplicate:
+
 ```typescript
-export async function seedPermissions(db: any) {
-  const perms = [
-    { resource: 'kb-entries', action: 'read', slug: 'kb-entries.read', description: 'View FAQ entries' },
-    { resource: 'kb-entries', action: 'create', slug: 'kb-entries.create', description: 'Create FAQ entries' },
-    // ...
-  ];
-  for (const perm of perms) {
-    await db.insert(permissions).values(perm).onConflictDoNothing();
-  }
+const perms = [
+  { resource: 'kb-entries', action: 'read', slug: 'kb-entries.read', description: 'View FAQ entries' },
+  { resource: 'kb-entries', action: 'create', slug: 'kb-entries.create', description: 'Create FAQ entries' },
+];
+for (const perm of perms) {
+  await db.insert(permissions).values(perm).onConflictDoNothing();
 }
+```
+
+### 12.4 — Seed must log what it does
+
+Every seed function must log its actions so operators can verify:
+
+```typescript
+console.log('[module-name] Cleared existing data');
+console.log('[module-name] Seeded 10 categories, 15 entries');
 ```
 
 ---

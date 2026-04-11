@@ -237,6 +237,29 @@ Each node reads from this shared state, performs its action, and writes results 
 
 ---
 
+### Playground Testing
+
+Agent workflows are tested through the canonical `UnifiedAIPlayground` in
+`@oven/agent-ui` (dashboard route `/ai-playground`; see
+`docs/modules/16-agent-ui.md`). In workflow mode the playground:
+
+- Lists active workflows from `/api/agent-workflows?filter={"status":"active"}`
+- Sends a plain user message (or unknown `/command`) by POSTing
+  `{ triggerSource: 'playground', payload: { message, question } }` to
+  `/api/agent-workflows/[id]/execute`
+- Fetches the execution detail from `/api/agent-workflow-executions/[id]` to
+  populate the Inspector and Trace panels with per-node status, timing, and
+  errors
+- Injects the workflow's final assistant-facing text back into the same
+  `MessageList` as a synthetic assistant message tagged
+  `metadata.source === 'workflow'` and `metadata.executionId` (extracted from
+  the last LLM-node output in `result.context`)
+- Blocks workflow-incompatible slash commands (`/agent`, `/tools`, `/skill`,
+  `/mcp`, `/pin`, `/feedback`, `/search`, `/reset`) with a user-visible
+  warning system message
+
+---
+
 ## 5. Execution Engine Behavior
 
 ### Standard Flow (Tool-Calling Agent)

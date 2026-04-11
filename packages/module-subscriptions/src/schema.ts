@@ -141,6 +141,26 @@ export const subscriptionQuotaOverrides = pgTable('sub_quota_overrides', {
   unique('sub_qo_unique').on(table.subscriptionId, table.serviceId),
 ]);
 
+// ─── Usage Tracking ──────────────────────────────────────────
+
+export const usageRecords = pgTable('sub_usage_records', {
+  id: serial('id').primaryKey(),
+  tenantId: integer('tenant_id').notNull(),
+  subscriptionId: integer('subscription_id'),
+  serviceId: integer('service_id').notNull(),
+  amount: integer('amount').notNull(),
+  unit: varchar('unit', { length: 64 }).notNull(),
+  billingCycle: varchar('billing_cycle', { length: 32 }),
+  upstreamCostCents: integer('upstream_cost_cents'),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('sur_tenant_id_idx').on(table.tenantId),
+  index('sur_service_id_idx').on(table.serviceId),
+  index('sur_billing_cycle_idx').on(table.billingCycle),
+  index('sur_created_at_idx').on(table.createdAt),
+]);
+
 // ─── Schema export ────────────────────────────────────────────
 
 export const subscriptionsSchema = {
@@ -152,4 +172,5 @@ export const subscriptionsSchema = {
   planQuotas,
   tenantSubscriptions,
   subscriptionQuotaOverrides,
+  usageRecords,
 };
