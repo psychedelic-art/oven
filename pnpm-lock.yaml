@@ -660,6 +660,25 @@ importers:
         specifier: ^4.0.3
         version: 4.0.3
 
+  packages/module-notifications:
+    dependencies:
+      '@oven/module-registry':
+        specifier: workspace:*
+        version: link:../module-registry
+      drizzle-orm:
+        specifier: ^0.38.0
+        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+      next:
+        specifier: '>=15.0.0'
+        version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react:
+        specifier: '>=19.0.0'
+        version: 19.2.4
+    devDependencies:
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.19.10)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.31.1)(tsx@4.21.0)
+
   packages/module-player-map-position:
     dependencies:
       '@neondatabase/serverless':
