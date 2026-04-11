@@ -10,7 +10,7 @@
 | 02 | Memory / context window | 🛑 Blocked | — | Blocked on Q-T-01 — `module-chat` absent on this session branch. |
 | 03 | Workflow engine correctness | ⏳ Planned | — | 4 findings active. F-03-02 path shifted to `engine.ts` (not `engine/engine.ts`). |
 | 04 | Chat & agent-core completion | 🛑 Blocked | — | Blocked on Q-T-01 — `module-agent-core` absent, and F-04-05 depends on `module-chat`. |
-| 05 | Handler type safety | 🟡 In progress | cycle-6 Phase 4 (pending push) | F-05-01 **done** cycle-3 (`ai-playground-executions.handler.ts`). F-05-02 **done** cycle-5: `getOrderColumn` rolled to 8 remaining handlers. F-05-03 **done** cycle-6 Phase 4: `assertCallableProvider` + `ProviderNotCallableError` + 11 tests; `ai-providers-test.handler.ts` has zero `as any`. `module-ai` suite: 161/161 (was 150). F-05-04/05 still ⏳. |
+| 05 | Handler type safety | 🟡 In progress | cycle-7 Phase 4 (pending push) | F-05-01 **done** cycle-3 (`ai-playground-executions.handler.ts`). F-05-02 **done** cycle-5: `getOrderColumn` rolled to 8 remaining handlers. F-05-03 **done** cycle-6 Phase 4: `assertCallableProvider` + `ProviderNotCallableError` + 11 tests; `ai-providers-test.handler.ts` has zero `as any`. F-05-04 **done** cycle-7 Phase 4: `resolveSubClientModel` + `ProviderSubClientNotCallableError` + 12 tests; `ai-transcribe.handler.ts` has zero `as any`. `module-ai` suite: 173/173 (was 161). F-05-05 still ⏳. |
 | 06 | Cross-cutting rule compliance | ⏳ Planned | — | Scope expanded from 5 → 7 findings (F-06-06/07 inherited from Sprint 01). |
 
 **Status legend**: ⏳ Planned · 🟡 In progress · 🔵 Awaiting BO review · ✅ Done · 🛑 Blocked
