@@ -1,4 +1,4 @@
-import { generateObject } from 'ai';
+import { generateObject, type Schema } from 'ai';
 import type { z } from 'zod';
 import { providerRegistry } from '../engine/provider-registry';
 import { resolveModel } from '../engine/model-resolver';
@@ -7,9 +7,24 @@ import { calculateCost } from '../engine/cost-calculator';
 
 // ─── Types ───────────────────────────────────────────────────
 
+/**
+ * Schema accepted by `aiGenerateObject`. Mirrors the union the AI SDK
+ * itself accepts on `generateObject({ schema })`:
+ *
+ *   - `z.ZodSchema<T>` for callers who hand-write a Zod schema.
+ *   - `Schema<T>` for callers who feed JSON Schema through the SDK's
+ *     `jsonSchema(...)` helper at the boundary (e.g.
+ *     `ai-generate-object.handler.ts` after F-05-05 boundary
+ *     validation).
+ *
+ * Widening `GenerateObjectParams.schema` to this union is the change
+ * that lets `ai-generate-object.handler.ts` drop its `as any` cast.
+ */
+export type GenerateObjectSchema<T> = z.ZodSchema<T> | Schema<T>;
+
 export interface GenerateObjectParams<T> {
   prompt: string;
-  schema: z.ZodSchema<T>;
+  schema: GenerateObjectSchema<T>;
   schemaName?: string;
   schemaDescription?: string;
   model?: string;
