@@ -6,7 +6,7 @@
 | Package | `packages/module-files/` |
 | Top-level spec | `docs/modules/14-files.md` (373 lines) |
 | Canonical doc set | **complete (11/11)** — scaffolded cycle-4 |
-| Current sprint | `sprint-01-security-hardening.md` (SHIPPING cycle-4 Phase 4) |
+| Current sprint | `sprint-01-security-hardening.md` **SHIPPED cycle-4 Phase 4** — 10/10 tests green; next is `sprint-02-upload-validation.md` |
 | Sprint queue | 6 files (00 → 05-acceptance) |
 | Active branch | `claude/inspiring-clarke-JuFO1` (cycle-4) |
 | Backup branch | none yet — first feature work against this module ships cycle-4 |
@@ -40,7 +40,7 @@
 - **ModuleDefinition**: `filesModule` with 2 configSchema entries,
   2 typed events, 3 chat action schemas.
 - **Dashboard UI**: 0 components (spec §6 missing).
-- **Tests**: 8 (sprint-01, sort guard).
+- **Tests**: 10 (sprint-01, sort guard — all green).
 
 ## Known gaps
 

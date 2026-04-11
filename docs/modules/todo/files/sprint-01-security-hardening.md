@@ -92,20 +92,28 @@ File: `packages/module-files/src/api/files.handler.ts`.
 
 ### 3. Unit tests
 
-File: `packages/module-files/src/__tests__/sort-guard.test.ts`. 8
-tests mirroring `ai-sort-guard.test.ts`:
+File: `packages/module-files/src/__tests__/sort-guard.test.ts`. 10
+tests, building on `ai-sort-guard.test.ts`:
 
 1. every valid column in `ALLOWED_SORTS` resolves with `ok: true`
-   and the correct column reference (identity check).
-2. an unknown field resolves with `ok: false`.
-3. an empty string resolves with `ok: false`.
-4. a SQL-injection-shaped string resolves with `ok: false`.
+   and a defined column reference.
+2. an unknown table column (e.g. `storageKey`) resolves with
+   `ok: false` — real column on the table, not in the allowlist.
+3. a SQL-injection-shaped string resolves with `ok: false`.
+4. an empty string resolves with `ok: false`.
 5. the `constructor` prototype-key string resolves with `ok: false`.
-6. a case-mismatched field (`'ID'`) resolves with `ok: false`
+6. the `__proto__` prototype-pollution guard resolves with
+   `ok: false`.
+7. a case-mismatched field (`'ID'`) resolves with `ok: false`
    (case-sensitive allowlist).
-7. the returned `column` is `===` to `files.id` when the field is
+8. the returned `column` is `===` to `files.id` when the field is
    `'id'` (column reference identity).
-8. `ALLOWED_SORTS` is exactly the 8 documented fields (no drift).
+9. the returned `column` is `===` to `files.createdAt` when the
+   field is `'createdAt'`.
+10. `ALLOWED_SORTS` is exactly the 8 documented fields (no drift
+    guard — this is the single most important regression test
+    because it makes the test suite catch an accidental allowlist
+    expansion).
 
 ### 4. Vitest config
 
@@ -126,7 +134,7 @@ version as siblings (`3.2.4`). Run `pnpm install` at the repo root.
 - [x] `packages/module-files/src/api/files.handler.ts` has zero
       `(files as any)` casts.
 - [x] `packages/module-files/src/__tests__/sort-guard.test.ts`
-      has exactly 8 tests, all green.
+      has at least 8 tests, all green. (Shipped: 10 tests.)
 - [x] `pnpm --filter @oven/module-files test` runs green.
 - [x] `pnpm install --prefer-offline` at the repo root completes
       without lockfile errors.
@@ -158,10 +166,11 @@ version as siblings (`3.2.4`). Run `pnpm install` at the repo root.
 ```
 pnpm --filter @oven/module-files test
 
-Expected:
-  ✓ src/__tests__/sort-guard.test.ts (8 tests)
+Actual (cycle-4 Phase 4):
+  ✓ src/__tests__/sort-guard.test.ts (10 tests)
   Test Files  1 passed (1)
-       Tests  8 passed (8)
+       Tests  10 passed (10)
+  Duration  1.73s
 ```
 
 Regression: `pnpm --filter @oven/module-ai test` must still show
