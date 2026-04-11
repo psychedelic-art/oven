@@ -4,6 +4,10 @@ import { getDb } from '@oven/module-registry/db';
 import { notFound } from '@oven/module-registry/api-utils';
 import { aiProviders } from '../schema';
 import { providerRegistry } from '../engine/provider-registry';
+import {
+  assertCallableProvider,
+  ProviderNotCallableError,
+} from '../engine/provider-types';
 
 // POST /api/ai-providers/[id]/test — Test provider connection
 export async function POST(
@@ -36,21 +40,17 @@ export async function POST(
     // Try to resolve the provider (this tests DB key decryption + SDK creation)
     const sdkProvider = await providerRegistry.resolve(provider.slug);
 
-    if (!sdkProvider) {
-      return NextResponse.json({
-        ok: false,
-        error: 'Could not create SDK provider instance',
-        latencyMs: Date.now() - startTime,
-      });
-    }
+    // Narrow the unknown return value to a callable SDK provider.
+    // Throws ProviderNotCallableError on null/undefined/non-callable,
+    // which is the caught-and-reported failure mode below.
+    assertCallableProvider(sdkProvider, provider.slug);
 
     // For a deeper test, try a minimal API call based on provider type
     let testResult = 'Provider SDK initialized successfully';
 
     if (provider.type === 'openai') {
-      // Lightweight test: list models
       const { generateText } = await import('ai');
-      const model = (sdkProvider as any)('gpt-4o-mini');
+      const model = sdkProvider('gpt-4o-mini');
       const result = await generateText({
         model,
         prompt: 'Say "ok"',
@@ -59,7 +59,7 @@ export async function POST(
       testResult = `Connected. Model responded: "${result.text}"`;
     } else if (provider.type === 'anthropic') {
       const { generateText } = await import('ai');
-      const model = (sdkProvider as any)('claude-sonnet-4-20250514');
+      const model = sdkProvider('claude-sonnet-4-20250514');
       const result = await generateText({
         model,
         prompt: 'Say "ok"',
@@ -68,7 +68,7 @@ export async function POST(
       testResult = `Connected. Model responded: "${result.text}"`;
     } else if (provider.type === 'google') {
       const { generateText } = await import('ai');
-      const model = (sdkProvider as any)('gemini-2.0-flash');
+      const model = sdkProvider('gemini-2.0-flash');
       const result = await generateText({
         model,
         prompt: 'Say "ok"',
@@ -85,6 +85,19 @@ export async function POST(
       type: provider.type,
     });
   } catch (err) {
+    // ProviderNotCallableError surfaces as a 502 with the typed message;
+    // generic errors (auth, network, SDK) fall through to the same shape.
+    if (err instanceof ProviderNotCallableError) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: err.message,
+          latencyMs: Date.now() - startTime,
+          provider: provider.slug,
+        },
+        { status: 502 },
+      );
+    }
     return NextResponse.json({
       ok: false,
       error: err instanceof Error ? err.message : 'Connection test failed',
