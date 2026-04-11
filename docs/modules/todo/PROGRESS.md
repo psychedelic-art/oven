@@ -61,7 +61,7 @@ none are touched by this cycle.
 | `notifications` | 5 (sprint-00..05) | complete (11/11) | 37 tests green; package NOT registered in `apps/dashboard/src/lib/modules.ts` | Register module in dashboard, then execute `sprint-02` WhatsApp Meta adapter. |
 | `module-knowledge-base` | 6 (sprint-00..05-acceptance) | complete (11/11) — cycle-7 audit re-verified | — | Execute `sprint-02` embedding pipeline. |
 | `ui-flows` | 5 (sprint-00..03, 99-acceptance) | complete (11/11) | — | Execute `sprint-01-foundation`. |
-| `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | F-05-01 + F-05-02 + F-05-03 + F-05-04 done in `module-ai` (**173/173** green) | Cycle-8 also exercised the F-05-01 IP-4 verbatim-copy pattern in `module-tenants/_utils/sort.ts`. Remaining open: **F-05-05** (`ai-generate-object.handler.ts:26` zod validation of the tool schema before passing to `ai.generateObject`). |
+| `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | F-05-01..**F-05-05** done in `module-ai` (**218/218** green; sprint-05 CLOSED cycle-8) | Sprint-05 closed cycle-8 — F-05-05 boundary validator + `GenerateObjectSchema<T>` union shipped on session branch (Phase 4 deliverable). Next program work: sprint-01 (AI Playground UX) or sprint-06 (cross-cutting rule compliance), pending BO triage on Q-T-01..03. |
 | `agent-ui` | 6 (sprint-00..05-acceptance) | complete (11/11) | LIVE package, vitest suite | Execute `sprint-00-discovery` drift audit, then `sprint-01-foundation` (type tighten + MUI-ban lint). |
 | `dashboard-ux-system` | 8 (sprint-00..07) | N/A (program) | — | Execute `sprint-01-foundation`. |
 | `psychedelic-claude-code-migration` | 12 (sprint-00..11) | N/A (program) | — | Owned elsewhere — do not touch. |
@@ -85,12 +85,13 @@ none are touched by this cycle.
 4. **`ui-flows` canonical shape uses `sprint-99-acceptance.md`** while
    every other module uses `sprint-NN-acceptance.md`. Minor naming
    inconsistency.
-5. **`oven-bug-sprint/sprint-05-handler-typesafety`.**
-   F-05-01..F-05-04 done. `packages/module-ai/src/api/` has zero
-   `as any` on sdkProvider / sub-client resolution in every handler
-   except `ai-generate-object.handler.ts:26` (F-05-05 — last open
-   finding). Cycle-8 added a second IP-4 callsite for the same helper
-   pattern in `module-tenants`.
+5. **`oven-bug-sprint/sprint-05-handler-typesafety` — CLOSED cycle-8.**
+   F-05-01..F-05-05 all done. `packages/module-ai/src/api/` has zero
+   `(schema as any) / (sdkProvider as any) / (sub-client as any)` left.
+   The only remaining `as any` under `src/api/` is the unrelated
+   `ai-tools-all.handler.ts:18 (mod as any).chat`, tracked under a
+   different sprint. Cycle-8 also added a second IP-4 callsite for
+   the F-05-01 helper pattern in `module-tenants/_utils/sort.ts`.
 6. **`module-tenants` DRIFT-6 deferred.** Seed idempotency lock is
    tracked but cannot be unit-tested without DB-mock infra. The seed
    already uses `onConflictDoNothing()`. Re-open once a DB-mock harness
