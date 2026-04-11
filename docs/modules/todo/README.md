@@ -1,69 +1,59 @@
-# OVEN — Todo / Bug-Sprint Project
+# OVEN — Todo / Project Plans
 
-> **Home for sprint-organized cleanup work on the OVEN monorepo.**
-> Every sprint here is a self-contained, async-executable unit of work
-> that ships on the `feature/bugs` branch.
+This folder is the home of **multi-sprint project plans** that turn large
+initiatives into iterable, async-runnable work packages.
 
-## What this folder is
+Every plan in this folder is structured so that:
 
-This is not runtime code. It is the **planning surface** for a recurring
-cleanup program that treats the OVEN codebase as a product with a
-backlog. Each sprint is a markdown file that:
+1. A human (or a Claude Code session) can read the project README and
+   immediately understand scope, owner, and current sprint.
+2. A long-running Claude Code agent can take the project's `PROMPT.md`,
+   run it on a dedicated `feature/<folder_name>` branch, and incrementally
+   execute one sprint at a time without losing context between runs.
+3. A **Business Owner** (BO) document proposes integrations and answers
+   "why" questions when ambiguity arises.
 
-- Enumerates a tight, scoped set of defects / UX issues / rule violations
-- Defines a clear Definition of Done (DoD)
-- Can be fed to an async worker (Claude Code subagent, human dev, etc.)
-  via [`prompts/run-sprint.md`](./prompts/run-sprint.md)
+---
 
 ## Folder layout
 
 ```
 docs/modules/todo/
-├── README.md          — this file
-├── backlog.md         — flat master list of all known findings
-├── roles.md           — dev team + business owner role definitions
-├── process.md         — sprint cadence, branch strategy, DoD
-├── sprints/
-│   ├── sprint-01-ai-playground-ux.md
-│   ├── sprint-02-memory-context.md
-│   ├── sprint-03-workflow-engine.md
-│   ├── sprint-04-chat-agent-completion.md
-│   ├── sprint-05-handler-typesafety.md
-│   └── sprint-06-rule-compliance.md
-└── prompts/
-    └── run-sprint.md  — the async runner prompt (copy-paste ready)
+  README.md                                  ← this file
+  <project-slug>/
+    README.md                                ← scope, BO, sprint index, status
+    business-owner.md                        ← BO role + integration proposals
+    sprint-00-<name>.md
+    sprint-01-<name>.md
+    ...
+    sprint-NN-<name>.md
+    PROMPT.md                                ← async runner prompt
+    STATUS.md                                ← updated after every sprint run
 ```
 
-## How to use
+## Naming rules
 
-1. **Pick a sprint** from `sprints/`. Each sprint is a standalone unit.
-2. **Copy the runner prompt** from `prompts/run-sprint.md`.
-3. **Fill in the `{{SPRINT_FILE}}` placeholder** with the sprint path.
-4. **Launch asynchronously** — the runner will check out `feature/bugs`,
-   implement the sprint, commit per finding, and open a PR.
-5. **Business owner** (see `roles.md`) reviews the PR, proposes
-   integrations with neighboring modules, and approves / requests changes.
+- Project folder = kebab-case slug (used as branch name suffix).
+- Branch convention: `feature/<project-slug>`.
+- Sprints are 0-padded (`sprint-00`, `sprint-01`, …) and ordered by number.
+- Each sprint file declares: **Goal**, **Scope**, **Out of scope**,
+  **Deliverables**, **Acceptance criteria**, **Touched packages**, **Risks**.
 
-## Ground rules (non-negotiable)
+## How a project gets executed
 
-- All work lands on **`feature/bugs`**. Never `main`.
-- One commit per finding, prefixed `fix(<sprint-id>):` or `chore(<sprint-id>):`.
-- Must respect **every** rule in [`/CLAUDE.md`](../../../CLAUDE.md) —
-  no inline `style={{}}`, no raw `clsx`, `import type` for types.
-- Must respect [`docs/module-rules.md`](../../module-rules.md) if the
-  fix touches module boundaries.
-- Scope discipline: **do not** refactor outside the sprint's findings.
-  New bugs discovered → add to `backlog.md`, do not fix inline.
+1. Open the project folder, read `README.md` and `business-owner.md`.
+2. Open `PROMPT.md` — copy it into a new Claude Code session (or trigger
+   an async run). The prompt is self-contained: it knows the branch, the
+   sprint sequence, the rules under `docs/`, and the stop conditions.
+3. The agent updates `STATUS.md` after every sprint, commits with a
+   `[sprint-NN] <summary>` prefix, and pushes to
+   `feature/<project-slug>`.
+4. The BO reviews the diff and either approves the next sprint or
+   posts integration proposals back into `business-owner.md`.
 
-## Status
+## Active projects
 
-| Sprint | Focus | Findings | Status |
-|--------|-------|----------|--------|
-| 01 | AI Playground UX & type safety | 10 | ready |
-| 02 | Memory / context window | 4 | ready |
-| 03 | Workflow engine correctness | 4 | ready |
-| 04 | Chat & agent-core completion | 5 | ready |
-| 05 | Handler type safety (SQL injection risk) | 5 | ready |
-| 06 | Cross-cutting rule compliance | 5 | ready |
-
-Total: **33 tracked findings** across 6 sprints.
+| Slug | Title | Branch | Status |
+|------|-------|--------|--------|
+| `psychedelic-claude-code-migration` | Migrate & integrate `psychedelic-art/claude-code` into OVEN | `feature/psychedelic-claude-code-migration` | Planned |
+| `oven-bug-sprint` | Sprint-organized bug / UX / rule-compliance cleanup of the OVEN monorepo | `feature/bugs` | Planned |
