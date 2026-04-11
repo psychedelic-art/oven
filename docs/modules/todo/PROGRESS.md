@@ -59,6 +59,7 @@ Verified on Neon (`neondb`, 91 public tables):
 | `notifications` | 5 (sprint-00..05) | ✅ complete | 37 tests green; package NOT registered in dashboard `modules.ts` | Register in dashboard; execute sprint-02 WhatsApp Meta adapter |
 | `module-knowledge-base` | 5 (sprint-00..05) | partial (`Readme.md` only — needs 10 more files) | — | Fill missing canonical doc files; execute sprint-02 embedding pipeline |
 | `oven-bug-sprint` | 6 (sprint-00..06) | N/A (program, not module) | — | Execute sprint-00 triage outputs |
+| `dashboard-ux-system` | 8 (sprint-00..07) | N/A (program, not module) | — | Execute sprint-01 foundation on `claude/dashboard-ux-system-nESUZ` |
 | `psychedelic-claude-code-migration` | 12 (sprint-00..11) | N/A | — | Owned elsewhere — do not touch |
 
 ## Known issues
