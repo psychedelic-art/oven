@@ -9,6 +9,7 @@
     "lint": "next lint",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx src/lib/seed.ts",
+    "db:reindex": "tsx src/lib/reset-indexes.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
