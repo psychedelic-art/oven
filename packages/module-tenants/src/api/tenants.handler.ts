@@ -1,17 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql, asc, desc, eq, and, ilike } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
-import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+import { parseListParams, listResponse, badRequest } from '@oven/module-registry/api-utils';
 import { eventBus } from '@oven/module-registry';
 import { tenants } from '../schema';
+import { getOrderColumn } from './_utils/sort';
+
+// Whitelisted sort columns for GET /api/tenants (DRIFT-5, F-05-01 pattern).
+// Keep this array explicit — do NOT reach for Object.keys(tenants).
+const ALLOWED_SORTS = [
+  'id',
+  'name',
+  'slug',
+  'enabled',
+  'createdAt',
+  'updatedAt',
+] as const;
 
 // GET /api/tenants — List tenants with filtering
 export async function GET(request: NextRequest) {
   const db = getDb();
   const params = parseListParams(request);
 
-  const orderCol = (tenants as any)[params.sort] ?? tenants.id;
-  const orderFn = params.order === 'desc' ? desc(orderCol) : asc(orderCol);
+  const resolved = getOrderColumn(tenants, params.sort, ALLOWED_SORTS);
+  if (!resolved.ok) {
+    return badRequest(
+      `Invalid sort field "${resolved.received}". Allowed: ${resolved.allowed.join(', ')}`,
+    );
+  }
+  const orderFn = params.order === 'desc' ? desc(resolved.column) : asc(resolved.column);
 
   const conditions = [];
   if (params.filter.enabled !== undefined) {

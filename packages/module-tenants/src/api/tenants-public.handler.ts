@@ -6,6 +6,10 @@ import { registry } from '@oven/module-registry';
 import { tenants } from '../schema';
 import { moduleConfigs } from '@oven/module-config/schema';
 import { computeBusinessHours } from '../utils';
+import {
+  assembleTenantPublicResponse,
+  type TenantPublicResolvedConfig,
+} from './_utils/public-response';
 
 const CONFIG_KEYS = [
   'BUSINESS_NAME', 'NIT', 'LOGO', 'TIMEZONE', 'LOCALE', 'SCHEDULE',
@@ -82,25 +86,20 @@ export async function GET(
     resolved[key] = schemaEntry?.defaultValue ?? null;
   }
 
-  // 3. Compute business hours
+  // 3. Compute business hours (side effect: clock read)
   const schedule = resolved.SCHEDULE as Record<string, { open: string; close: string }> | null;
   const timezone = (resolved.TIMEZONE as string) || 'America/Bogota';
   const isBusinessHours = computeBusinessHours(schedule, timezone);
 
-  // 4. Assemble backward-compatible response
-  return NextResponse.json({
-    name: tenant.name,
-    businessName: resolved.BUSINESS_NAME,
-    logo: resolved.LOGO,
-    timezone,
-    locale: resolved.LOCALE || 'es',
-    schedule,
-    authorizedServices: resolved.AUTHORIZED_SERVICES || [],
-    paymentMethods: resolved.PAYMENT_METHODS || [],
-    tone: resolved.TONE || 'friendly',
-    schedulingUrl: resolved.SCHEDULING_URL,
-    welcomeMessageBusinessHours: resolved.WELCOME_MESSAGE_BUSINESS_HOURS,
-    welcomeMessageOutOfHours: resolved.WELCOME_MESSAGE_OUT_OF_HOURS,
-    isBusinessHours,
-  });
+  // 4. Assemble the public body via the pure helper. Sprint-03 DRIFT-2:
+  // `assembleTenantPublicResponse` has a typed return that explicitly
+  // omits `id`, so any future edit that tries to surface numeric ids
+  // on the public endpoint fails tsc.
+  return NextResponse.json(
+    assembleTenantPublicResponse(
+      { name: tenant.name },
+      resolved as TenantPublicResolvedConfig,
+      isBusinessHours,
+    ),
+  );
 }
