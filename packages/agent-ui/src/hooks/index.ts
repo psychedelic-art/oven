@@ -12,3 +12,9 @@ export type { UseCommandPaletteReturn } from './useCommandPalette';
 export { useDualStateMessages } from './useDualStateMessages';
 export type { UseDualStateMessagesReturn } from './useDualStateMessages';
 export { useChat } from './useChat';
+export { usePlaygroundCommands, WORKFLOW_BLOCKED_COMMANDS } from './usePlaygroundCommands';
+export type {
+  UsePlaygroundCommandsOptions,
+  UsePlaygroundCommandsReturn,
+  PlaygroundRuntimeConfig,
+} from './usePlaygroundCommands';

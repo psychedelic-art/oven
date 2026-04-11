@@ -18,6 +18,16 @@ export async function POST(req: NextRequest, ctx?: { params: Promise<{ id: strin
   const workflow = rows[0];
   if (workflow.status !== 'active') return badRequest('Workflow is not active');
 
+  // Resolve effective tenantId. Workflows can be created without a tenant
+  // binding (agent_workflows.tenant_id is nullable for global/template
+  // workflows), but RAG / KB / memory nodes are tenant-scoped at the data
+  // layer. So we let the caller pass `tenantId` in the body and fall back to
+  // the workflow row only if the body didn't provide one. Without this, RAG
+  // nodes inside global workflows would silently search `WHERE tenant_id = 0`
+  // and return empty context.
+  const effectiveTenantId =
+    (body.tenantId != null ? Number(body.tenantId) : null) ?? workflow.tenantId;
+
   // Build initial context with trigger wrapper
   // The payload goes under `trigger` so definitions can reference $.trigger.message, $.trigger.messages etc.
   const triggerPayload = body.payload ?? {};
@@ -26,13 +36,14 @@ export async function POST(req: NextRequest, ctx?: { params: Promise<{ id: strin
     trigger: {
       ...triggerPayload,
       messages: conversationMessages,
+      tenantId: effectiveTenantId, // exposed so node configs can reference $.trigger.tenantId
     },
   };
 
   // Create execution record
   const [execution] = await db.insert(agentWorkflowExecutions).values({
     workflowId: workflow.id,
-    tenantId: workflow.tenantId,
+    tenantId: effectiveTenantId,
     status: 'running',
     triggerSource: body.triggerSource ?? 'api',
     triggerPayload,
@@ -47,7 +58,7 @@ export async function POST(req: NextRequest, ctx?: { params: Promise<{ id: strin
     definition,
     config,
     initialContext,
-    { executionId: execution.id, tenantId: workflow.tenantId ?? undefined },
+    { executionId: execution.id, tenantId: effectiveTenantId ?? undefined },
   );
 
   // Update execution record

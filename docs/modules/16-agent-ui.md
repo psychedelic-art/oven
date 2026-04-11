@@ -52,7 +52,88 @@ interface ChatWidgetProps {
 - **Anonymous sessions**: Creates chat sessions with `sessionToken` (no login required)
 - **Responsive**: Works on mobile (full-screen overlay) and desktop (floating panel)
 
-### `<AgentPlayground />`
+### `<UnifiedAIPlayground />`
+
+The canonical playground surface. This is a new version of the newsan chat
+experience — it reuses the newsan‑lineage chat primitives (`MessageList`,
+`MessageInput`, `CommandPalette`, `useChat`, `useDualStateMessages`,
+`useChatScroll`) and adds a 3‑panel playground shell around them. It is the
+single source of truth for testing both agents (`module-agent-core`) and
+workflow agents (`module-workflow-agents`).
+
+**Props**:
+```typescript
+interface UnifiedAIPlaygroundProps {
+  apiBaseUrl?: string;
+  tenantSlug?: string;
+  defaultMode?: 'agent' | 'workflow';
+  className?: string;
+}
+```
+
+**Architecture rules**:
+- **Zero MUI.** The playground lives in `@oven/agent-ui` and must not import
+  `@mui/*`, `react-router-dom`, or anything under `apps/dashboard`. This keeps
+  it embeddable in docs, script tags, and third-party hosts.
+- **Dashboard wrapper**: the React Admin route `/ai-playground` mounts a ~40
+  line MUI shell (back button + title) around `<UnifiedAIPlayground>`. Do not
+  reintroduce chat UI into that wrapper.
+- **Tailwind in dashboard**: because dashboard's `globals.css` intentionally
+  omits Tailwind (React Admin uses MUI), the wrapper imports a scoped
+  `ai-playground.css` file that loads `tailwindcss/theme + tailwindcss/utilities`
+  (no preflight, so MUI resets stay intact) and `@source`-scans the agent-ui
+  package.
+
+**Layout** (3 panels):
+- **Left** — tabbed `TargetSelector` / `RuntimeConfigPanel`. Target tab lists
+  agents and workflows from `/api/agents` and `/api/agent-workflows`.
+- **Center** — `ChatHeader` + `MessageList` + `MessageInput`. Empty-state
+  splash when no target is selected; per-target welcome state when selected but
+  no messages sent.
+- **Right** — tabbed Inspector / Eval / Trace (`ExecutionInspector`,
+  `EvalReportPanel`, `TracePanel`).
+
+**Runtime modes**:
+- **Agent mode** — routes to `useChat.sendMessage` which POSTs to
+  `/api/chat-sessions/[id]/messages` (and through that, the agent invoker).
+  Streams tokens via SSE. Inspector shows message-level details.
+- **Workflow mode** — bypasses `sendMessage`, POSTs to
+  `/api/agent-workflows/[id]/execute`, fetches execution detail from
+  `/api/agent-workflow-executions/[id]`, and injects the assistant response
+  into the same `MessageList` via `chat.appendMessage(...)` with
+  `metadata.source === 'workflow'`. Inspector shows node execution trace.
+
+**Slash commands** (`/commands` support):
+- Commands are fetched from `/api/chat-commands` at mount via the new
+  `usePlaygroundCommands` hook.
+- `MessageInput` opens the `CommandPalette` automatically when the user types
+  `/`. Palette filtering / keyboard nav / Tab completion come from the existing
+  `useCommandPalette` hook.
+- Six commands are handled locally so they work even without backend routing:
+  - `/clear` — clear the conversation
+  - `/help` — list all available commands
+  - `/status` — show mode, target, model, temperature
+  - `/model <fast|smart|claude>` — change the runtime config
+  - `/temperature <0-2>` — change the runtime config
+  - `/export` — download the conversation as JSON
+- In workflow mode, a blocked set (`agent, tools, skill, mcp, pin, feedback,
+  search, reset`) short-circuits with a user-visible warning system message.
+- Unknown commands are forwarded to the backend (agent mode via
+  `chat.sendMessage`, workflow mode via the workflow execute path).
+
+**Embedding**:
+```tsx
+import { UnifiedAIPlayground } from '@oven/agent-ui';
+
+<UnifiedAIPlayground
+  apiBaseUrl="https://api.example.com"
+  tenantSlug="my-tenant"
+  defaultMode="agent"
+/>
+```
+No React Router and no MUI required in the host.
+
+### `<AgentPlayground />` *(legacy — prefer `UnifiedAIPlayground`)*
 
 A full-featured conversational testing interface for dashboard users.
 

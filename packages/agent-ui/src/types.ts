@@ -99,6 +99,10 @@ export interface UseChatReturn {
   status: 'idle' | 'loading' | 'streaming' | 'error';
   sessionId: number | null;
   isSessionReady: boolean;
+  /** Inject a synthetic message into the realtime list (used for workflow responses, system notices). */
+  appendMessage: (message: UIMessage) => void;
+  /** Clear all realtime messages (history stays). */
+  clearMessages: () => void;
 }
 
 // ─── Component Props ────────────────────────────────────────

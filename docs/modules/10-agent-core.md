@@ -224,17 +224,29 @@ The endpoint:
 
 ### Playground (Testing Mode)
 
-The agent listing page includes a **playground action** on each row — a button that opens an inline or modal conversational interface where the user can:
+The canonical testing surface is **`UnifiedAIPlayground`** from
+`@oven/agent-ui` (see `docs/modules/16-agent-ui.md`). The dashboard route
+`/ai-playground` mounts it inside a thin MUI wrapper (back button + title);
+the playground internals are Tailwind-only and reuse the newsan-lineage chat
+primitives (`MessageList`, `MessageInput`, `CommandPalette`, `useChat`). For
+`module-agent-core`, the playground invokes agents through the
+`POST /api/agents/[slug]/invoke` endpoint wired into the central chat session
+flow.
 
-- Send text messages to the agent
-- Attach images or audio files
-- Override exposed parameters via a settings panel
-- See real-time agent responses, including tool call cards showing which tools were invoked and their results
-- View execution metadata (tokens, latency, model used)
+The playground supports:
 
-The agent detail/show page includes a full-page playground tab with the same capabilities, plus the ability to inspect the agent's configuration and version history side-by-side.
+- Sending text messages and running tools through the agent (streamed via SSE)
+- Overriding exposed parameters through the `RuntimeConfigPanel`
+- Inspecting message-level details, tool calls, and execution metadata in the
+  right panel
+- Full `/commands` integration (palette opens on `/`, commands fetched from
+  `/api/chat-commands`, local handlers for `/clear`, `/help`, `/status`,
+  `/model`, `/temperature`, `/export`)
+- Running evals (`EvalReportPanel`) and viewing LangSmith traces (`TracePanel`)
+  when `LANGSMITH_API_KEY` is configured
 
-Playground sessions are marked with `isPlayground: true` in the database so they can be filtered from production sessions.
+Playground sessions are marked with `isPlayground: true` in the database so
+they can be filtered from production sessions.
 
 ### Menu Section
 ```

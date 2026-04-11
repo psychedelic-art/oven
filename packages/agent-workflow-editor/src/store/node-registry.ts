@@ -76,12 +76,12 @@ export const agentNodeTypes: AgentNodeTypeDefinition[] = [
     color: '#4CAF50',
     icon: '📚',
     description: 'Search the knowledge base for relevant context',
-    defaultConfig: { maxResults: 5, confidenceThreshold: 0.8 },
+    defaultConfig: { maxResults: 5, confidenceThreshold: 0.6 },
     configFields: [
       { name: 'query', label: 'Search Query', type: 'text', helperText: 'Use $.path to reference context (e.g., $.trigger.question)' },
       { name: 'knowledgeBaseId', label: 'Knowledge Base ID', type: 'number', helperText: 'Optional: specific KB to search' },
       { name: 'maxResults', label: 'Max Results', type: 'number', defaultValue: 5 },
-      { name: 'confidenceThreshold', label: 'Confidence Threshold', type: 'number', defaultValue: 0.8, helperText: '0.0–1.0' },
+      { name: 'confidenceThreshold', label: 'Confidence Threshold', type: 'number', defaultValue: 0.6, helperText: '0.0–1.0 (lower = more recall, higher = more precision)' },
     ],
   },
   {

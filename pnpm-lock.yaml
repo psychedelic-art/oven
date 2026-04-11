@@ -35,6 +35,9 @@ importers:
       '@neondatabase/serverless':
         specifier: ^0.10.0
         version: 0.10.4
+      '@oven/agent-ui':
+        specifier: workspace:*
+        version: link:../../packages/agent-ui
       '@oven/auth-authjs':
         specifier: workspace:*
         version: link:../../packages/auth-authjs

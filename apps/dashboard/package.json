@@ -18,6 +18,7 @@
     "@mui/icons-material": "^7.3.7",
     "@mui/material": "^7.3.7",
     "@neondatabase/serverless": "^0.10.0",
+    "@oven/agent-ui": "workspace:*",
     "@oven/auth-authjs": "workspace:*",
     "@oven/form-editor": "workspace:*",
     "@oven/map-editor": "workspace:*",

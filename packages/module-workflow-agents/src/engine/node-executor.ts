@@ -258,11 +258,33 @@ async function executeHumanReviewNode(ctx: NodeExecutionContext): Promise<Record
 
 async function executeRAGNode(ctx: NodeExecutionContext): Promise<Record<string, unknown>> {
   const { hybridSearch } = await import('@oven/module-knowledge-base');
-  const query = ctx.input.query as string ?? '';
-  const tenantId = (ctx.input.tenantId as number) ?? ctx.tenantId ?? 0;
+
+  const query = (ctx.input.query as string) ?? '';
+  if (!query.trim()) {
+    throw new Error('rag node: `query` is empty. Wire `$.trigger.message` (or similar) into the node config.');
+  }
+
+  // Tenant resolution: prefer the explicit input mapping, fall back to the
+  // workflow execution's tenantId. NEVER silently default to 0 — that would
+  // make the search query `WHERE tenant_id = 0` and return zero rows for any
+  // real KB, which is exactly what produced the original empty-context bug.
+  const inputTenantId = ctx.input.tenantId;
+  const resolvedTenantId =
+    typeof inputTenantId === 'number' ? inputTenantId : ctx.tenantId;
+  if (typeof resolvedTenantId !== 'number' || resolvedTenantId <= 0) {
+    throw new Error(
+      'rag node: no tenantId available. The workflow row must be bound to a tenant, '
+      + 'or the node input must map `tenantId` (e.g. `$.trigger.tenantId`).',
+    );
+  }
+  const tenantId = resolvedTenantId;
+
   const maxResults = (ctx.input.maxResults as number) ?? 5;
   const knowledgeBaseId = ctx.input.knowledgeBaseId as number | undefined;
-  const confidenceThreshold = (ctx.input.confidenceThreshold as number) ?? 0.8;
+  // Default lowered from 0.8 to 0.6 — 0.8 was so strict that real-world
+  // semantic matches (~0.65–0.75) would trigger the keyword fallback and end
+  // up returning empty when the keyword index didn't have a hit.
+  const confidenceThreshold = (ctx.input.confidenceThreshold as number) ?? 0.6;
 
   const searchResult = await hybridSearch(
     { query, tenantId, knowledgeBaseId, maxResults },

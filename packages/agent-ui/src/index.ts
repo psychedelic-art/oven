@@ -8,6 +8,13 @@ export {
   useChatScroll,
   useCommandPalette,
   useDualStateMessages,
+  usePlaygroundCommands,
+  WORKFLOW_BLOCKED_COMMANDS,
+} from './hooks';
+export type {
+  UsePlaygroundCommandsOptions,
+  UsePlaygroundCommandsReturn,
+  PlaygroundRuntimeConfig,
 } from './hooks';
 
 // ─── Shared Components ──────────────────────────────────────
@@ -23,7 +30,10 @@ export {
   MessageList,
   SessionSidebar,
   ConversationView,
+  ChatHeader,
+  filterMessagesForDisplay,
 } from './shared';
+export type { ChatHeaderProps } from './shared';
 
 // ─── Widget Components ──────────────────────────────────────
 export {

@@ -214,7 +214,16 @@ export async function hybridSearch(
   // 4. Sort by merged score descending
   const results = Array.from(merged.values()).sort((a, b) => b.score - a.score);
   const maxResults = options.maxResults ?? DEFAULT_MAX_RESULTS;
-  const trimmed = results.slice(0, maxResults);
+  let trimmed = results.slice(0, maxResults);
+
+  // 5. Safety net: if the keyword fallback was also empty (or merging produced
+  // nothing), fall back to the raw semantic results so the caller still gets
+  // *something* to work with. The previous behavior silently returned an empty
+  // array — see the RAG node empty-context bug. The caller already gets the
+  // honest `topResultConfident: false` flag, so they can decide how to react.
+  if (trimmed.length === 0 && semanticResult.results.length > 0) {
+    trimmed = semanticResult.results.slice(0, maxResults);
+  }
 
   const topScore = trimmed.length > 0 ? trimmed[0].score : 0;
 

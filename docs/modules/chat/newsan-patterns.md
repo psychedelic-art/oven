@@ -132,17 +132,26 @@ AIChatInterfaceEnhanced (main container)
 
 **Oven adaptation**: Similar hierarchy in agent-ui:
 ```
-ChatWidget (facade)
+ChatWidget / UnifiedAIPlayground (facade)
   ├── SessionSidebar
-  ├── MessageList
+  ├── ChatHeader                       (ported from newsan)
+  ├── MessageList                      (fed via filterMessagesForDisplay, ported from newsan)
   │   └── MessageBubble
   │       ├── StreamingText
   │       ├── ToolCallCard
   │       └── MessageFeedback
   ├── MessageInput
-  │   └── CommandPalette
+  │   └── CommandPalette               (net-new, not in newsan)
   └── WidgetLauncher
 ```
+
+**Ported in the April 2026 playground refactor**:
+- `ChatHeader` — dedicated session header (newsan had one, agent-ui had an
+  ad-hoc inline top bar). Now used by `UnifiedAIPlayground` and available to
+  `ChatWidget` next.
+- `filterMessagesForDisplay` — hides empty non-streaming assistant rows while
+  always keeping errors, streaming messages, user, system, and tool messages.
+  Applied inside `UnifiedAIPlayground` before handing messages to `MessageList`.
 
 ---
 

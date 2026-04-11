@@ -106,6 +106,14 @@ export function useChat(opts: {
     setStatus('idle');
   }, []);
 
+  const appendMessage = useCallback((message: UIMessage) => {
+    appendRealtime(message);
+  }, [appendRealtime]);
+
+  const clearMessages = useCallback(() => {
+    clearRealtime();
+  }, [clearRealtime]);
+
   return {
     messages,
     sendMessage,
@@ -115,6 +123,8 @@ export function useChat(opts: {
     status,
     sessionId,
     isSessionReady: isReady,
+    appendMessage,
+    clearMessages,
   };
 }
 

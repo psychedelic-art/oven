@@ -9,3 +9,6 @@ export { MessageInput } from './MessageInput';
 export { MessageList } from './MessageList';
 export { SessionSidebar } from './SessionSidebar';
 export { ConversationView } from './ConversationView';
+export { ChatHeader } from './ChatHeader';
+export type { ChatHeaderProps } from './ChatHeader';
+export { filterMessagesForDisplay } from './filterMessagesForDisplay';
