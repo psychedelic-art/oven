@@ -65,7 +65,8 @@ noon-on-a-closed-day, and default-parameter smoke tests. See
 | Module / Program | Sprint files | Canonical doc set | Package / tests | Next action |
 |---|---|---|---|---|
 | `auth` | 5 (sprint-00..04) | complete (11 files, 1,411 lines) | — (package not yet scaffolded) | Execute sprint-01 foundation — scaffold `packages/module-auth/` + `packages/adapter-authjs/` |
-| `tenants` | 5 (sprint-00..04) | complete (11 files) | `computeBusinessHours` hardened + 14 tests green | Execute sprint-03 security hardening (RLS + `app.tenant_ids` GUC + last-owner guard + sort allowlist) |
+| `tenants` | 5 (sprint-00..04) | complete (11 files) | `computeBusinessHours` hardened + 28 tests green | Execute sprint-03 security hardening (RLS + `app.tenant_ids` GUC + last-owner guard + sort allowlist) |
+| `subscriptions` | 6 (sprint-00..05) | complete (11 files, scaffolded cycle-3 Phase-3) | — (package live on `dev`, **zero tests**) | Execute sprint-01 foundation — vitest scaffold + limit-resolver + override-precedence + seed-idempotency + ModuleDefinition tests |
 | `dashboard-ux-system` | 8 (sprint-00..07) | N/A (program, not module) | — | Execute sprint-01 foundation — bootstrap `packages/dashboard-ui/` shared chrome |
 | `ui-flows` | 5 (sprint-00..03, 99-acceptance) | complete | — | Execute sprint-01 foundation |
 | `config` | 4 (sprint-00..04) | complete | 24 tests green | Execute sprint-02 dashboard UI |
@@ -100,6 +101,12 @@ noon-on-a-closed-day, and default-parameter smoke tests. See
 6. **`claude/qa-test-todo-module-K2tpT` branch carries
    `tsconfig.tsbuildinfo`.** Build artifact — should be added to
    `.gitignore`. Tracked under `oven-bug-sprint`.
+
+7. **`subscriptions` has zero unit tests** despite being live on
+   `dev` with 23 API handlers and a business-critical limit
+   resolver that `module-ai` middleware calls on every request.
+   Sprint-01 of the newly-scaffolded todo folder is the entire
+   foundation sprint to close this gap.
 
 ## Backup inventory (cumulative)
 
