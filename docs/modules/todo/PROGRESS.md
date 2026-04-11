@@ -41,7 +41,7 @@ No regression. Pre-existing 460 dashboard errors are driven by
 | `notifications` | 5 (sprint-00..05) | complete (11/11) | 37 tests green; package NOT registered in `apps/dashboard/src/lib/modules.ts` | Register module in dashboard, then execute `sprint-02` WhatsApp Meta adapter. |
 | `module-knowledge-base` | 6 (sprint-00..05-acceptance) | complete (11/11) — cycle-7 audit re-verified | — | Execute `sprint-02` embedding pipeline. |
 | `ui-flows` | 5 (sprint-00..03, 99-acceptance) | complete (11/11) | — | Execute `sprint-01-foundation`. |
-| `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | F-05-01 + F-05-02 + **F-05-03** done in `module-ai` | **F-05-03 done cycle-7.** Next open: F-05-04 (`ai-transcribe.handler.ts` shape guard), F-05-05 (`ai-generate-object.handler.ts` zod schema). |
+| `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | F-05-01 + F-05-02 + F-05-03 + **F-05-04** done in `module-ai` | **F-05-03 + F-05-04 done cycle-7.** Remaining open: F-05-05 (`ai-generate-object.handler.ts` zod schema). |
 | `agent-ui` | 6 (sprint-00..05-acceptance) | complete (11/11) | LIVE package, vitest suite | Execute `sprint-00-discovery` drift audit, then `sprint-01-foundation` (type tighten + MUI-ban lint). |
 | `dashboard-ux-system` | 8 (sprint-00..07) | N/A (program) | — | Execute `sprint-01-foundation`. |
 | `psychedelic-claude-code-migration` | 12 (sprint-00..11) | N/A (program) | — | Owned elsewhere — do not touch. |
@@ -79,9 +79,11 @@ No regression. Pre-existing 460 dashboard errors are driven by
    every other module uses `sprint-NN-acceptance.md`. Minor naming
    inconsistency.
 5. **`oven-bug-sprint/sprint-05-handler-typesafety`.**
-   F-05-01 (cycle-3), F-05-02 (cycle-5), **F-05-03 (cycle-7)** done.
-   Remaining open: F-05-04 (ai-transcribe shape guard) and F-05-05
-   (ai-generate-object zod schema).
+   F-05-01 (cycle-3), F-05-02 (cycle-5), **F-05-03 + F-05-04 (cycle-7)**
+   done. `packages/module-ai/src/api/` now has zero `as any` in
+   every handler except `ai-generate-object.handler.ts:26`, which is
+   the last remaining open finding (F-05-05: run the schema through
+   zod before passing it to the AI SDK).
 6. **Drizzle `getDb()` returns `any`.** Forces casts in seed paths.
    Still unaddressed, tracked as tech debt.
 7. **Rebase + commit-signing incompatibility.** The code-sign server
