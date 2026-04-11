@@ -42,21 +42,46 @@ override precedence locked down.
 
 ## Acceptance Criteria
 
-- [ ] `pnpm --filter @oven/module-subscriptions test` exits 0.
-- [ ] At least **20 tests** across the four files.
-- [ ] Coverage includes the five-step limit resolver: subscription
+- [x] `pnpm --filter @oven/module-subscriptions test` exits 0.
+- [x] At least **20 tests** across the test files — shipped **52 tests**:
+      10 billing-cycle + 25 resolver + 17 module-definition.
+- [x] Coverage includes the five-step limit resolver: subscription
       lookup, service lookup, override present, plan quota present,
-      service not in plan → 0.
-- [ ] Override precedence test: when both an override and a plan
+      service not in plan → 0. See `resolve-effective-limit.test.ts`.
+- [x] Override precedence test: when both an override and a plan
       quota exist for the same `(subscription, service)`, the
-      override wins.
+      override wins, including zero-override (suspension) and
+      override-lower-than-plan cases.
 - [ ] Seed idempotency test: running `seed()` twice produces the
-      same `count(*)` per table on both runs.
-- [ ] `ModuleDefinition` test asserts `name === 'subscriptions'`,
-      all required fields present, `events.schemas` shape per
-      Rule 2.3.
-- [ ] `CLAUDE.md` grep gates: no `style={{`, all type-only imports
-      use `import type`.
+      same `count(*)` per table on both runs. **DEFERRED** to
+      sprint-02 — requires either a real Neon connection or a
+      Drizzle mock that was out of scope for cycle-3 Phase-4.
+- [x] `ModuleDefinition` test asserts `name === 'subscriptions'`,
+      required fields present, `events.schemas` shape per
+      Rule 2.3, three usage routes wired, `import type` hygiene
+      on the module-registry import.
+- [x] `CLAUDE.md` grep gates: no `style={{`, all type-only imports
+      use `import type` — asserted in
+      `module-definition.test.ts` §"`import type` hygiene".
+
+## Delivery notes (cycle-3 Phase-4)
+
+Extracted two pure helper modules from `usage-metering.ts` without
+changing the public engine API:
+
+- `src/engine/billing-cycle.ts` — `computeBillingCycle(now?: Date)`
+  is UTC-stable, handles midnight rollover, leap day, and year
+  rollover. Mirrors the `computeBusinessHours` pattern from
+  `@oven/module-tenants`.
+- `src/engine/resolve-effective-limit.ts` — `resolveEffectiveLimit`,
+  `computeRemaining`, `isAllowed`. The decision logic is now
+  exhaustively testable without a live database.
+
+`usage-metering.ts` was refactored to delegate to these helpers.
+The historical return contract (`null` for "no quota") is
+preserved so the API handler call sites do not need to change.
+`module-ai` tests remain green, proving the `checkQuota` /
+`trackUsage` contract is intact.
 
 ## Dependencies
 

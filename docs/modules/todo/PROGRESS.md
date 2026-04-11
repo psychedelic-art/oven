@@ -21,17 +21,24 @@ appeared between cycle-2 and cycle-3.
 | 3 | `claude/dashboard-ux-system-nESUZ` | (already landed on `origin/dev` via PR #26 on 2026-04-11) | `bk/claude-dashboard-ux-system-nESUZ-20260411` | — already on `dev` | — | ALREADY ON DEV |
 | 4 | `claude/qa-test-todo-module-K2tpT` | — (build artifact only) | `bk/claude-qa-test-todo-module-K2tpT-20260411` | `apps/dashboard/tsconfig.tsbuildinfo` only | — | **BLOCK** — tsbuildinfo is a build artifact that must not be tracked |
 
-Lifetime test additions across cycles 1–3: **97 new unit tests**
+Lifetime test additions across cycles 1–3: **149 new unit tests**
 (`@oven/module-config` 24, `@oven/module-notifications` 37,
 `@oven/module-ai` +8 this cycle, `@oven/module-tenants` +28 this
-cycle). Verified green:
+cycle, `@oven/module-subscriptions` +52 this cycle — sprint-01
+foundation). Verified green on the session branch:
 
 ```
 pnpm --filter @oven/module-ai test
   Test Files  11 passed (11)   Tests  110 passed (110)
 pnpm --filter @oven/module-tenants test
   Test Files  1 passed (1)     Tests  28 passed (28)
+pnpm --filter @oven/module-subscriptions test
+  Test Files  3 passed (3)     Tests  52 passed (52)
 ```
+
+The `module-ai` suite staying green after the
+`usage-metering.ts` refactor is the key proof that the
+`checkQuota` / `trackUsage` middleware contract is unchanged.
 
 Shared ancestor audit: `d4865d2` "Docs/feature module ai conventions
 (#21)" was on every GA0Ok-family branch but superseded on `dev` by
@@ -66,7 +73,7 @@ noon-on-a-closed-day, and default-parameter smoke tests. See
 |---|---|---|---|---|
 | `auth` | 5 (sprint-00..04) | complete (11 files, 1,411 lines) | — (package not yet scaffolded) | Execute sprint-01 foundation — scaffold `packages/module-auth/` + `packages/adapter-authjs/` |
 | `tenants` | 5 (sprint-00..04) | complete (11 files) | `computeBusinessHours` hardened + 28 tests green | Execute sprint-03 security hardening (RLS + `app.tenant_ids` GUC + last-owner guard + sort allowlist) |
-| `subscriptions` | 6 (sprint-00..05) | complete (11 files, scaffolded cycle-3 Phase-3) | — (package live on `dev`, **zero tests**) | Execute sprint-01 foundation — vitest scaffold + limit-resolver + override-precedence + seed-idempotency + ModuleDefinition tests |
+| `subscriptions` | 6 (sprint-00..05) | complete (11 files, scaffolded cycle-3 Phase-3) | **52 tests green** — 10 billing-cycle + 25 resolver + 17 module-definition (shipped cycle-3 Phase-4) | Execute sprint-02 usage-metering — X-Usage-Idempotency-Key + slug validation + per-period aggregation |
 | `dashboard-ux-system` | 8 (sprint-00..07) | N/A (program, not module) | — | Execute sprint-01 foundation — bootstrap `packages/dashboard-ui/` shared chrome |
 | `ui-flows` | 5 (sprint-00..03, 99-acceptance) | complete | — | Execute sprint-01 foundation |
 | `config` | 4 (sprint-00..04) | complete | 24 tests green | Execute sprint-02 dashboard UI |
@@ -102,11 +109,12 @@ noon-on-a-closed-day, and default-parameter smoke tests. See
    `tsconfig.tsbuildinfo`.** Build artifact — should be added to
    `.gitignore`. Tracked under `oven-bug-sprint`.
 
-7. **`subscriptions` has zero unit tests** despite being live on
-   `dev` with 23 API handlers and a business-critical limit
-   resolver that `module-ai` middleware calls on every request.
-   Sprint-01 of the newly-scaffolded todo folder is the entire
-   foundation sprint to close this gap.
+7. ~~**`subscriptions` has zero unit tests**~~ — **CLOSED cycle-3
+   Phase-4**. 52 vitest tests shipped covering billing-cycle
+   math, the five-step limit resolver, and the ModuleDefinition
+   contract. The seed idempotency test has been deferred to
+   sprint-02 (requires a Drizzle mock harness out of scope for
+   this cycle).
 
 ## Backup inventory (cumulative)
 

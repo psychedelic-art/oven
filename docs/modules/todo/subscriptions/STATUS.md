@@ -5,15 +5,16 @@
 - **Top-level spec**: `docs/modules/21-module-subscriptions.md` (887 lines) — LIVE
 - **Canonical doc set**: `docs/modules/subscriptions/` — **scaffolded this session** (11 files)
 - **Package**: `packages/module-subscriptions/` — already on `dev`
-- **Unit tests**: **0** — the biggest gap
+- **Unit tests**: **52** — sprint-01 foundation shipped this cycle
 - **Sprint queue**: 6 files (`sprint-00..05`)
-- **Active sprint**: `sprint-00-discovery` (not yet started)
+- **Active sprint**: `sprint-02-usage-metering` (sprint-01 shipped, sprint-00 discovery deferred)
 
 ## History
 
 | Date       | Event                                                                              |
 |------------|------------------------------------------------------------------------------------|
-| 2026-04-11 | Cycle-3 session: canonical 11-file doc set scaffolded; todo folder + sprint plan created. No code changes. |
+| 2026-04-11 | Cycle-3 Phase-3: canonical 11-file doc set scaffolded; todo folder + 6 sprint files created. |
+| 2026-04-11 | Cycle-3 Phase-4: sprint-01 foundation shipped. Extracted `computeBillingCycle` and `resolveEffectiveLimit` (pure helpers) from `usage-metering.ts`; refactored the engine to delegate; wrote 52 vitest tests across three files (10 billing-cycle + 25 resolver + 17 module-definition). `module-ai` and `module-tenants` test suites remain green (110 + 28) — no regression. |
 
 ## Dependencies satisfied
 

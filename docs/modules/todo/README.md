@@ -55,7 +55,7 @@ See `PROGRESS.md` for the live state table. Snapshot:
 | `oven-bug-sprint` | Program | `claude/eager-curie-0da9Q` | Triage (sprint-00) + 6 sprints imported; F-05-01 sort allowlist helper shipped cycle-3 |
 | `auth` | Module | `claude/inspiring-clarke-0OpL4` → superseded by `GA0Ok` | Canonical 11-file doc set graduated cycle-3 (1,411 lines); 5 sprint files (00-discovery..04-acceptance); package not yet implemented |
 | `tenants` | Module | `claude/inspiring-clarke-GA0Ok` | Canonical 11-file doc set graduated cycle-3; 5 sprint files (00..04); `computeBusinessHours` hardened + 28 vitest tests shipped cycle-3; sprint-03 security hardening remaining |
-| `subscriptions` | Module | (scaffolded cycle-3 from live code) | Canonical 11-file doc set graduated cycle-3; todo folder + 6 sprint files (00-discovery..05-acceptance) created; package already on `dev` but has **zero unit tests** — sprint-01 is the foundation |
+| `subscriptions` | Module | (scaffolded cycle-3 from live code) | Canonical 11-file doc set graduated cycle-3; todo folder + 6 sprint files; sprint-01 foundation shipped cycle-3 Phase-4 — **52 tests green** (billing-cycle 10 + resolver 25 + module-definition 17); next is sprint-02 usage-metering hardening |
 | `dashboard-ux-system` | Program | `claude/dashboard-ux-system-nESUZ` | Discovery + 8 sprints authored; **landed on `dev` via PR #26** (2026-04-11); ready for sprint-01 foundation execution |
 | `psychedelic-claude-code-migration` | Program | (owned elsewhere) | Planned — NOT touched by this pipeline |
 

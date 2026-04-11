@@ -10,6 +10,10 @@
     "./types": "./src/types.ts",
     "./api/*": "./src/api/*"
   },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
   "dependencies": {
     "@oven/module-registry": "workspace:*",
     "@oven/module-roles": "workspace:*",
@@ -17,6 +21,9 @@
     "@oven/module-tenants": "workspace:*",
     "drizzle-orm": "^0.38.0",
     "@neondatabase/serverless": "^0.10.0"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0"
   },
   "peerDependencies": {
     "next": ">=15.0.0",
