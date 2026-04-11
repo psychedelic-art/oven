@@ -39,7 +39,7 @@ No regression. Pre-existing 460 dashboard errors are driven by
 | `tenants` | 5 (sprint-00..04-acceptance) | complete (11/11) | **28 tests** green | Execute `sprint-03-security-hardening` (R3.5 id leak fix, last-owner guard, `MAX_MEMBERS_PER_TENANT`, sort allowlist). |
 | `config` | 4 (sprint-00..04) | complete (11/11) | 24 tests green | Execute `sprint-02-dashboard-ui`. |
 | `notifications` | 5 (sprint-00..05) | complete (11/11) | 37 tests green; package NOT registered in `apps/dashboard/src/lib/modules.ts` | Register module in dashboard, then execute `sprint-02` WhatsApp Meta adapter. |
-| `module-knowledge-base` | 5 (sprint-00..05) | **partial** (`Readme.md` only — 10 files missing) | — | Fill missing canonical doc files; then execute `sprint-02` embedding pipeline. |
+| `module-knowledge-base` | 6 (sprint-00..05-acceptance) | complete (11/11) — cycle-7 audit re-verified | — | Execute `sprint-02` embedding pipeline. |
 | `ui-flows` | 5 (sprint-00..03, 99-acceptance) | complete (11/11) | — | Execute `sprint-01-foundation`. |
 | `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | F-05-01 + F-05-02 + **F-05-03** done in `module-ai` | **F-05-03 done cycle-7.** Next open: F-05-04 (`ai-transcribe.handler.ts` shape guard), F-05-05 (`ai-generate-object.handler.ts` zod schema). |
 | `agent-ui` | 6 (sprint-00..05-acceptance) | complete (11/11) | LIVE package, vitest suite | Execute `sprint-00-discovery` drift audit, then `sprint-01-foundation` (type tighten + MUI-ban lint). |
@@ -59,9 +59,22 @@ No regression. Pre-existing 460 dashboard errors are driven by
    scaffolded in cycle-3 is not listed in
    `apps/dashboard/src/lib/modules.ts`. Register before
    `notifications/sprint-02` lands.
-3. **`module-knowledge-base` canonical doc shape is incomplete.** Only
-   `docs/modules/knowledge-base/Readme.md` exists on dev. Target of
-   cycle-7 Phase 3.
+3. **`module-knowledge-base` canonical doc shape — CORRECTED cycle-7.**
+   Previous PROGRESS.md entries flagged this module as partial
+   (`Readme.md` only). A fresh re-audit (cycle-7 Phase 3) against the
+   graduated `docs/modules/knowledge-base/` folder confirms **all 11
+   canonical files are present with real content** (Readme 122L,
+   UI 531L, api 693L, architecture 348L, database 412L,
+   detailed-requirements 235L, module-design 314L, prompts 230L,
+   references 112L, secure 261L, use-case-compliance 271L). The stale
+   flag is removed; next action is `sprint-02` embedding pipeline
+   execution. The same audit confirmed every other todo module with a
+   sibling `docs/modules/<module>/` folder has the complete 11/11
+   shape (agent-ui, auth, config, files, notifications, subscriptions,
+   tenants, ui-flows). The three programs
+   (`dashboard-ux-system`, `oven-bug-sprint`,
+   `psychedelic-claude-code-migration`) do not require a canonical
+   folder by design.
 4. **`ui-flows` canonical shape uses `sprint-99-acceptance.md`** while
    every other module uses `sprint-NN-acceptance.md`. Minor naming
    inconsistency.
