@@ -1,16 +1,37 @@
 import { NextRequest } from 'next/server';
 import { sql, asc, desc, eq, and, ilike } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
-import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+import { parseListParams, listResponse, badRequest } from '@oven/module-registry/api-utils';
 import { files } from '../schema';
+import { getOrderColumn } from './_utils/sort';
+
+// Whitelisted sort columns for GET /api/files.
+// Keep this array explicit — do NOT reach for Object.keys(files) since
+// that would silently expand the allowlist as the schema grows (e.g.
+// when the sprint-05 `visibility` column lands).
+const ALLOWED_SORTS = [
+  'id',
+  'tenantId',
+  'filename',
+  'mimeType',
+  'sizeBytes',
+  'folder',
+  'sourceModule',
+  'createdAt',
+] as const;
 
 // GET /api/files — List files
 export async function GET(request: NextRequest) {
   const db = getDb();
   const params = parseListParams(request);
 
-  const orderCol = (files as any)[params.sort] ?? files.id;
-  const orderFn = params.order === 'desc' ? desc(orderCol) : asc(orderCol);
+  const resolved = getOrderColumn(files, params.sort, ALLOWED_SORTS);
+  if (!resolved.ok) {
+    return badRequest(
+      `Invalid sort field "${resolved.received}". Allowed: ${resolved.allowed.join(', ')}`,
+    );
+  }
+  const orderFn = params.order === 'desc' ? desc(resolved.column) : asc(resolved.column);
 
   const conditions: any[] = [];
   if (params.filter.q) {
