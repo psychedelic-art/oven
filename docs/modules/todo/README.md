@@ -61,6 +61,21 @@ See `PROGRESS.md` for the live state table. Snapshot:
 | `dashboard-ux-system` | Program | `claude/dashboard-ux-system-nESUZ` | Discovery + 8 sprints authored; **landed on `dev` via PR #26** (2026-04-11); ready for sprint-01 foundation execution |
 | `psychedelic-claude-code-migration` | Program | (owned elsewhere) | Planned — NOT touched by this pipeline |
 
+Cycle-6 landing (2026-04-11): `auth`, `tenants`, `subscriptions`,
+`files`, and `agent-ui` canonical 11-file doc sets plus `module-ai`
+F-05-01/F-05-02 rollout landed on `origin/dev` as merge commit
+`80a58ac` from `claude/inspiring-clarke-e8QUu`. 138 new unit tests,
+240 total green, zero typecheck regressions (460 baseline). See
+`PROGRESS.md` and `qa-reports/claude-inspiring-clarke-e8QUu-QA-REPORT.md`.
+
+Cycle-7 session (2026-04-11): `module-ai` F-05-03 typed SDK provider
+guard landed on session branch `claude/inspiring-clarke-LSksg` from
+`claude/inspiring-clarke-bYhvx`. 11 new regression tests
+(`provider-callable-guard.test.ts`), `@oven/module-ai` 161/161 green,
+dashboard `tsc --noEmit` delta 0 (460 baseline unchanged). User
+approval required to land on `dev` — see
+`qa-reports/claude-inspiring-clarke-bYhvx-QA-REPORT.md`.
+
 ## Graduation definition of done
 
 A module leaves `docs/modules/todo/<module>/` only when:
