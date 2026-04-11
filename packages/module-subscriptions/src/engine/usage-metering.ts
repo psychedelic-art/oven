@@ -9,6 +9,11 @@ import {
   planQuotas,
   subscriptionQuotaOverrides,
 } from '../schema';
+import { computeBillingCycle } from './billing-cycle';
+import {
+  resolveEffectiveLimit,
+  computeRemaining,
+} from './resolve-effective-limit';
 
 export interface TrackUsageParams {
   tenantId: number;
@@ -43,13 +48,14 @@ export interface ServiceUsage {
 }
 
 /**
- * Compute billing cycle string for current month (e.g., "2026-04")
+ * Compute billing cycle string for current month (e.g., "2026-04").
+ *
+ * Thin wrapper around the pure `computeBillingCycle` helper in
+ * `./billing-cycle.ts`. The wrapper is kept so existing call sites
+ * in this file do not need to pass an explicit `new Date()`.
  */
 function getCurrentBillingCycle(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  return `${year}-${month}`;
+  return computeBillingCycle();
 }
 
 /**
@@ -66,7 +72,17 @@ async function resolveService(db: ReturnType<typeof getDb>, slug: string) {
 
 /**
  * Get the effective quota limit for a tenant + service.
- * Cascade: override → plan quota → 0 (not in plan)
+ *
+ * DB reads are done here; the decision logic is delegated to the
+ * pure `resolveEffectiveLimit` helper in `./resolve-effective-limit.ts`,
+ * which is exhaustively unit-tested. Keeping the DB access and the
+ * decision separate is the sprint-01 refactor that lets us prove
+ * the five-step cascade is correct without a live database.
+ *
+ * The historical return shape (`null` for "no quota available") is
+ * preserved so the two existing call sites in this file do not
+ * need to change — the resolver's discriminated-union result is
+ * mapped back to `null` for the terminal-zero cases.
  */
 async function getEffectiveLimit(
   db: ReturnType<typeof getDb>,
@@ -88,41 +104,56 @@ async function getEffectiveLimit(
     )
     .limit(1);
 
-  if (!subscription) return null;
-
-  // 2. Check override first
-  const [override] = await db
-    .select({ quota: subscriptionQuotaOverrides.quota })
-    .from(subscriptionQuotaOverrides)
-    .where(
-      and(
-        eq(subscriptionQuotaOverrides.subscriptionId, subscription.subscriptionId),
-        eq(subscriptionQuotaOverrides.serviceId, serviceId)
+  // 2. Check override (only if we have a subscription)
+  let override: { quota: number } | null = null;
+  if (subscription) {
+    const [row] = await db
+      .select({ quota: subscriptionQuotaOverrides.quota })
+      .from(subscriptionQuotaOverrides)
+      .where(
+        and(
+          eq(subscriptionQuotaOverrides.subscriptionId, subscription.subscriptionId),
+          eq(subscriptionQuotaOverrides.serviceId, serviceId)
+        )
       )
-    )
-    .limit(1);
-
-  if (override) {
-    return { limit: override.quota, period: 'monthly', source: 'override' };
+      .limit(1);
+    if (row) override = { quota: row.quota };
   }
 
   // 3. Fall back to plan quota
-  const [quota] = await db
-    .select({ quota: planQuotas.quota, period: planQuotas.period })
-    .from(planQuotas)
-    .where(
-      and(
-        eq(planQuotas.planId, subscription.planId),
-        eq(planQuotas.serviceId, serviceId)
+  let planQuota: { quota: number; period: string } | null = null;
+  if (subscription) {
+    const [row] = await db
+      .select({ quota: planQuotas.quota, period: planQuotas.period })
+      .from(planQuotas)
+      .where(
+        and(
+          eq(planQuotas.planId, subscription.planId),
+          eq(planQuotas.serviceId, serviceId)
+        )
       )
-    )
-    .limit(1);
-
-  if (quota) {
-    return { limit: quota.quota, period: quota.period, source: 'plan' };
+      .limit(1);
+    if (row) planQuota = { quota: row.quota, period: row.period };
   }
 
-  // Service not in plan
+  // 4. Delegate the cascade decision to the pure helper.
+  const resolved = resolveEffectiveLimit({
+    hasActiveSubscription: !!subscription,
+    serviceId,
+    override,
+    planQuota,
+  });
+
+  // Preserve the legacy return contract: any source other than
+  // `override` or `plan` maps back to `null` so existing call sites
+  // continue to treat zero-quota outcomes as "no limit available".
+  if (resolved.source === 'override' || resolved.source === 'plan') {
+    return {
+      limit: resolved.limit,
+      period: resolved.period,
+      source: resolved.source,
+    };
+  }
   return null;
 }
 
@@ -194,7 +225,7 @@ export class UsageMeteringService {
     }
 
     const used = await getCurrentUsage(db, tenantId, service.id, billingCycle);
-    const remaining = Math.max(0, effectiveLimit.limit - used);
+    const remaining = computeRemaining(effectiveLimit.limit, used);
     const exceeded = used > effectiveLimit.limit;
 
     if (exceeded) {
@@ -231,7 +262,7 @@ export class UsageMeteringService {
 
     const billingCycle = getCurrentBillingCycle();
     const used = await getCurrentUsage(db, tenantId, service.id, billingCycle);
-    const remaining = Math.max(0, effectiveLimit.limit - used);
+    const remaining = computeRemaining(effectiveLimit.limit, used);
     const allowed = remaining >= estimatedAmount;
 
     return { allowed, remaining, limit: effectiveLimit.limit, used };
@@ -315,7 +346,7 @@ export class UsageMeteringService {
         unit: q.unit,
         used,
         limit,
-        remaining: Math.max(0, limit - used),
+        remaining: computeRemaining(limit, used),
         period: q.period,
         source: overrideQuota !== undefined ? 'override' as const : 'plan' as const,
       };

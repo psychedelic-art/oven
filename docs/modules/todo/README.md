@@ -51,9 +51,12 @@ See `PROGRESS.md` for the live state table. Snapshot:
 | `ui-flows` | Module | `claude/eager-curie-TXjZZ` | Canonical doc set graduated; sprints in review |
 | `config` | Module | `claude/eager-curie-INifN` | Canonical doc set graduated; cascade resolver tests (24) passing |
 | `notifications` | Module | `claude/eager-curie-4GaQC` | Canonical doc set graduated; `@oven/module-notifications` package scaffolded, tests (37) passing — NOT YET registered in `apps/dashboard/src/lib/modules.ts` |
-| `module-knowledge-base` | Module | `claude/eager-curie-LRIhN` | Todo sprints added (sprint-00..05); canonical folder already exists on dev |
-| `oven-bug-sprint` | Program | `claude/eager-curie-0da9Q` | Triage (sprint-00) + 6 sprints imported; ready for execution |
-| `dashboard-ux-system` | Program | `claude/dashboard-ux-system-nESUZ` | Discovery + 8 sprints authored; ready for sprint-01 foundation |
+| `module-knowledge-base` | Module | `claude/eager-curie-LRIhN` | Todo sprints added (sprint-00..05); canonical folder `Readme.md` only — remaining 10 files missing |
+| `oven-bug-sprint` | Program | `claude/eager-curie-0da9Q` | Triage (sprint-00) + 6 sprints imported; F-05-01 sort allowlist helper shipped cycle-3 |
+| `auth` | Module | `claude/inspiring-clarke-0OpL4` → superseded by `GA0Ok` | Canonical 11-file doc set graduated cycle-3 (1,411 lines); 5 sprint files (00-discovery..04-acceptance); package not yet implemented |
+| `tenants` | Module | `claude/inspiring-clarke-GA0Ok` | Canonical 11-file doc set graduated cycle-3; 5 sprint files (00..04); `computeBusinessHours` hardened + 28 vitest tests shipped cycle-3; sprint-03 security hardening remaining |
+| `subscriptions` | Module | (scaffolded cycle-3 from live code) | Canonical 11-file doc set graduated cycle-3; todo folder + 6 sprint files; sprint-01 foundation shipped cycle-3 Phase-4 — **52 tests green** (billing-cycle 10 + resolver 25 + module-definition 17); next is sprint-02 usage-metering hardening |
+| `dashboard-ux-system` | Program | `claude/dashboard-ux-system-nESUZ` | Discovery + 8 sprints authored; **landed on `dev` via PR #26** (2026-04-11); ready for sprint-01 foundation execution |
 | `psychedelic-claude-code-migration` | Program | (owned elsewhere) | Planned — NOT touched by this pipeline |
 
 ## Graduation definition of done

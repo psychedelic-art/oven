@@ -1,17 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql, asc, desc, eq, and } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
-import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
+import { parseListParams, listResponse, badRequest } from '@oven/module-registry/api-utils';
 import { eventBus } from '@oven/module-registry';
 import { aiPlaygroundExecutions } from '../schema';
+import { getOrderColumn } from './_utils/sort';
+
+// Whitelisted sort columns for GET /api/ai-playground-executions.
+// Keep this array explicit — do NOT reach for Object.keys(aiPlaygroundExecutions)
+// since that would silently expand the allowlist as the schema grows.
+const ALLOWED_SORTS = [
+  'id',
+  'tenantId',
+  'type',
+  'model',
+  'status',
+  'latencyMs',
+  'costCents',
+  'createdAt',
+] as const;
 
 // GET /api/ai-playground-executions — List playground executions
 export async function GET(request: NextRequest) {
   const db = getDb();
   const params = parseListParams(request);
 
-  const orderCol = (aiPlaygroundExecutions as any)[params.sort] ?? aiPlaygroundExecutions.id;
-  const orderFn = params.order === 'desc' ? desc(orderCol) : asc(orderCol);
+  const resolved = getOrderColumn(aiPlaygroundExecutions, params.sort, ALLOWED_SORTS);
+  if (!resolved.ok) {
+    return badRequest(
+      `Invalid sort field "${resolved.received}". Allowed: ${resolved.allowed.join(', ')}`,
+    );
+  }
+  const orderFn = params.order === 'desc' ? desc(resolved.column) : asc(resolved.column);
 
   const conditions: any[] = [];
   if (params.filter.type) {
