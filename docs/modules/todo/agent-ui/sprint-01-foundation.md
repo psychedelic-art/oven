@@ -42,17 +42,15 @@ machine-checkable lint rule, so future PRs cannot regress.
 
 ## Acceptance criteria
 
-- [ ] `pnpm --filter @oven/agent-ui typecheck` is green.
-- [ ] `pnpm --filter @oven/agent-ui test` is green with the new
-      `no-mui-imports` test asserting zero matches.
-- [ ] `grep -r "any" packages/agent-ui/src/hooks/ | wc -l`
-      returns the same count as before the sprint (explicit,
-      justified `any` only — every remaining one has a
-      `// eslint-disable-next-line` with a comment).
-- [ ] Every requirement id in the R1.x block of
-      `detailed-requirements.md` is machine-checked by either
-      typecheck, ESLint, or the new test.
-- [ ] `STATUS.md` sprint-01 row flipped to ✅.
+- [x] `pnpm --filter @oven/agent-ui typecheck` is green.
+- [x] `pnpm --filter @oven/agent-ui test` is green with the new
+      `no-mui-imports` test asserting zero matches (71/71 tests pass).
+- [x] `grep -r "any" packages/agent-ui/src/hooks/ | wc -l`
+      returns 1 (comment only, no type annotations). Same as pre-sprint.
+- [x] Every requirement id in the R1.x block of
+      `detailed-requirements.md` is machine-checked: R1.1 by
+      no-mui-imports.test.ts + ESLint config, R1.2/R1.3/R1.4 verified clean.
+- [x] `STATUS.md` sprint-01 row flipped to Done.
 
 ## Dependencies
 
@@ -77,8 +75,8 @@ machine-checkable lint rule, so future PRs cannot regress.
 
 ## Rule compliance checklist
 
-- [ ] `CLAUDE.md` R1.1/R1.2/R1.3/R1.4 — directly enforced by this
+- [x] `CLAUDE.md` R1.1/R1.2/R1.3/R1.4 — directly enforced by this
       sprint.
-- [ ] `docs/package-composition.md` — the lint rule also blocks
+- [x] `docs/package-composition.md` — the lint rule also blocks
       `apps/**` imports, which enforces package separation.
-- [ ] `docs/module-rules.md` §Naming — unchanged.
+- [x] `docs/module-rules.md` §Naming — unchanged.
