@@ -1,8 +1,8 @@
 # Todo Queue Progress
 
-Regenerated fresh on 2026-04-12 after **cycle-23** merge of
-`claude/stoic-hamilton-JTmbo` (subscriptions sprint-03 public pricing,
-83 tests green) onto `origin/dev` as merge commit `ff4e60a`.
+Regenerated fresh on 2026-04-12 after **cycle-24** merge of
+`claude/stoic-hamilton-Ucqlg` (notifications sprint-03 usage metering,
+87 tests green, +39 new) onto `origin/dev` as merge commit `8f71a06`.
 Session branch: `claude/stoic-hamilton-Ucqlg`.
 
 ## Phase 0 — Branch discovery (cycle-24)
@@ -44,6 +44,7 @@ No shared unmerged ancestors detected across candidates.
 | 21 | agent-ui | sprint-01 foundation | `15ffa1b` | — |
 | 22 | files | sprint-03 tenant scoping | `f8dc9a9` | — |
 | 23 | subscriptions | sprint-03 public pricing | `ff4e60a` | +3 |
+| 24 | notifications | sprint-03 usage metering | `8f71a06` | +39 |
 
 ## Active queue (post cycle-23)
 
@@ -54,7 +55,7 @@ No shared unmerged ancestors detected across candidates.
 | `subscriptions` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-subscriptions`, 83 tests (6 files) | **sprint-03 done (cycle-23)** | Execute sprint-04-dashboard-ui. |
 | `tenants` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-tenants`, 78 tests (4 files) | sprint-03 done (cycle-8) | Execute sprint-04-acceptance (BLOCKED on DB-mock harness). |
 | `config` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-config`, 24 tests (2 files) | **sprint-02 done (cycle-15)** | Execute sprint-03-rls-and-migration (SEMI-BLOCKED: needs Neon preview branch). |
-| `notifications` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-notifications` 48 tests + `@oven/notifications-meta` 21 tests; REGISTERED | **sprint-02 done (cycle-12)** | **Execute sprint-03-usage-metering.** |
+| `notifications` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-notifications` 87 tests + `@oven/notifications-meta` 21 tests; REGISTERED | **sprint-03 done (cycle-24)** | Execute sprint-04-dashboard-ui. |
 | `module-knowledge-base` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-knowledge-base`, 21 tests (2 files) | **sprint-02 done (cycle-16)** | Execute sprint-03-search-engine (pgvector required). |
 | `ui-flows` | 5 (sprint-00..03, 99) | 11/11 | LIVE `@oven/module-ui-flows`, 89 tests (13 files) | **sprint-01 done (cycle-19)** | Execute sprint-02-portal-app. |
 | `agent-ui` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/agent-ui`, 71 tests (10 files) | **sprint-01 done (cycle-21)** | Execute sprint-02-session-sidebar (needs module-chat endpoints). |
@@ -62,13 +63,13 @@ No shared unmerged ancestors detected across candidates.
 | `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | 310+ tests (`module-ai` + `module-workflows`) | sprint-01 CLOSED (cycle-14), sprint-03 CLOSED (cycle-18), sprint-05 CLOSED (cycle-9), sprint-06 CLOSED (cycle-11) | No unblocked sprints remain. sprint-02/04 BLOCKED on module-chat/agent-core. |
 | `psychedelic-claude-code-migration` | 12 (sprint-00..11) | N/A (program) | N/A | -- | Owned elsewhere -- do not touch. |
 
-## Priority order (post cycle-23)
+## Priority order (post cycle-24)
 
-P0: notifications sprint-03 (usage metering — all dependencies met)
-P1: subscriptions sprint-04 (dashboard UI — dependencies met)
-P2: auth sprint-03 (dashboard UI + API keys — large scope)
-P3: ui-flows sprint-02 (portal app — large scope, new app)
-P4: agent-ui sprint-02 (session sidebar — needs module-chat endpoints)
+P0: subscriptions sprint-04 (dashboard UI — dependencies met)
+P1: auth sprint-03 (dashboard UI + API keys — large scope)
+P2: ui-flows sprint-02 (portal app — large scope, new app)
+P3: agent-ui sprint-02 (session sidebar — needs module-chat endpoints)
+P4: notifications sprint-04 (dashboard UI — after sprint-03)
 P5: dashboard-ux-system sprint-01 (foundation — docs-only bootstrap)
 P6: config sprint-03 (RLS + migration — needs Neon preview branch)
 P7: knowledge-base sprint-03 (search engine — needs pgvector)
@@ -104,7 +105,8 @@ SKIP: psychedelic-claude-code-migration (external ownership)
 
 ## Backup inventory (current)
 
-- `bk/claude-stoic-hamilton-JTmbo-20260412` (cycle-23 — to be created)
+- `bk/claude-stoic-hamilton-Ucqlg-20260412` (cycle-24)
+- `bk/claude-stoic-hamilton-JTmbo-20260412` (cycle-23)
 - `bk/claude-stoic-hamilton-2ylh0-20260412` (cycle-18)
 - `bk/claude-stoic-hamilton-bVxUR-20260412` (cycle-17b)
 - `bk/claude-stoic-hamilton-8IRlF-20260412` (cycle-15)
@@ -124,5 +126,5 @@ SKIP: psychedelic-claude-code-migration (external ownership)
 
 ## Merge path to `dev` (post cycle-23)
 
-`origin/dev` HEAD is now `ff4e60a merge(cycle-23): land subscriptions
-sprint-03 public pricing`.
+`origin/dev` HEAD is now `8f71a06 merge(cycle-24): land notifications
+sprint-03 usage metering`.
