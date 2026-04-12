@@ -9,12 +9,11 @@ import {
   DateField,
   FunctionField,
 } from 'react-admin';
-import { Chip, Box, Typography } from '@mui/material';
-
-const adapterColors: Record<string, 'primary' | 'success'> = {
-  pgvector: 'primary',
-  pinecone: 'success',
-};
+import { Chip, Box } from '@mui/material';
+import {
+  type VectorStoreRecord,
+  resolveAdapterColor,
+} from '@oven/module-ai/view/vector-store-record';
 
 export default function VectorStoreShow() {
   return (
@@ -23,13 +22,13 @@ export default function VectorStoreShow() {
         <TextField source="name" />
         <TextField source="slug" />
         <NumberField source="tenantId" label="Tenant ID" />
-        <FunctionField
+        <FunctionField<VectorStoreRecord>
           label="Adapter"
-          render={(record: any) => (
+          render={(record) => (
             <Chip
               label={record?.adapter}
               size="small"
-              color={adapterColors[record?.adapter] ?? 'default'}
+              color={resolveAdapterColor(record?.adapter)}
               variant="outlined"
             />
           )}
@@ -39,9 +38,9 @@ export default function VectorStoreShow() {
         <TextField source="distanceMetric" label="Distance Metric" />
         <NumberField source="documentCount" label="Document Count" />
         <BooleanField source="enabled" />
-        <FunctionField
+        <FunctionField<VectorStoreRecord>
           label="Connection Config"
-          render={(record: any) => {
+          render={(record) => {
             const config = record?.connectionConfig;
             if (!config) return 'None';
             return (

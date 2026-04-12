@@ -14,16 +14,15 @@ import {
   EditButton,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import {
+  type VectorStoreRecord,
+  resolveAdapterColor,
+} from '@oven/module-ai/view/vector-store-record';
 
 const adapterChoices = [
   { id: 'pgvector', name: 'pgvector' },
   { id: 'pinecone', name: 'Pinecone' },
 ];
-
-const adapterColors: Record<string, 'primary' | 'success'> = {
-  pgvector: 'primary',
-  pinecone: 'success',
-};
 
 const filters = [
   <TextInput key="q" source="q" label="Search" alwaysOn />,
@@ -38,13 +37,13 @@ export default function VectorStoreList() {
         <TextField source="name" label="Name" />
         <TextField source="slug" label="Slug" />
         <NumberField source="tenantId" label="Tenant" />
-        <FunctionField
+        <FunctionField<VectorStoreRecord>
           label="Adapter"
-          render={(record: any) => (
+          render={(record) => (
             <Chip
               label={record?.adapter}
               size="small"
-              color={adapterColors[record?.adapter] ?? 'default'}
+              color={resolveAdapterColor(record?.adapter)}
               variant="outlined"
             />
           )}
