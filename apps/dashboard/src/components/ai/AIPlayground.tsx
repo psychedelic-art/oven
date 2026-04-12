@@ -77,6 +77,28 @@ interface PlaygroundExecution {
   createdAt: string;
 }
 
+/** Type guard for image-type execution outputs that carry a URL. */
+function isImageOutput(output: unknown): output is { url: string } {
+  return (
+    output != null &&
+    typeof output === 'object' &&
+    'url' in output &&
+    typeof (output as Record<string, unknown>).url === 'string'
+  );
+}
+
+/** Type guard for outputs with token usage info. */
+function hasTokens(
+  output: unknown,
+): output is { tokens: { input?: number; output?: number; total?: number } } {
+  return (
+    output != null &&
+    typeof output === 'object' &&
+    'tokens' in output &&
+    typeof (output as Record<string, unknown>).tokens === 'object'
+  );
+}
+
 interface ParameterField {
   type: 'number' | 'integer' | 'select' | 'boolean' | 'string';
   label: string;
@@ -588,10 +610,10 @@ function HistorySidebar({
                   onClick={() => onSelect(item)}
                   sx={{ py: 1, px: 1.5 }}
                 >
-                  {item.type === 'image' && (item.output as any)?.url && (
+                  {item.type === 'image' && isImageOutput(item.output) && (
                     <Box
                       component="img"
-                      src={(item.output as any).url}
+                      src={item.output.url}
                       alt=""
                       sx={{ width: 40, height: 40, borderRadius: 0.5, objectFit: 'cover', mr: 1, flexShrink: 0 }}
                     />
@@ -770,13 +792,13 @@ function TextGenerationTab({
     setError('');
     if (output?.text) setResponse(output.text as string);
     else setResponse('');
-    if (output?.tokens || output?.costCents) {
+    if (hasTokens(output) || output?.costCents) {
       setUsage({
-        tokens: output.tokens as any,
-        costCents: output.costCents as number,
+        tokens: hasTokens(output) ? output.tokens : undefined,
+        costCents: output?.costCents as number,
         latencyMs: item.latencyMs ?? 0,
-        model: output.model as string,
-        provider: output.provider as string,
+        model: output?.model as string,
+        provider: output?.provider as string,
       });
     }
   };
