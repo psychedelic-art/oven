@@ -74,14 +74,14 @@ a live Neon DB. No dashboard UI yet (sprint-03).
 
 ## Acceptance criteria
 
-- [ ] `POST /api/auth/login` returns a working access token against a
+- [x] `POST /api/auth/login` returns a working access token against a
       seeded test user.
-- [ ] `GET /api/auth/me` with the returned token returns the context.
-- [ ] `POST /api/auth/logout` invalidates the session and a follow-up
+- [x] `GET /api/auth/me` with the returned token returns the context.
+- [x] `POST /api/auth/logout` invalidates the session and a follow-up
       `GET /api/auth/me` returns `401 AUTH_INVALID_TOKEN`.
-- [ ] 11/11 new tests green.
-- [ ] Typecheck delta: 0 new errors.
-- [ ] `packages/module-auth/src/**` has zero imports of
+- [x] 16/11 new tests green (6 middleware + 9 handler + 1 password).
+- [x] Typecheck delta: 0 new errors.
+- [x] `packages/module-auth/src/**` has zero imports of
       `jsonwebtoken`, `next-auth`, `argon2`, `bcrypt`, `hash-wasm`.
 
 ## Touched packages
