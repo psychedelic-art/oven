@@ -6,7 +6,6 @@ import {
   TextField,
   NumberField,
   DateField,
-  FunctionField,
   TextInput,
   SelectInput,
 } from 'react-admin';
@@ -17,6 +16,7 @@ import {
   formatCostCents,
   type PlaygroundExecutionRecord,
 } from '@oven/module-ai/view/playground-execution-record';
+import { TypedFunctionField } from './_fields/TypedFunctionField';
 
 const executionFilters = [
   <TextInput key="model" source="model" label="Model" alwaysOn />,
@@ -49,7 +49,7 @@ export default function PlaygroundExecutionList() {
     <List filters={executionFilters} sort={{ field: 'createdAt', order: 'DESC' }}>
       <Datagrid rowClick="show">
         <TextField source="id" />
-        <FunctionField<PlaygroundExecutionRecord>
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Type"
           render={(record) => (
             <Chip
@@ -60,7 +60,7 @@ export default function PlaygroundExecutionList() {
           )}
         />
         <TextField source="model" />
-        <FunctionField<PlaygroundExecutionRecord>
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Status"
           render={(record) => (
             <Chip
@@ -70,7 +70,7 @@ export default function PlaygroundExecutionList() {
             />
           )}
         />
-        <FunctionField<PlaygroundExecutionRecord>
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Cost"
           render={(record) => formatCostCents(record.costCents)}
         />

@@ -6,7 +6,6 @@ import {
   TextField,
   NumberField,
   DateField,
-  FunctionField,
 } from 'react-admin';
 import { Box, Typography, Chip } from '@mui/material';
 import {
@@ -14,19 +13,20 @@ import {
   formatCostCents,
   type PlaygroundExecutionRecord,
 } from '@oven/module-ai/view/playground-execution-record';
+import { TypedFunctionField } from './_fields/TypedFunctionField';
 
 export default function PlaygroundExecutionShow() {
   return (
     <Show>
       <SimpleShowLayout>
-        <FunctionField<PlaygroundExecutionRecord>
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Type"
           render={(record) => (
             <Chip label={record.type} size="small" color="primary" />
           )}
         />
         <TextField source="model" />
-        <FunctionField<PlaygroundExecutionRecord>
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Status"
           render={(record) => (
             <Chip
@@ -36,14 +36,14 @@ export default function PlaygroundExecutionShow() {
             />
           )}
         />
-        <FunctionField<PlaygroundExecutionRecord>
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Cost"
           render={(record) => formatCostCents(record.costCents)}
         />
         <NumberField source="latencyMs" label="Latency (ms)" />
         <DateField source="createdAt" showTime />
 
-        <FunctionField<PlaygroundExecutionRecord>
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Input"
           render={(record) => (
             <Box
@@ -65,7 +65,7 @@ export default function PlaygroundExecutionShow() {
           )}
         />
 
-        <FunctionField<PlaygroundExecutionRecord>
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Output"
           render={(record) => {
             // If image type with a url, show image preview
@@ -117,7 +117,7 @@ export default function PlaygroundExecutionShow() {
         />
 
         {/* Error field only shown if present */}
-        <FunctionField<PlaygroundExecutionRecord>
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Error"
           render={(record) =>
             record.error ? (
