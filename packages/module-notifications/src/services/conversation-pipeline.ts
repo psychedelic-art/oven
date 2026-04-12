@@ -4,9 +4,10 @@ import { eventBus } from '@oven/module-registry';
 import {
   notificationConversations,
   notificationMessages,
-  notificationUsage,
 } from '../schema';
 import { NOTIFICATION_EVENTS } from '../events';
+import { checkUsageLimit, incrementUsage } from './usage-metering';
+import type { UsageLimitResolverDeps } from './usage-limit-resolver';
 import type { InboundMessage, ChannelType } from '../types';
 
 interface IngestParams {
@@ -14,12 +15,15 @@ interface IngestParams {
   channelId: number;
   channelType: ChannelType;
   message: InboundMessage;
+  /** Optional: injected deps for usage-limit resolution (tests). */
+  usageDeps?: UsageLimitResolverDeps;
 }
 
 interface IngestResult {
   conversationId: number;
   messageId: number;
   isNewConversation: boolean;
+  limitExceeded: boolean;
 }
 
 /**
@@ -33,10 +37,24 @@ interface IngestResult {
 export async function ingestInboundMessage(
   params: IngestParams,
 ): Promise<IngestResult> {
-  const { tenantId, channelId, channelType, message } = params;
+  const { tenantId, channelId, channelType, message, usageDeps } = params;
   const db = getDb();
 
-  // 1. Find or create conversation
+  // 1. Check usage limit before processing
+  const usageCheck = await checkUsageLimit(tenantId, channelType, usageDeps);
+
+  if (!usageCheck.allowed) {
+    // Short-circuit: limit already exceeded — do not process the message,
+    // emit limit-exceeded if not already emitted this period.
+    return {
+      conversationId: 0,
+      messageId: 0,
+      isNewConversation: false,
+      limitExceeded: true,
+    };
+  }
+
+  // 2. Find or create conversation
   let isNewConversation = false;
   const existing = await db
     .select()
@@ -69,7 +87,7 @@ export async function ingestInboundMessage(
     conversationId = conv.id;
   }
 
-  // 2. Insert message
+  // 3. Insert message
   const [msg] = await db
     .insert(notificationMessages)
     .values({
@@ -82,48 +100,10 @@ export async function ingestInboundMessage(
     })
     .returning({ id: notificationMessages.id });
 
-  // 3. Increment usage (upsert for current period)
-  const now = new Date();
-  const periodStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    .toISOString()
-    .split('T')[0];
-  const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    .toISOString()
-    .split('T')[0];
+  // 4. Increment usage via the metering service (atomic upsert + event emission)
+  await incrementUsage(tenantId, channelType, usageCheck.limit);
 
-  const existingUsage = await db
-    .select()
-    .from(notificationUsage)
-    .where(
-      and(
-        eq(notificationUsage.tenantId, tenantId),
-        eq(notificationUsage.channelType, channelType),
-        eq(notificationUsage.periodStart, periodStart),
-      ),
-    )
-    .limit(1);
-
-  if (existingUsage.length > 0) {
-    await db
-      .update(notificationUsage)
-      .set({
-        messageCount: existingUsage[0].messageCount + 1,
-        updatedAt: new Date(),
-      })
-      .where(eq(notificationUsage.id, existingUsage[0].id));
-  } else {
-    await db.insert(notificationUsage).values({
-      tenantId,
-      channelType,
-      period: 'monthly',
-      periodStart,
-      periodEnd,
-      messageCount: 1,
-      limit: 300, // fallback; resolved from module-config in sprint-03
-    });
-  }
-
-  // 4. Emit events
+  // 5. Emit events
   eventBus.emit(NOTIFICATION_EVENTS.MESSAGE_RECEIVED, {
     conversationId,
     tenantId,
@@ -145,5 +125,6 @@ export async function ingestInboundMessage(
     conversationId,
     messageId: msg.id,
     isNewConversation,
+    limitExceeded: false,
   };
 }
