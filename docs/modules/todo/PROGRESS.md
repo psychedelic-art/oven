@@ -1,8 +1,8 @@
 # Todo Queue Progress
 
-Regenerated fresh on 2026-04-12 after **cycle-16** landing of
-`claude/stoic-hamilton-8IRlF` (knowledge-base sprint-02 -- usage metering
-+ event listeners) onto `origin/dev` as merge commit `948196a`.
+Regenerated fresh on 2026-04-12 after **cycle-16b** landing of
+`claude/stoic-hamilton-8IRlF` (ui-flows sprint-01 foundation tests, 41 new)
+onto `origin/dev` as merge commit `2bd0550`.
 Session branch: `claude/stoic-hamilton-8IRlF`.
 
 ## Cycle-16 merge audit
@@ -41,7 +41,7 @@ Session branch: `claude/stoic-hamilton-8IRlF`.
 | `config` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-config`, 24 tests | **sprint-02 done (cycle-15)** | Execute sprint-03-rls-and-migration. |
 | `notifications` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-notifications` 48 tests + `@oven/notifications-meta` 21 tests; REGISTERED | sprint-02 done | Execute sprint-03-usage-metering. |
 | `module-knowledge-base` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-knowledge-base`, 21 tests | **sprint-02 done (cycle-16)** | Execute sprint-03-search-engine. |
-| `ui-flows` | 5 (sprint-00..03, 99) | 11/11 | LIVE `@oven/module-ui-flows` | sprint-00 done | Execute sprint-01-foundation. |
+| `ui-flows` | 5 (sprint-00..03, 99) | 11/11 | LIVE `@oven/module-ui-flows`, 41 tests | **sprint-01 partial (cycle-16b)** | Continue sprint-01 (API handler tests). |
 | `agent-ui` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/agent-ui`, 67 tests | sprint-00 not started | Execute sprint-00-discovery drift audit. |
 | `dashboard-ux-system` | 8 (sprint-00..07) | N/A (program) | N/A | sprint-00 not started | Execute sprint-01-foundation. |
 | `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | 291 tests (`module-ai`) | **sprint-01 CLOSED** (cycle-14), sprint-06 CLOSED (cycle-11) | Next: sprint-03 (Workflow engine, 4 findings). Sprints 02/04 remain BLOCKED (module-chat/agent-core absent). |
