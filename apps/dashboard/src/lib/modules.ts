@@ -19,6 +19,7 @@ import { knowledgeBaseModule } from '@oven/module-knowledge-base';
 import { agentCoreModule } from '@oven/module-agent-core';
 import { chatModule } from '@oven/module-chat';
 import { workflowAgentsModule } from '@oven/module-workflow-agents';
+import { notificationsModule } from '@oven/module-notifications';
 
 // Register auth adapter before module registration
 registerAuthAdapter(authJsAdapter);
@@ -39,6 +40,7 @@ registry.register(knowledgeBaseModule);          // Depends on: ai
 registry.register(agentCoreModule);             // Depends on: ai
 registry.register(chatModule);                  // Depends on: agent-core, ai
 registry.register(workflowAgentsModule);        // Depends on: workflows, agent-core, ai
+registry.register(notificationsModule);          // Depends on: config, tenants, agent-core
 registry.register(authModule);                   // Depends on: roles
 registry.register(formsModule);                  // Depends on: roles
 registry.register(flowsModule);                  // Depends on: roles
