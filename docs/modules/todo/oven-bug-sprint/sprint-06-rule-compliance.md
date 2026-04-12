@@ -15,12 +15,12 @@ compliance with the styling and typing rules in `CLAUDE.md`.
 Findings to resolve:
 
 - [x] **F-06-01** — `apps/dashboard/src/components/ai/GuardrailList.tsx:51,57,63,73` Type every `FunctionField` render prop; no `record: any`. **Done cycle-9 Phase 4**: extracted `packages/module-ai/src/view/guardrail-record.ts` (`GuardrailRecord` interface + `GUARDRAIL_ACTION_COLORS` + `resolveGuardrailActionColor` + `truncateGuardrailPattern` pure helpers, own-property guard against prototype lookups), updated the four `FunctionField` call sites to `<FunctionField<GuardrailRecord>>`, added **26 vitest regression tests** (`@oven/module-ai` 218 → 244). Zero `record: any`, zero inline style, zero behavioural change in the rendered output.
-- [ ] **F-06-02** — `apps/dashboard/src/components/ai/VectorStoreShow.tsx:28,44` Same pattern; define `interface VectorStoreRecord`.
-- [ ] **F-06-03** — `apps/dashboard/src/components/ai/VectorStoreList.tsx:43` Same (only one call site on this branch, triage-verified).
-- [ ] **F-06-04** — `apps/dashboard/src/components/ai/PlaygroundExecutionList.tsx` Memoize expensive render functions or lift them to module scope so Chip / Box are not recreated each parent render.
-- [ ] **F-06-05** — Repo-wide sweep: grep for `^import \{[^}]*\}` imports where every symbol is only used as a type and convert to `import type`. Start with `packages/module-ai` and `apps/dashboard/src/components/ai`. (`packages/module-chat` and `packages/module-agent-core` do **not** exist on `claude/eager-curie-0da9Q` — drop them from the sweep per sprint-00 triage.)
-- [ ] **F-06-06** — `apps/dashboard/src/components/ai/PlaygroundExecutionShow.tsx:24,31,41,50,72,124` — 6 `record: any` casts. Define `interface PlaygroundExecutionRecord` and use it consistently. *(Inherited from Sprint 01 F-01-05.)*
-- [ ] **F-06-07** — `apps/dashboard/src/components/ai/PlaygroundExecutionList.tsx:60,71,81` — 3 `record: any` casts in this list view. Type them against the same `PlaygroundExecutionRecord`. *(Inherited from Sprint 01 F-01-06.)*
+- [x] **F-06-02** — `apps/dashboard/src/components/ai/VectorStoreShow.tsx:25,41` Extracted `VectorStoreRecord` interface + `resolveAdapterColor()` helper to `packages/module-ai/src/view/vector-store-record.ts`. 2 `FunctionField` call sites typed. +13 vitest regression tests (244 -> 257). Done cycle-11.
+- [x] **F-06-03** — `apps/dashboard/src/components/ai/VectorStoreList.tsx:40` 1 `FunctionField<VectorStoreRecord>` call site typed using the same view helper. Done cycle-11 (same commit as F-06-02).
+- [x] **F-06-04** — `apps/dashboard/src/components/ai/PlaygroundExecutionList.tsx` Lifted 3 render functions (`renderType`, `renderStatus`, `renderCost`) to module scope so Chip closures are not recreated each parent render. Done cycle-11.
+- [x] **F-06-05** — Repo-wide sweep: converted `NextRequest` from value import to `import type` (or inline `type NextRequest`) across 23 handler files in `packages/module-ai/src/api/`. 5 files already compliant. `packages/module-chat` and `packages/module-agent-core` absent — skipped per sprint-00 triage. Full file list in commit body. Done cycle-11.
+- [x] **F-06-06** — `apps/dashboard/src/components/ai/PlaygroundExecutionShow.tsx:22,29,39,46,68,120` — 6 `record: any` casts eliminated. Extracted `PlaygroundExecutionRecord` interface + `resolveExecutionStatusColor()` + `formatCostCents()` to `packages/module-ai/src/view/playground-execution-record.ts`. +34 vitest regression tests (257 -> 291). Done cycle-11.
+- [x] **F-06-07** — `apps/dashboard/src/components/ai/PlaygroundExecutionList.tsx:52,63,73` — 3 `record: any` casts eliminated. Same `PlaygroundExecutionRecord` interface. Done cycle-11 (same commit as F-06-06).
 
 With 6 total `record: any` call sites across `PlaygroundExecutionShow`
 (F-06-06) and `PlaygroundExecutionList` (F-06-07) plus the 4 in
@@ -48,13 +48,13 @@ in this sprint.
 
 ## Acceptance criteria
 
-- [ ] All 7 findings checked `[x]` in this file.
-- [ ] Zero new `as any` introduced by this sprint.
-- [ ] Zero inline `style={{}}` introduced.
-- [ ] Zero direct `clsx` or `classnames` imports introduced.
+- [x] All 7 findings checked `[x]` in this file.
+- [x] Zero new `as any` introduced by this sprint.
+- [x] Zero inline `style={{}}` introduced.
+- [x] Zero direct `clsx` or `classnames` imports introduced.
 - [ ] `pnpm -F dashboard lint typecheck` green.
 - [ ] `pnpm -w turbo run lint typecheck build test` green.
-- [ ] **Integration Proposals** section authored by the BO role at
+- [x] **Integration Proposals** section authored by the BO role at
       the bottom of this file before the sprint closes.
 
 ## Touched packages
@@ -81,3 +81,38 @@ in this sprint.
 - `docs/module-rules.md` Rule 4 (Loose Coupling) — do not introduce
   a new shared component in a place that becomes a cross-module
   dependency.
+
+## Integration Proposals (BO role)
+
+### IP-1: Extend TypedFunctionField to remaining AI resources
+
+The `_fields/TypedFunctionField.tsx` wrapper is proven across 5 AI
+resource views (16 call sites). The remaining AI resource views
+(AliasList, BudgetList, BudgetAlertList, ProviderList, ProviderShow,
+UsageLogList) still use untyped `FunctionField` with `record: any`.
+Proposal: define typed record interfaces for these resources in future
+sprints and migrate their call sites to `TypedFunctionField`.
+
+### IP-2: Extract shared colour-map pattern
+
+Three view helper files (`guardrail-record.ts`, `vector-store-record.ts`,
+`playground-execution-record.ts`) independently implement the same
+pattern: typed colour map + `resolveXxxColor()` with hasOwnProperty
+guard. If more resources adopt this pattern (IP-1), consider extracting
+a generic `createColorResolver<T>()` factory. Not justified at 3
+occurrences today (IP-5 threshold would need 5+).
+
+### IP-3: Consolidate formatCostCents across dashboard
+
+`formatCostCents()` currently lives in
+`packages/module-ai/src/view/playground-execution-record.ts`. The
+BudgetList and UsageLogList views have inline cost-formatting logic
+that duplicates this. Once those views adopt typed records (IP-1),
+the shared helper can be reused.
+
+### IP-4: import type enforcement via ESLint
+
+The F-06-05 sweep was manual. Consider enabling
+`@typescript-eslint/consistent-type-imports` with `prefer: type-imports`
+and `fixStyle: inline-type-imports` across the monorepo to enforce
+this automatically. This would prevent regressions across all packages.
