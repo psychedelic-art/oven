@@ -47,16 +47,20 @@ middleware without double-counting.
 
 ## Acceptance Criteria
 
-- [ ] Two calls to `POST /api/usage/track` with the same
+- [x] Two calls to `POST /api/usage/track` with the same
       `X-Usage-Idempotency-Key` produce one row and return 200 both
       times.
-- [ ] A call with `serviceSlug='../../etc/passwd'` returns 400 and
+- [x] A call with `serviceSlug='../../etc/passwd'` returns 400 and
       does NOT hit the DB.
-- [ ] `docs/routes.md` lists all three usage routes with their
+- [x] `docs/routes.md` lists all three usage routes with their
       method + auth columns.
 - [ ] Per-period rollup returns correct integer aggregates for
       monthly, daily, and hourly windows.
-- [ ] All tests green.
+      (Deferred: requires daily/hourly billing_cycle extension;
+      current engine aggregates by monthly billing_cycle only.
+      Plan quotas with `period: daily` are stored correctly but
+      aggregation is monthly-granularity. Tracked for sprint-03.)
+- [x] All tests green.
 
 ## Dependencies
 
@@ -80,9 +84,9 @@ middleware without double-counting.
 
 ## Rule Compliance Checklist
 
-- [ ] `docs/module-rules.md` Rule 4 (schema) — new column is plain
+- [x] `docs/module-rules.md` Rule 4 (schema) — new column is plain
       `varchar`, indexed, no cross-module FK leakage.
-- [ ] `docs/module-rules.md` Rule 5 (seed idempotency) — preserved.
-- [ ] OWASP A03 (Injection) — slug validation.
-- [ ] OWASP A08 (Integrity) — idempotency key closure.
-- [ ] `docs/routes.md` — three routes documented.
+- [x] `docs/module-rules.md` Rule 5 (seed idempotency) — preserved.
+- [x] OWASP A03 (Injection) — slug validation.
+- [x] OWASP A08 (Integrity) — idempotency key closure.
+- [x] `docs/routes.md` — three routes documented.
