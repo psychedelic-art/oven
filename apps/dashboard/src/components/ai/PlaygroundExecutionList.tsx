@@ -11,6 +11,12 @@ import {
   SelectInput,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import {
+  resolveExecutionStatusColor,
+  resolveExecutionTypeColor,
+  formatCostCents,
+  type PlaygroundExecutionRecord,
+} from '@oven/module-ai/view/playground-execution-record';
 
 const executionFilters = [
   <TextInput key="model" source="model" label="Model" alwaysOn />,
@@ -38,49 +44,35 @@ const executionFilters = [
   />,
 ];
 
-const statusColors: Record<string, 'success' | 'error' | 'default'> = {
-  completed: 'success',
-  failed: 'error',
-};
-
-const typeColors: Record<string, 'primary' | 'secondary' | 'info' | 'warning'> = {
-  text: 'primary',
-  embedding: 'secondary',
-  image: 'info',
-  'structured-output': 'warning',
-};
-
 export default function PlaygroundExecutionList() {
   return (
     <List filters={executionFilters} sort={{ field: 'createdAt', order: 'DESC' }}>
       <Datagrid rowClick="show">
         <TextField source="id" />
-        <FunctionField
+        <FunctionField<PlaygroundExecutionRecord>
           label="Type"
-          render={(record: any) => (
+          render={(record) => (
             <Chip
               label={record.type}
               size="small"
-              color={typeColors[record.type] ?? 'default'}
+              color={resolveExecutionTypeColor(record.type)}
             />
           )}
         />
         <TextField source="model" />
-        <FunctionField
+        <FunctionField<PlaygroundExecutionRecord>
           label="Status"
-          render={(record: any) => (
+          render={(record) => (
             <Chip
               label={record.status}
               size="small"
-              color={statusColors[record.status] ?? 'default'}
+              color={resolveExecutionStatusColor(record.status)}
             />
           )}
         />
-        <FunctionField
+        <FunctionField<PlaygroundExecutionRecord>
           label="Cost"
-          render={(record: any) =>
-            record.costCents != null ? `$${(record.costCents / 100).toFixed(2)}` : '-'
-          }
+          render={(record) => formatCostCents(record.costCents)}
         />
         <NumberField source="latencyMs" label="Latency (ms)" />
         <DateField source="createdAt" showTime />

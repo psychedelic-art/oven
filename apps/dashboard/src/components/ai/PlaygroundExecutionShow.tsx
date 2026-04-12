@@ -9,45 +9,43 @@ import {
   FunctionField,
 } from 'react-admin';
 import { Box, Typography, Chip } from '@mui/material';
-
-const statusColors: Record<string, 'success' | 'error' | 'default'> = {
-  completed: 'success',
-  failed: 'error',
-};
+import {
+  resolveExecutionStatusColor,
+  formatCostCents,
+  type PlaygroundExecutionRecord,
+} from '@oven/module-ai/view/playground-execution-record';
 
 export default function PlaygroundExecutionShow() {
   return (
     <Show>
       <SimpleShowLayout>
-        <FunctionField
+        <FunctionField<PlaygroundExecutionRecord>
           label="Type"
-          render={(record: any) => (
+          render={(record) => (
             <Chip label={record.type} size="small" color="primary" />
           )}
         />
         <TextField source="model" />
-        <FunctionField
+        <FunctionField<PlaygroundExecutionRecord>
           label="Status"
-          render={(record: any) => (
+          render={(record) => (
             <Chip
               label={record.status}
               size="small"
-              color={statusColors[record.status] ?? 'default'}
+              color={resolveExecutionStatusColor(record.status)}
             />
           )}
         />
-        <FunctionField
+        <FunctionField<PlaygroundExecutionRecord>
           label="Cost"
-          render={(record: any) =>
-            record.costCents != null ? `$${(record.costCents / 100).toFixed(2)}` : '-'
-          }
+          render={(record) => formatCostCents(record.costCents)}
         />
         <NumberField source="latencyMs" label="Latency (ms)" />
         <DateField source="createdAt" showTime />
 
-        <FunctionField
+        <FunctionField<PlaygroundExecutionRecord>
           label="Input"
-          render={(record: any) => (
+          render={(record) => (
             <Box
               component="pre"
               sx={{
@@ -67,9 +65,9 @@ export default function PlaygroundExecutionShow() {
           )}
         />
 
-        <FunctionField
+        <FunctionField<PlaygroundExecutionRecord>
           label="Output"
-          render={(record: any) => {
+          render={(record) => {
             // If image type with a url, show image preview
             if (record.type === 'image' && record.output?.url) {
               return (
@@ -119,9 +117,9 @@ export default function PlaygroundExecutionShow() {
         />
 
         {/* Error field only shown if present */}
-        <FunctionField
+        <FunctionField<PlaygroundExecutionRecord>
           label="Error"
-          render={(record: any) =>
+          render={(record) =>
             record.error ? (
               <Typography color="error" variant="body2">
                 {record.error}
