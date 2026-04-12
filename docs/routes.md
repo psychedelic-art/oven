@@ -198,4 +198,17 @@ Content-Range: resources 0-24/100
 | module-player-map-position | 9 | 5 | 3 (assignments, positions, visitedChunks) |
 | module-workflows | 18 | 15 | 5 (workflows, executions, nodeExecutions, moduleConfigs, versions) |
 | module-registry | 7 | 0 (inline) | 1 (eventWirings) |
-| **Total** | **60** | **35** | **15** |
+| module-subscriptions | 3 | 3 | 1 (usageRecords) |
+| **Total** | **63** | **38** | **16** |
+
+---
+
+## Subscriptions Module (`@oven/module-subscriptions`)
+
+### Usage Tracking
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| POST | `/api/usage/track` | Tenant | Record a usage event. Supports `X-Usage-Idempotency-Key` header (UUID v4) for at-most-once delivery. |
+| GET | `/api/usage/summary` | Tenant | Aggregated usage summary for a tenant across all services in the current billing cycle. |
+| GET | `/api/tenant-subscriptions/:tenantId/usage` | Tenant | Detailed usage breakdown for a specific tenant. |

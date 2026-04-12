@@ -152,6 +152,7 @@ export const usageRecords = pgTable('sub_usage_records', {
   unit: varchar('unit', { length: 64 }).notNull(),
   billingCycle: varchar('billing_cycle', { length: 32 }),
   upstreamCostCents: integer('upstream_cost_cents'),
+  idempotencyKey: varchar('idempotency_key', { length: 64 }),
   metadata: jsonb('metadata'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => [
@@ -159,6 +160,7 @@ export const usageRecords = pgTable('sub_usage_records', {
   index('sur_service_id_idx').on(table.serviceId),
   index('sur_billing_cycle_idx').on(table.billingCycle),
   index('sur_created_at_idx').on(table.createdAt),
+  unique('sur_tenant_idempotency_key').on(table.tenantId, table.idempotencyKey),
 ]);
 
 // ─── Schema export ────────────────────────────────────────────
