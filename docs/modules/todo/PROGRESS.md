@@ -1,112 +1,114 @@
 # Todo Queue Progress
 
-Regenerated fresh on 2026-04-12 after **cycle-9** landing of
-`claude/inspiring-clarke-HBa3u` (`module-ai` F-05-05 — zod boundary
-validator for `POST /api/ai/generate-object` + `GenerateObjectSchema<T>`
-union widening + 45 regression tests) onto `origin/dev` as merge commit
-`054ad8c` on top of cycle-8 `1eb20cf`. Session branch:
-`claude/inspiring-clarke-IODSY`.
+Regenerated fresh on 2026-04-12 after **cycle-11** landing of
+`claude/stoic-hamilton-iouNt` (oven-bug-sprint sprint-06 F-06-02..07 --
+VectorStoreRecord + PlaygroundExecutionRecord typed helpers,
+TypedFunctionField extraction, render-function lift, import-type sweep,
++47 regression tests) onto `origin/dev` as merge commit `63d5601`.
+Session branch: `claude/stoic-hamilton-iouNt`.
 
-## Cycle-9 merge audit
+## Cycle-11 merge audit
 
 | # | Branch | Modules landed | Backup | Unique content | Tests | Verdict |
 |---|--------|----------------|--------|----------------|-------|---------|
-| 1 | `claude/inspiring-clarke-HBa3u` | `module-ai` F-05-05 (closes oven-bug-sprint sprint-05) | `bk/claude-inspiring-clarke-HBa3u-20260412` | New `packages/module-ai/src/api/_utils/generate-object-input.ts` (zod `generateObjectInputSchema` covering `prompt / schema / model / system / temperature / maxTokens / tenantId`, `jsonSchemaObjectSchema` refine-gate requiring one of `type / $ref / $schema / properties / items / oneOf / anyOf / allOf / enum / const / not`, `parseGenerateObjectInput` pure verdict returning `{ ok, value } \| { ok: false, reason, field }`); handler rewrite of `ai-generate-object.handler.ts` dropping three hand-rolled `typeof` guards + the `(schema as any)` cast on line 26 while preserving the historical 400 error strings byte-for-byte; widening of `GenerateObjectParams<T>.schema` to `GenerateObjectSchema<T> = z.ZodSchema<T> \| Schema<T>` in `tools/generate-object.ts` to match the AI SDK union; sprint-05 row F-05-05 `[ ] → [x]`; oven-bug-sprint `STATUS.md` sprint-05 row flipped to ✅ Done (cycle-8/9 notes). | **+45 vitest tests** (happy-path, every structural JSON-Schema keyword, prompt / schema / optional-field rejection, prototype-bypass normalisation). `@oven/module-ai` 173 → **218** all green. | **MERGED to `origin/dev`** as `054ad8c` (cycle-9 `--no-ff`) |
-| 2 | `claude/qa-test-todo-module-K2tpT` | — | `bk/claude-qa-test-todo-module-K2tpT-20260411` (cycle-2) | Only a regenerated `apps/dashboard/tsconfig.tsbuildinfo` (build artifact). 1 ahead, 45 behind dev. | — | **BLOCKED** — build artifacts must not be committed (unchanged verdict across cycles 2..9) |
+| 1 | `claude/stoic-hamilton-iouNt` | `module-ai` F-06-02..07, TypedFunctionField, F-06-04, F-06-05 (closes oven-bug-sprint sprint-06) | `bk/claude-stoic-hamilton-iouNt-20260412` | New `packages/module-ai/src/view/vector-store-record.ts` (VectorStoreRecord + VECTOR_STORE_ADAPTER_COLORS + resolveAdapterColor), new `packages/module-ai/src/view/playground-execution-record.ts` (PlaygroundExecutionRecord + EXECUTION_STATUS_COLORS + EXECUTION_TYPE_COLORS + resolveExecutionStatusColor + resolveExecutionTypeColor + formatCostCents), new `apps/dashboard/src/components/ai/_fields/TypedFunctionField.tsx`, 23 handler files converted to `import type { NextRequest }`. | **+47 vitest tests** (13 vector-store-record + 34 playground-execution-record). `@oven/module-ai` 244 -> **291** all green. | **MERGED to `origin/dev`** as `63d5601` (cycle-11 merge) |
 
-### Phase 0 candidate set (cycle-9)
+### Phase 0 candidate set (cycle-11)
 
 | Branch | Ahead | Behind | Disposition |
 |--------|-------|--------|-------------|
-| `claude/inspiring-clarke-0OpL4` | 0 | 39 | content already on dev (predecessor cycles) |
-| `claude/inspiring-clarke-GA0Ok` | 0 | 32 | content already on dev (predecessor cycles) |
-| `claude/inspiring-clarke-HBa3u` | 5 | 0 | **landed cycle-9 → `054ad8c`** |
-| `claude/inspiring-clarke-JGiXk` | 0 | 1 | content already on dev (cycle-8) |
-| `claude/inspiring-clarke-JuFO1` | 0 | 24 | content already on dev (predecessor cycles) |
-| `claude/inspiring-clarke-LSksg` | 0 | 6 | content already on dev (cycle-7) |
-| `claude/inspiring-clarke-M7sl8` | 0 | 28 | content already on dev (predecessor cycles) |
-| `claude/inspiring-clarke-bYhvx` | 0 | 13 | content already on dev (cycle-7) |
-| `claude/inspiring-clarke-e8QUu` | 0 | 17 | content already on dev (cycle-6) |
-| `claude/qa-test-todo-module-K2tpT` | 1 | 45 | **BLOCKED** (tsbuildinfo only) |
+| `claude/inspiring-clarke-0OpL4` | 0 | 51 | content already on dev |
+| `claude/inspiring-clarke-GA0Ok` | 0 | 44 | content already on dev |
+| `claude/inspiring-clarke-HBa3u` | 0 | 7 | content already on dev (cycle-9) |
+| `claude/inspiring-clarke-JGiXk` | 0 | 13 | content already on dev (cycle-8) |
+| `claude/inspiring-clarke-JuFO1` | 0 | 36 | content already on dev |
+| `claude/inspiring-clarke-LSksg` | 0 | 18 | content already on dev (cycle-7) |
+| `claude/inspiring-clarke-M7sl8` | 0 | 40 | content already on dev |
+| `claude/inspiring-clarke-bYhvx` | 0 | 25 | content already on dev |
+| `claude/inspiring-clarke-e8QUu` | 0 | 29 | content already on dev (cycle-6) |
+| `claude/qa-test-todo-module-K2tpT` | 1 | 57 | **BLOCKED** (tsbuildinfo only) |
 
-### Shared unmerged ancestors
+No unmerged work branches with meaningful content remain.
 
-`git log --format=%H` over `dev..HBa3u` and `dev..K2tpT` produces six
-distinct SHAs (`b54d1d4`, `9ac35af`, `4559384`, `b98d131`, `e9e8063`,
-`1ffa9c1`) with **zero overlap**. No shared unmerged ancestor required
-pre-landing this cycle.
+### Typecheck delta (cycle-11)
 
-### Typecheck delta (cycle-9)
-
-| Package | dev (`1eb20cf`, pre cycle-9) | dev (`054ad8c`, post cycle-9) | delta |
+| Package | dev (pre cycle-11) | dev (post cycle-11) | delta |
 |---|---|---|---|
-| `@oven/dashboard` | 460 | 460 | 0 |
+| `@oven/dashboard` | 461 | 465 | +4 (new subpath TS2307, same category) |
 | `@oven/module-ai` | 0 | 0 | 0 |
-| `@oven/module-files` | 0 | 0 | 0 |
-| `@oven/module-subscriptions` | 40 | 40 | 0 |
-| `@oven/module-tenants` | 18 | 18 | 0 |
 
-No regression. The 460 dashboard errors still come from
-`packages/workflow-editor/` peer-dep React typing and `RouteHandler`
-context-param patterns in `module-subscriptions` / `module-tenants`;
-none are touched by this cycle.
+The +4 delta is from 2 new subpath import modules (`vector-store-record`
+x2, `playground-execution-record` x2) in the same TS2307 category as
+the existing 28+ `@oven/module-ai/*` subpath errors. Next.js resolves
+them correctly at runtime via the package `exports` map.
 
-## Active queue (post cycle-9)
+## Active queue (post cycle-11)
 
-| Module / Program | Sprint files | Canonical doc set | Package / tests | Next action |
-|---|---|---|---|---|
-| `auth` | 5 (sprint-00..04-acceptance) | complete (11/11) | no package yet | Execute `sprint-00-discovery` — inventory existing auth code before writing `sprint-01-foundation` package skeleton. |
-| `files` | 6 (sprint-00..05-acceptance) | complete (11/11) | LIVE package, **10 tests** (sort-guard) | F-05-01 landed. Execute `sprint-02-upload-validation`. |
-| `subscriptions` | 6 (sprint-00..05-acceptance) | complete (11/11) | **52 tests** green | Execute `sprint-02-usage-metering` (thread pure resolver through every call site + integration tests). |
-| `tenants` | 5 (sprint-00..04-acceptance) | complete (11/11) | **78 tests** green | sprint-03 landed cycle-8. Next: `sprint-04-acceptance` (blocked on DB-mock harness) and DRIFT-6 seed-idempotency lock (same blocker). |
-| `config` | 4 (sprint-00..04) | complete (11/11) | 24 tests green | Execute `sprint-02-dashboard-ui`. |
-| `notifications` | 5 (sprint-00..05) | complete (11/11) | 37 tests green; package NOT registered in `apps/dashboard/src/lib/modules.ts` | Register module in dashboard, then execute `sprint-02` WhatsApp Meta adapter. |
-| `module-knowledge-base` | 6 (sprint-00..05-acceptance) | complete (11/11) | — | Execute `sprint-02` embedding pipeline. |
-| `ui-flows` | 5 (sprint-00..03, 99-acceptance) | complete (11/11) | — | Execute `sprint-01-foundation`. |
-| `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | F-05-01..**F-05-05** done in `module-ai` (**218/218** green; sprint-05 CLOSED cycle-9) | Sprint-05 closed. Next program work: `sprint-06-cross-cutting-rule-compliance` (7 findings) or unblock `sprint-02 / sprint-04` once `module-chat` / `module-agent-core` land. |
-| `agent-ui` | 6 (sprint-00..05-acceptance) | complete (11/11) | LIVE package, vitest suite | Execute `sprint-00-discovery` drift audit, then `sprint-01-foundation` (type tighten + MUI-ban lint). |
-| `dashboard-ux-system` | 8 (sprint-00..07) | N/A (program) | — | Execute `sprint-01-foundation`. |
-| `psychedelic-claude-code-migration` | 12 (sprint-00..11) | N/A (program) | — | Owned elsewhere — do not touch. |
+| Module / Program | Sprint files | Canonical doc set | Package / tests | Current sprint | Next action |
+|---|---|---|---|---|---|
+| `auth` | 5 (sprint-00..04) | 11/11 | `@oven/module-auth` exists, 0 tests | sprint-00-discovery | Execute sprint-00: inventory existing auth code, then sprint-01 foundation. |
+| `files` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-files`, 10 tests | sprint-01 done | Execute sprint-02-upload-validation. |
+| `subscriptions` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-subscriptions`, 52 tests | sprint-01 done | Execute sprint-02-usage-metering. |
+| `tenants` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-tenants`, 78 tests | sprint-03 done | Execute sprint-04-acceptance (BLOCKED on DB-mock harness). |
+| `config` | 4 (sprint-00..04) | 11/11 | LIVE `@oven/module-config`, 24 tests | sprint-01 done | Execute sprint-02-dashboard-ui. |
+| `notifications` | 5 (sprint-00..05) | 11/11 | LIVE `@oven/module-notifications`, 37 tests; **NOT REGISTERED** | sprint-01 done | **Register in modules.ts**, then execute sprint-02 WhatsApp Meta adapter. |
+| `module-knowledge-base` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-knowledge-base` | sprint-01 done | Execute sprint-02-embedding-pipeline. |
+| `ui-flows` | 5 (sprint-00..03, 99) | 11/11 | LIVE `@oven/module-ui-flows` | sprint-00 done | Execute sprint-01-foundation. |
+| `agent-ui` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/agent-ui`, vitest suite | sprint-00 not started | Execute sprint-00-discovery drift audit. |
+| `dashboard-ux-system` | 8 (sprint-00..07) | N/A (program) | N/A | sprint-00 not started | Execute sprint-01-foundation. |
+| `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | 291 tests (`module-ai`) | **sprint-06 CLOSED** (cycle-11) | Next: sprint-01 (AI Playground UX, 8 findings), then sprint-03 (Workflow engine, 4 findings). Sprints 02/04 remain BLOCKED (module-chat/agent-core absent). |
+| `psychedelic-claude-code-migration` | 12 (sprint-00..11) | N/A (program) | N/A | — | Owned elsewhere -- do not touch. |
+
+## Priority order (post cycle-11)
+
+Sprint-06 is closed. Updated priorities:
+
+P0: oven-bug-sprint sprint-01 (AI Playground UX, 8 findings)
+P1: notifications sprint-02 (register module first, then adapter)
+P2: files sprint-02 (upload validation)
+P3: subscriptions sprint-02 (usage metering)
+P4: config sprint-02 (dashboard UI)
+P5: auth sprint-00 (discovery, then sprint-01 foundation)
+P6: module-knowledge-base sprint-02 (embedding pipeline)
+P7: ui-flows sprint-01 (foundation)
+P8: agent-ui sprint-00 (discovery)
+P9: dashboard-ux-system sprint-01 (foundation)
+P10: oven-bug-sprint sprint-03 (workflow engine, 4 findings)
+SKIP: tenants sprint-04 (blocked on DB-mock harness)
+SKIP: oven-bug-sprint sprint-02/04 (blocked on module-chat/agent-core)
+SKIP: psychedelic-claude-code-migration (external ownership)
 
 ## Known issues
 
-1. **Pre-existing typecheck baseline on `dev` (460 errors).** All from
-   `packages/workflow-editor/` (peer-dep `react` resolution) and
+1. **Pre-existing typecheck baseline on `dev` (465 errors).** All from
+   `packages/workflow-editor/` (peer-dep `react` resolution),
    `RouteHandler` / `"json"` field types in `module-subscriptions` /
-   `module-tenants`. Unchanged by cycle-9. Fix: add `react` / `react-dom`
-   as dev deps to `packages/workflow-editor`; widen `RouteHandler`
-   context typings; replace `"json"` field types with the `jsonb`
-   drizzle column helper.
+   `module-tenants`, and `@oven/module-ai/*` subpath TS2307 errors (32
+   total). Unchanged category across cycles 2-11.
 2. **`@oven/module-notifications` is not registered.** The package
    scaffolded in cycle-3 is not listed in
    `apps/dashboard/src/lib/modules.ts`. Register before
    `notifications/sprint-02` lands.
 3. **`ui-flows` canonical shape uses `sprint-99-acceptance.md`** while
    every other module uses `sprint-NN-acceptance.md`. Minor naming
-   inconsistency, not fixing in this cycle.
-4. **`oven-bug-sprint/sprint-05-handler-typesafety` — CLOSED cycle-9.**
-   F-05-01..F-05-05 all done. `packages/module-ai/src/api/` has
-   **zero** `(schema as any) / (sdkProvider as any) / (sub-client as
-   any)`. The only remaining `as any` under `src/api/` is the unrelated
-   `ai-tools-all.handler.ts:18 (mod as any).chat`, which belongs to a
-   different finding (sprint-06 candidate).
-5. **`module-tenants` DRIFT-6 deferred.** Seed idempotency lock is
-   tracked but cannot be unit-tested without DB-mock infra. The seed
-   already uses `onConflictDoNothing()`. Re-open once the DB-mock
-   harness is available (sprint-04 dependency).
-6. **Drizzle `getDb()` returns `any`.** Forces casts in seed paths.
+   inconsistency, not fixing.
+4. **`oven-bug-sprint/sprint-05-handler-typesafety` -- CLOSED cycle-9.**
+   F-05-01..F-05-05 all done.
+5. **`oven-bug-sprint/sprint-06-rule-compliance` -- CLOSED cycle-11.**
+   F-06-01..F-06-07 all done. +73 tests across the sprint (218 -> 291).
+   4 BO Integration Proposals authored.
+6. **`module-tenants` DRIFT-6 deferred.** Seed idempotency lock
+   cannot be unit-tested without DB-mock infra. Re-open with sprint-04.
+7. **Drizzle `getDb()` returns `any`.** Forces casts in seed paths.
    Still unaddressed, tracked as tech debt.
-7. **Rebase + commit-signing incompatibility.** The code-sign server
-   returns `400 { "error": "missing source" }` when `git rebase`
-   replays commits. Direct merge commits (`--no-ff`) sign cleanly.
-   Operational guidance: do NOT rebase session branches — always merge
-   `dev` in, never rebase onto it.
+8. **Rebase + commit-signing incompatibility.** Do NOT rebase session
+   branches -- always merge `dev` in.
 
 ## Backup inventory (current)
 
-Cumulative backups pushed under `bk/<original>-<YYYYMMDD>`:
-
-- `bk/claude-inspiring-clarke-HBa3u-20260412` (cycle-9 — **new**)
+- `bk/claude-stoic-hamilton-iouNt-20260412` (cycle-11 -- **new**)
+- `bk/claude-inspiring-clarke-IODSY-20260412` (cycle-10)
+- `bk/claude-inspiring-clarke-HBa3u-20260412` (cycle-9)
 - `bk/claude-inspiring-clarke-JGiXk-20260411` (cycle-8)
 - `bk/claude-inspiring-clarke-bYhvx-20260411` (cycle-7)
 - `bk/claude-inspiring-clarke-LSksg-20260411` (cycle-7 session)
@@ -118,15 +120,14 @@ Cumulative backups pushed under `bk/<original>-<YYYYMMDD>`:
 - `bk/claude-qa-test-todo-module-K2tpT-20260411` (blocked, cycle-2)
 - `bk/claude-dashboard-ux-system-nESUZ-20260411`
 
-## Merge path to `dev` (post cycle-9)
+## Merge path to `dev` (post cycle-11)
 
-`origin/dev` HEAD is now `054ad8c merge(cycle-9): land module-ai F-05-05
-zod boundary validator (+45 tests)`. The cycle-9 work is live. The
-session branch for the current pipeline run is
-`claude/inspiring-clarke-IODSY`; all Phase 1/3/4 work in this run sits
-on top of `054ad8c`.
+`origin/dev` HEAD is now `63d5601 merge(cycle-11): land oven-bug-sprint
+sprint-06 F-06-02..07`. All sprint-06 work is live.
 
 QA evidence:
-- Cycle-9: `qa-reports/claude-inspiring-clarke-HBa3u-QA-REPORT.md`
-- Cycle-8: `qa-reports/claude-inspiring-clarke-JGiXk-QA-REPORT.md`
-- Cycle-7: `qa-reports/claude-inspiring-clarke-LSksg-QA-REPORT.md`
+- Cycle-11: `docs/modules/todo/oven-bug-sprint/QA-REPORT.md`
+- Cycle-10: `docs/modules/todo/qa-reports/claude-inspiring-clarke-IODSY-QA-REPORT.md`
+- Cycle-9: `docs/modules/todo/qa-reports/claude-inspiring-clarke-HBa3u-QA-REPORT.md`
+- Cycle-8: `docs/modules/todo/qa-reports/claude-inspiring-clarke-JGiXk-QA-REPORT.md`
+- Cycle-7: `docs/modules/todo/qa-reports/claude-inspiring-clarke-LSksg-QA-REPORT.md`

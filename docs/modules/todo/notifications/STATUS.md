@@ -2,18 +2,24 @@
 
 | Field | Value |
 |---|---|
-| Current sprint | `sprint-01-foundation.md` |
-| Sprint state | **done** (Phase 4 shipped) |
-| Package | `packages/module-notifications/` (scaffolded + 37 tests passing) |
-| Active branch | `claude/eager-curie-4GaQC` |
-| Backup branch | n/a — no prior feature work to back up |
-| Open PR | none (do not create without explicit user approval) |
-| Test framework | `vitest` 3.2.4 (matches `packages/module-ai/src/__tests__/*.test.ts` convention) |
-| QA verdict | **pass** — 37/37 vitest green on first run |
+| Current sprint | `sprint-02-whatsapp-meta-adapter.md` |
+| Sprint state | **done** (cycle-12) |
+| Package | `packages/module-notifications/` (48 tests), `packages/notifications-meta/` (21 tests) |
+| Active branch | `claude/stoic-hamilton-iouNt` |
+| Backup branch | `bk/claude-stoic-hamilton-iouNt-20260412` |
+| Open PR | none |
+| Test framework | `vitest` 3.2.4 |
+| QA verdict | **pass** — 48/48 module-notifications + 21/21 notifications-meta green |
 | Blockers | none |
 
 ## Last updates
 
+- 2026-04-12 — sprint-02-whatsapp-meta-adapter executed on `claude/stoic-hamilton-iouNt`:
+  - New package `@oven/notifications-meta` with `metaAdapter` (verifyMetaSignature, parseInboundMetaWebhook, sendMetaMessage). 21 vitest tests.
+  - 5 API handlers: channels CRUD, conversations list/show, WhatsApp webhook GET+POST.
+  - `ingestInboundMessage()` conversation pipeline service.
+  - Module registered in `apps/dashboard/src/lib/modules.ts` with `registerNotificationAdapter(metaAdapter)`.
+  - Tests: 48/48 module-notifications, 21/21 notifications-meta green.
 - 2026-04-11 — folder bootstrapped from `docs/modules/15-notifications.md`; canonical doc set scaffolded at `docs/modules/notifications/`; sprint roadmap authored (00–05); Rule 13 drift identified and routed to `module-subscriptions`.
 - 2026-04-11 — sprint-01-foundation executed on `claude/eager-curie-4GaQC`:
   - `packages/module-notifications/` scaffolded with `package.json`, `tsconfig.json`, 7 source files, 5 test files.
@@ -26,17 +32,17 @@
 Mirrors [`docs/module-rules.md`](../../../module-rules.md) "Before Merging a New Module" checklist — updated each sprint.
 
 - [x] `ModuleDefinition` contract implemented (sprint-01)
-- [ ] Registered in `apps/dashboard/src/lib/modules.ts` in dependency order (sprint-05)
+- [x] Registered in `apps/dashboard/src/lib/modules.ts` in dependency order (cycle-12)
 - [x] `chat` block declared (sprint-01)
 - [x] Events listed in `events.emits` with typed `schemas` (sprint-01)
 - [x] No direct imports from other module packages (sprint-01 — enforced by `no-cross-module-imports.test.ts`)
-- [ ] Adapter interface + separate adapter packages (interface shipped sprint-01; Meta adapter package ships sprint-02)
+- [x] Adapter interface + separate adapter packages (interface sprint-01; `@oven/notifications-meta` shipped cycle-12)
 - [x] Tenant-scoped tables have `tenantId` column with index (sprint-01)
-- [ ] API handlers filter by `tenantId` (sprint-02 onwards)
+- [x] API handlers filter by `tenantId` (cycle-12 — channels handler filters by tenantId)
 - [x] Events include `tenantId` in payload (sprint-01 schemas)
 - [x] Permissions seeded for CRUD + resolve (sprint-01 seed)
 - [x] PUT handlers auto-create version snapshots — n/a (no versioned entities)
-- [ ] `listResponse()` + `parseListParams()` used (sprint-02 handlers)
+- [x] `listResponse()` + `parseListParams()` used (cycle-12 — channels + conversations handlers)
 - [ ] Menu items added to `CustomMenu.tsx` (sprint-04)
 - [ ] Resources registered with list/create/edit/show (sprint-04)
 - [ ] Create forms auto-assign `tenantId` (sprint-04)
