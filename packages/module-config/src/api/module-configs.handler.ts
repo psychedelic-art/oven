@@ -54,7 +54,12 @@ export async function GET(request: NextRequest) {
 // POST /api/module-configs — Upsert a config entry
 export async function POST(request: NextRequest) {
   const db = getDb();
-  const body = await request.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
 
   const { tenantId, moduleName, scope, scopeId, key, value, description } = body;
 
