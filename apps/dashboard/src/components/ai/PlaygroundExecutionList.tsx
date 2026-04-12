@@ -44,6 +44,25 @@ const executionFilters = [
   />,
 ];
 
+const renderType = (record: PlaygroundExecutionRecord) => (
+  <Chip
+    label={record?.type}
+    size="small"
+    color={resolveTypeColor(record?.type)}
+  />
+);
+
+const renderStatus = (record: PlaygroundExecutionRecord) => (
+  <Chip
+    label={record?.status}
+    size="small"
+    color={resolveStatusColor(record?.status)}
+  />
+);
+
+const renderCost = (record: PlaygroundExecutionRecord) =>
+  formatCostCents(record?.costCents);
+
 export default function PlaygroundExecutionList() {
   return (
     <List filters={executionFilters} sort={{ field: 'createdAt', order: 'DESC' }}>
@@ -51,28 +70,16 @@ export default function PlaygroundExecutionList() {
         <TextField source="id" />
         <FunctionField<PlaygroundExecutionRecord>
           label="Type"
-          render={(record) => (
-            <Chip
-              label={record?.type}
-              size="small"
-              color={resolveTypeColor(record?.type)}
-            />
-          )}
+          render={renderType}
         />
         <TextField source="model" />
         <FunctionField<PlaygroundExecutionRecord>
           label="Status"
-          render={(record) => (
-            <Chip
-              label={record?.status}
-              size="small"
-              color={resolveStatusColor(record?.status)}
-            />
-          )}
+          render={renderStatus}
         />
         <FunctionField<PlaygroundExecutionRecord>
           label="Cost"
-          render={(record) => formatCostCents(record?.costCents)}
+          render={renderCost}
         />
         <NumberField source="latencyMs" label="Latency (ms)" />
         <DateField source="createdAt" showTime />
