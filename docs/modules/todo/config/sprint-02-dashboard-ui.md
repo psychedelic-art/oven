@@ -36,20 +36,23 @@ resource becomes routable and discoverable.
 
 ## Deliverables
 
-- [ ] List view with filters: `moduleName`, `scope`, `tenantId` (admin),
+- [x] List view with filters: `moduleName`, `scope`, `tenantId` (admin),
       `key` (ilike).
-- [ ] Create view with module dropdown sourced from `registry.getAll()`,
-      key input, scope + scopeId inputs, JSON value editor, description.
-- [ ] Edit view pre-populated, same inputs as create, value JSON editor.
-- [ ] Menu section labelled "Platform" above the resource item.
-- [ ] Route shims for every API handler:
+- [x] Create view with module name input, key input, scope + scopeId
+      inputs, JSON value editor with validation, description.
+      (Module dropdown sourced from `registry.getAll()` deferred:
+      requires a `/api/registry/modules` endpoint. Plain TextInput used.)
+- [x] Edit view pre-populated, same inputs as create, value JSON editor
+      with parse validation and human-readable error message.
+- [x] Menu section labelled "Platform" above the resource item.
+- [x] Route shims for every API handler:
       - `/api/module-configs/route.ts`
       - `/api/module-configs/[id]/route.ts`
       - `/api/module-configs/resolve/route.ts`
       - `/api/module-configs/resolve-batch/route.ts`
-- [ ] `apps/dashboard/src/lib/modules.ts` imports and registers `configModule`
-      **before** `workflowsModule` (once the spec's Phase 2 migration in
-      sprint-03 removes the table from workflows).
+- [x] `apps/dashboard/src/lib/modules.ts` imports and registers `configModule`.
+      (Registration order kept after `workflowsModule` — reorder deferred to
+      sprint-03 when the table migration removes `moduleConfigs` from workflows.)
 
 ## Acceptance Criteria
 
@@ -97,10 +100,10 @@ resource becomes routable and discoverable.
 
 ## Rule Compliance Checklist
 
-- [ ] `docs/module-rules.md` Rule 6 — RA convention, menu grouping.
-- [ ] `docs/module-rules.md` Rule 5.2 — handler-level tenant filtering.
-- [ ] `docs/routes.md` — route shims follow the `export { GET, POST } from
+- [x] `docs/module-rules.md` Rule 6 — RA convention, menu grouping.
+- [x] `docs/module-rules.md` Rule 5.2 — handler-level tenant filtering.
+- [x] `docs/routes.md` — route shims follow the `export { GET, POST } from
       '@oven/module-config/api/...'` convention.
-- [ ] Root `CLAUDE.md` — MUI `sx`, no `style={}`, `import type`, no `styled()`.
-- [ ] `docs/package-composition.md` — dashboard components live in
+- [x] Root `CLAUDE.md` — MUI `sx`, no `style={}`, `import type`, no `styled()`.
+- [x] `docs/package-composition.md` — dashboard components live in
       `apps/dashboard/src/components/<resource>/`.

@@ -8,6 +8,18 @@ import {
   NumberInput,
 } from 'react-admin';
 
+function validateJsonValue(value: unknown) {
+  if (value === undefined || value === null || value === '') return undefined;
+  if (typeof value === 'string') {
+    try {
+      JSON.parse(value);
+    } catch (e) {
+      return `Invalid JSON: ${(e as SyntaxError).message}`;
+    }
+  }
+  return undefined;
+}
+
 export default function ConfigCreate() {
   return (
     <Create>
@@ -42,6 +54,10 @@ export default function ConfigCreate() {
           helperText="Enter a JSON value: string, number, boolean, object, or array"
           isRequired
           fullWidth
+          multiline
+          minRows={2}
+          sx={{ '& .MuiInputBase-input': { fontFamily: 'monospace' } }}
+          validate={validateJsonValue}
           parse={(v: string) => {
             try {
               return JSON.parse(v);
@@ -50,7 +66,7 @@ export default function ConfigCreate() {
             }
           }}
           format={(v: unknown) =>
-            typeof v === 'string' ? v : JSON.stringify(v)
+            typeof v === 'string' ? v : JSON.stringify(v, null, 2)
           }
         />
         <TextInput

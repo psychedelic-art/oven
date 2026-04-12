@@ -51,7 +51,6 @@ export default function CustomMenu() {
       </Box>
       <Menu.ResourceItem name="workflows" />
       <Menu.ResourceItem name="workflow-executions" />
-      <Menu.ResourceItem name="module-configs" />
 
       <Divider sx={{ my: 1 }} />
       <Box sx={{ px: 2, pb: 0.5 }}>
@@ -219,6 +218,14 @@ export default function CustomMenu() {
         primaryText="API Permissions"
         leftIcon={<ApiIcon />}
       />
+
+      <Divider sx={{ my: 1 }} />
+      <Box sx={{ px: 2, pb: 0.5 }}>
+        <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10 }}>
+          Platform
+        </Typography>
+      </Box>
+      <Menu.ResourceItem name="module-configs" />
 
       <Divider sx={{ my: 1 }} />
       <Box sx={{ px: 2, pb: 0.5 }}>
