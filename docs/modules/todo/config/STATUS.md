@@ -1,56 +1,35 @@
 # Module Config — Status
 
-> Last updated: 2026-04-11
-> Session branch: `claude/eager-curie-INifN`
+> Last updated: 2026-04-12
 
 ## Current State
 
 | Field | Value |
 |-------|-------|
-| Overall progress | 55% |
-| Current sprint | `sprint-01-foundation-tests` → Done. Next: `sprint-02-dashboard-ui` |
-| Active feature branch | `claude/eager-curie-INifN` (session branch) |
-| Backup branch | n/a — feature work is on the session branch; no separate PR yet |
-| Last commit on package | this session's `test(config)` commit (see git log) |
-| Tests | **24 passing** (13 `module-configs-resolve.test.ts` + 11 `module-configs-resolve-batch.test.ts`). Run via `pnpm --filter @oven/module-config test`. |
-| Lint | Clean (no lint scripts configured for `module-config` yet — enforced at repo level) |
-| Typecheck | Clean (compiles as part of dashboard build) |
+| Overall progress | 75% |
+| Current sprint | `sprint-02-dashboard-ui` -> Done. Next: `sprint-03-rls-and-migration` |
+| Tests | **24 passing** (13 resolve + 11 resolve-batch). Run via `pnpm --filter @oven/module-config test`. |
+| Lint | Clean |
+| Typecheck | Pre-existing baseline (compiles as part of dashboard build) |
+
+## History
+
+| Date | Event |
+|------|-------|
+| 2026-04-11 | Cycle-3: canonical doc set scaffolded; sprint-01 foundation tests shipped (24 tests). |
+| 2026-04-12 | Cycle-15: sprint-02 dashboard UI completed. resolve-batch route shim added; module-configs menu moved to "Platform" section; Create/Edit forms upgraded with JSON validation + monospace editor. |
 
 ## Risk Log
 
-1. **RLS policies not yet migrated**: spec section 6 defines policies but the
-   migration to enable RLS is scoped to sprint-03. Until then, tenant isolation
-   relies on API-level filters; external callers must set `req.tenantId`
-   correctly.
-2. **Workflows owns `moduleConfigs` table today**: the spec's Phase 2 migration
-   removes the table from `module-workflows` and gives it exclusively to
-   `module-config`. This is destructive-adjacent and is gated behind
-   sprint-03; it must ship before `module-config` can be registered ahead of
-   `module-workflows` in `modules.ts`.
-3. **No dashboard UI components yet**: the `resources` entry in `index.ts`
-   points to `'module-configs'` but has no `list`, `create`, `edit`
-   components — the RA resource will throw on mount. Sprint-02 ships the
-   minimum components (JSON value editor is the hard part).
+1. **RLS policies not yet migrated**: sprint-03 scope.
+2. **Workflows owns `moduleConfigs` table today**: sprint-03 migration will transfer ownership.
+3. **Module dropdown in Create form**: uses plain TextInput, not a dropdown from `registry.getAll()`. Requires a `/api/registry/modules` endpoint (deferred).
+4. **`useTenantContext` not available**: tenant-aware list filtering (Rule 6.3) cannot be implemented until the tenant context provider is built (dashboard-ux-system program).
 
 ## Acceptance Gate
 
-The module graduates from `todo/config/` to `docs/modules/config/` (i.e. the
-todo folder is removed) when sprint-04-acceptance's checklist is fully met.
-The canonical doc set under `docs/modules/config/` already exists and is the
-target location; only the todo folder is removed at graduation.
-
-## QA Outcomes
-
-None yet — no feature branch beyond the session branch has been opened, so no
-QA report has been filed. This section will hold the verdict/recommendation for
-each QA pass once feature branches start landing.
+Sprint-03 (RLS + migration) and sprint-04 (acceptance) remain.
 
 ## Backup Branches
 
-None yet. Backup branches follow the convention
-`bk/<feature-branch>-<YYYYMMDD>` and are recorded here as soon as they are
-pushed.
-
-## PR Links
-
-None yet — no pull request has been opened against `dev` for this module.
+- `bk/claude-stoic-hamilton-8IRlF-20260412` (cycle-15)
