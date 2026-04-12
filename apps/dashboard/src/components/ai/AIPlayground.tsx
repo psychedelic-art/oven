@@ -38,6 +38,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { FileUploader, FilePickerCombobox, FilePicker, useFileUpload } from '../files';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import type { SyntheticEvent, Dispatch, SetStateAction } from 'react';
+import { PlaygroundErrorBoundary } from './PlaygroundErrorBoundary';
 
 // ─── Session State Persistence ───────────────────────────────
 
@@ -1826,42 +1827,44 @@ export default function AIPlayground() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" gutterBottom>
-        AI Playground
-      </Typography>
-      <ProviderStatusBanner
-        hasConnectedProvider={hasConnectedProvider}
-        loading={loading}
-      />
-      <Paper sx={{ p: 2 }}>
-        <Tabs value={tab} onChange={handleTabChange}>
-          <Tab label="Text Generation" />
-          <Tab label="Vision" />
-          <Tab label="Embeddings" />
-          <Tab label="Image Generation" />
-          <Tab label="Audio" />
-          <Tab label="Structured Output" />
-        </Tabs>
-        <TabPanel value={tab} index={0}>
-          <TextGenerationTab textAliases={textAliases} aliasLoading={loading} />
-        </TabPanel>
-        <TabPanel value={tab} index={1}>
-          <VisionTab textAliases={textAliases} aliasLoading={loading} />
-        </TabPanel>
-        <TabPanel value={tab} index={2}>
-          <EmbeddingsTab embeddingAliases={embeddingAliases} aliasLoading={loading} />
-        </TabPanel>
-        <TabPanel value={tab} index={3}>
-          <ImageGenerationTab imageAliases={imageAliases} aliasLoading={loading} />
-        </TabPanel>
-        <TabPanel value={tab} index={4}>
-          <AudioTab audioAliases={audioAliases} aliasLoading={loading} />
-        </TabPanel>
-        <TabPanel value={tab} index={5}>
-          <StructuredOutputTab textAliases={textAliases} aliasLoading={loading} />
-        </TabPanel>
-      </Paper>
-    </Box>
+    <PlaygroundErrorBoundary>
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h5" gutterBottom>
+          AI Playground
+        </Typography>
+        <ProviderStatusBanner
+          hasConnectedProvider={hasConnectedProvider}
+          loading={loading}
+        />
+        <Paper sx={{ p: 2 }}>
+          <Tabs value={tab} onChange={handleTabChange}>
+            <Tab label="Text Generation" />
+            <Tab label="Vision" />
+            <Tab label="Embeddings" />
+            <Tab label="Image Generation" />
+            <Tab label="Audio" />
+            <Tab label="Structured Output" />
+          </Tabs>
+          <TabPanel value={tab} index={0}>
+            <TextGenerationTab textAliases={textAliases} aliasLoading={loading} />
+          </TabPanel>
+          <TabPanel value={tab} index={1}>
+            <VisionTab textAliases={textAliases} aliasLoading={loading} />
+          </TabPanel>
+          <TabPanel value={tab} index={2}>
+            <EmbeddingsTab embeddingAliases={embeddingAliases} aliasLoading={loading} />
+          </TabPanel>
+          <TabPanel value={tab} index={3}>
+            <ImageGenerationTab imageAliases={imageAliases} aliasLoading={loading} />
+          </TabPanel>
+          <TabPanel value={tab} index={4}>
+            <AudioTab audioAliases={audioAliases} aliasLoading={loading} />
+          </TabPanel>
+          <TabPanel value={tab} index={5}>
+            <StructuredOutputTab textAliases={textAliases} aliasLoading={loading} />
+          </TabPanel>
+        </Paper>
+      </Box>
+    </PlaygroundErrorBoundary>
   );
 }
