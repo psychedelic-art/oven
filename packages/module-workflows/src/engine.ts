@@ -196,7 +196,13 @@ class WorkflowEngine {
 
     // Iterate through states manually
     let currentState = definition.initial;
-    const visitedStates = new Set<string>();
+    let previousState = '__start__';
+    // Track transitions (from->to pairs) instead of state+context snapshots.
+    // This detects infinite loops in O(n) without JSON.stringify overhead.
+    // Reset per top-level run so legitimately revisited states are allowed
+    // as long as the same transition doesn't repeat.
+    // Sprint-03 F-03-02: https://docs/modules/todo/oven-bug-sprint/sprint-03-workflow-engine.md
+    const visitedTransitions = new Set<string>();
     const maxIterations = 100; // safety limit
     let iterations = 0;
 
@@ -233,12 +239,13 @@ class WorkflowEngine {
         return;
       }
 
-      // Detect infinite loops
-      const stateKey = `${currentState}:${JSON.stringify(machineContext)}`;
-      if (visitedStates.has(stateKey)) {
+      // Detect infinite loops by tracking transitions, not content hashes.
+      const transitionKey = `${previousState}->${currentState}`;
+      if (visitedTransitions.has(transitionKey)) {
         throw new Error(`Infinite loop detected at state "${currentState}"`);
       }
-      visitedStates.add(stateKey);
+      visitedTransitions.add(transitionKey);
+      previousState = currentState;
 
       // Execute invoke (service/task)
       if (stateDef.invoke) {
