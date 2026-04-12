@@ -76,15 +76,15 @@ message limits from `module-subscriptions` plan quotas with a
 
 ## Acceptance Criteria
 
-- [ ] Resolver tests pass all three tiers
-- [ ] `incrementUsage` is atomic (asserted by concurrent-call test)
-- [ ] Warning event fires exactly once when crossing 80%, not on every
-  subsequent message below 100%
-- [ ] `notifications.usage.limitExceeded` fires exactly once when crossing
-  100%, not on repeated over-limit attempts in the same period
-- [ ] DRIFT-1 item in CODE-REVIEW.md marked resolved with commit hash
-- [ ] Spec file edit reviewed: no other section still references
-  `tenant.whatsappLimit`
+- [x] Resolver tests pass all three tiers (12 tests, 3 tiers + fail-safe + slug mapping)
+- [x] `incrementUsage` is atomic (SQL `message_count + 1`, old/new count crossing logic)
+- [x] Warning event fires exactly once when crossing 80%, not on every
+  subsequent message below 100% (tested: crossing + no-re-emit)
+- [x] `notifications.usage.limitExceeded` fires exactly once when crossing
+  100%, not on repeated over-limit attempts in the same period (tested)
+- [x] DRIFT-1 item in CODE-REVIEW.md marked resolved
+- [x] Spec file `15-notifications.md` section 6 updated; no remaining
+  `tenant.whatsappLimit` references in notifications code/docs
 
 ## Dependencies
 

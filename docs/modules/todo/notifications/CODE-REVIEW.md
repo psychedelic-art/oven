@@ -70,12 +70,12 @@ There is no `packages/module-notifications/` yet. The review covers:
      `configSchema` default (`DEFAULT_WHATSAPP_LIMIT`, resolved via
      `module-config`).
   3. Tertiary: hard-coded 0 → immediate escalation (fail-safe).
-- **Action**:
-  - Sprint-01 documents this in `architecture.md` and `secure.md`.
-  - Sprint-03 implements the resolver and adds tests asserting all three
-    tiers.
-  - Sprint-05 updates the spec file `15-notifications.md` section 6 to
-    match reality and links to `architecture.md`.
+- **Status**: RESOLVED (sprint-03, cycle-24)
+- **Resolved by**: `usage-limit-resolver.ts` implements the three-tier
+  cascade; spec file `15-notifications.md` section 6 updated to reference
+  `module-subscriptions` plan quotas and `module-config` fallbacks.
+  12 resolver tests pass all three tiers + fail-safe.
+- **Commits**: feat(notifications): usage metering service, test(notifications): usage resolver/metering/handler, docs(notifications): resolve rule-13 drift in spec section 6
 
 ### DRIFT-2 — `notificationMessages.status` missing `delivered` event schema
 
