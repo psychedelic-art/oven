@@ -1,10 +1,15 @@
 # Todo Queue Progress
 
-Regenerated fresh on 2026-04-12 after **cycle-15** landing of
-`claude/stoic-hamilton-8IRlF` (config sprint-02 -- dashboard UI,
-resolve-batch route shim, Platform menu section, JSON validation)
-onto `origin/dev` as merge commit `a65a4dc`.
+Regenerated fresh on 2026-04-12 after **cycle-15b** landing of
+`claude/stoic-hamilton-8IRlF` (auth sprint-00 discovery inventory)
+onto `origin/dev` as merge commit `0073243`.
 Session branch: `claude/stoic-hamilton-8IRlF`.
+
+## Cycle-15b merge audit
+
+| # | Branch | Modules landed | Backup | Tests | Verdict |
+|---|--------|----------------|--------|-------|---------|
+| 1 | `claude/stoic-hamilton-8IRlF` | auth sprint-00 discovery (inventory.md — 16 hits, 3 call-site migrations) | `bk/claude-stoic-hamilton-8IRlF-20260412` | Docs only — no tests affected. | **MERGED to `origin/dev`** as `0073243` (cycle-15b merge) |
 
 ## Cycle-15 merge audit
 
@@ -23,7 +28,7 @@ Session branch: `claude/stoic-hamilton-8IRlF`.
 
 | Module / Program | Sprint files | Canonical doc set | Package / tests | Current sprint | Next action |
 |---|---|---|---|---|---|
-| `auth` | 5 (sprint-00..04) | 11/11 | `@oven/module-auth` exists, 0 tests | sprint-00-discovery | Execute sprint-00: inventory existing auth code, then sprint-01 foundation. |
+| `auth` | 5 (sprint-00..04) | 11/11 | `@oven/module-auth` exists, 0 tests | **sprint-00 done (cycle-15b)** | Execute sprint-01-foundation. |
 | `files` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-files`, 29 tests | sprint-02 done | Execute sprint-03-tenant-scoping. |
 | `subscriptions` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-subscriptions`, 80 tests | sprint-02 done | Execute sprint-03-public-pricing. |
 | `tenants` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-tenants`, 78 tests | sprint-03 done | Execute sprint-04-acceptance (BLOCKED on DB-mock harness). |
@@ -38,7 +43,7 @@ Session branch: `claude/stoic-hamilton-8IRlF`.
 
 ## Priority order (post cycle-15)
 
-P0: auth sprint-00 (discovery, then sprint-01 foundation)
+P0: auth sprint-01 (foundation — package skeleton, middleware hardening)
 P1: module-knowledge-base sprint-02 (embedding pipeline)
 P2: ui-flows sprint-01 (foundation)
 P3: agent-ui sprint-00 (discovery)
