@@ -6,7 +6,7 @@
 | Package | `packages/module-files/` |
 | Top-level spec | `docs/modules/14-files.md` (373 lines) |
 | Canonical doc set | **complete (11/11)** — scaffolded cycle-4 |
-| Current sprint | `sprint-01-security-hardening.md` **SHIPPED cycle-4 Phase 4** — 10/10 tests green; next is `sprint-02-upload-validation.md` |
+| Current sprint | `sprint-02-upload-validation.md` **SHIPPED cycle-13** — 29/29 tests green; next is `sprint-03-tenant-scoping.md` |
 | Sprint queue | 6 files (00 → 05-acceptance) |
 | Active branch | `claude/inspiring-clarke-JuFO1` (cycle-4) |
 | Backup branch | none yet — first feature work against this module ships cycle-4 |
@@ -40,19 +40,19 @@
 - **ModuleDefinition**: `filesModule` with 2 configSchema entries,
   2 typed events, 3 chat action schemas.
 - **Dashboard UI**: 0 components (spec §6 missing).
-- **Tests**: 10 (sprint-01, sort guard — all green).
+- **Tests**: 29 (sprint-01 sort guard + sprint-02 magic-bytes + upload-processor — all green).
 
 ## Known gaps
 
 | # | Gap | Severity | Sprint |
 |---|---|---|---|
 | 1 | ~~F-05-01 sort injection in `GET /api/files`~~ — **CLOSED sprint-01** | — | — |
-| 2 | MIME allowlist not enforced on upload | HIGH | sprint-02 |
-| 3 | Size limit not enforced on upload | HIGH | sprint-02 |
-| 4 | Magic-byte verification missing | HIGH | sprint-02 |
-| 5 | `tenantId` from request body is not clamped against JWT tenant set | HIGH | sprint-02 |
+| 2 | ~~MIME allowlist not enforced on upload~~ — **CLOSED sprint-02 (cycle-13)** | — | — |
+| 3 | ~~Size limit not enforced on upload~~ — **CLOSED sprint-02 (cycle-13)** | — | — |
+| 4 | ~~Magic-byte verification missing~~ — **CLOSED sprint-02 (cycle-13)** | — | — |
+| 5 | `tenantId` from request body is not clamped against JWT tenant set | HIGH | BLOCKED on module-auth/ssr |
 | 6 | List/get/delete do not filter by tenant (cross-tenant enumeration) | HIGH | sprint-03 |
-| 7 | Upload processor not unit-testable without monkey-patching | MEDIUM | sprint-02 (adapter injection) |
+| 7 | ~~Upload processor not unit-testable~~ — **CLOSED sprint-02 (cycle-13)** adapter injection | — | — |
 | 8 | `PUT /api/files/[id]` handler missing | MEDIUM | sprint-04 |
 | 9 | Download + public-serve handlers missing | MEDIUM | sprint-05 |
 | 10 | React Admin `FileList`/`FileShow` missing | MEDIUM | sprint-04 |
@@ -65,10 +65,10 @@
 Mirrors `sprint-05-acceptance.md`. Updated each sprint.
 
 - [x] `GET /api/files` uses `getOrderColumn` + allowlist — 8 tests green (sprint-01)
-- [ ] `POST /api/files/upload` enforces `ALLOWED_MIME_TYPES` with magic-byte check
-- [ ] `POST /api/files/upload` enforces `MAX_FILE_SIZE_MB`
-- [ ] `POST /api/files/upload` clamps `tenantId` against JWT tenant set
-- [ ] `processUpload` accepts optional adapter parameter
+- [x] `POST /api/files/upload` enforces `ALLOWED_MIME_TYPES` with magic-byte check (cycle-13)
+- [x] `POST /api/files/upload` enforces `MAX_FILE_SIZE_MB` (cycle-13)
+- [ ] `POST /api/files/upload` clamps `tenantId` against JWT tenant set (BLOCKED on module-auth/ssr)
+- [x] `processUpload` accepts optional adapter parameter (cycle-13)
 - [ ] `LocalFsAdapter` rejects keys containing `..`
 - [ ] List/get/delete filter by tenant and return 404 on cross-tenant
 - [ ] `PUT /api/files/[id]` handler shipped

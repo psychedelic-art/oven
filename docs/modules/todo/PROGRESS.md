@@ -1,17 +1,22 @@
 # Todo Queue Progress
 
-Regenerated fresh on 2026-04-12 after **cycle-11** landing of
-`claude/stoic-hamilton-iouNt` (oven-bug-sprint sprint-06 F-06-02..07 --
-VectorStoreRecord + PlaygroundExecutionRecord typed helpers,
-TypedFunctionField extraction, render-function lift, import-type sweep,
-+47 regression tests) onto `origin/dev` as merge commit `63d5601`.
+Regenerated fresh on 2026-04-12 after **cycle-12** landing of
+`claude/stoic-hamilton-iouNt` (notifications sprint-02 -- Meta WhatsApp
+adapter package, 5 API handlers, conversation pipeline, module
+registration in dashboard) onto `origin/dev` as merge commit `0b710fd`.
 Session branch: `claude/stoic-hamilton-iouNt`.
+
+## Cycle-12 merge audit
+
+| # | Branch | Modules landed | Backup | Tests | Verdict |
+|---|--------|----------------|--------|-------|---------|
+| 1 | `claude/stoic-hamilton-iouNt` | notifications sprint-02 (Meta adapter + webhook + CRUD handlers + pipeline + dashboard wiring) | `bk/claude-stoic-hamilton-iouNt-20260412` | `@oven/module-notifications` 37 -> **48** (+11). New `@oven/notifications-meta` **21** tests. | **MERGED to `origin/dev`** as `0b710fd` (cycle-12 merge) |
 
 ## Cycle-11 merge audit
 
-| # | Branch | Modules landed | Backup | Unique content | Tests | Verdict |
-|---|--------|----------------|--------|----------------|-------|---------|
-| 1 | `claude/stoic-hamilton-iouNt` | `module-ai` F-06-02..07, TypedFunctionField, F-06-04, F-06-05 (closes oven-bug-sprint sprint-06) | `bk/claude-stoic-hamilton-iouNt-20260412` | New `packages/module-ai/src/view/vector-store-record.ts` (VectorStoreRecord + VECTOR_STORE_ADAPTER_COLORS + resolveAdapterColor), new `packages/module-ai/src/view/playground-execution-record.ts` (PlaygroundExecutionRecord + EXECUTION_STATUS_COLORS + EXECUTION_TYPE_COLORS + resolveExecutionStatusColor + resolveExecutionTypeColor + formatCostCents), new `apps/dashboard/src/components/ai/_fields/TypedFunctionField.tsx`, 23 handler files converted to `import type { NextRequest }`. | **+47 vitest tests** (13 vector-store-record + 34 playground-execution-record). `@oven/module-ai` 244 -> **291** all green. | **MERGED to `origin/dev`** as `63d5601` (cycle-11 merge) |
+| # | Branch | Modules landed | Backup | Tests | Verdict |
+|---|--------|----------------|--------|-------|---------|
+| 1 | `claude/stoic-hamilton-iouNt` | oven-bug-sprint sprint-06 F-06-02..07 (closes sprint-06) | `bk/claude-stoic-hamilton-iouNt-20260412` | `@oven/module-ai` 244 -> **291** (+47). | **MERGED to `origin/dev`** as `63d5601` (cycle-11 merge) |
 
 ### Phase 0 candidate set (cycle-11)
 
@@ -51,7 +56,7 @@ them correctly at runtime via the package `exports` map.
 | `subscriptions` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-subscriptions`, 52 tests | sprint-01 done | Execute sprint-02-usage-metering. |
 | `tenants` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-tenants`, 78 tests | sprint-03 done | Execute sprint-04-acceptance (BLOCKED on DB-mock harness). |
 | `config` | 4 (sprint-00..04) | 11/11 | LIVE `@oven/module-config`, 24 tests | sprint-01 done | Execute sprint-02-dashboard-ui. |
-| `notifications` | 5 (sprint-00..05) | 11/11 | LIVE `@oven/module-notifications`, 37 tests; **NOT REGISTERED** | sprint-01 done | **Register in modules.ts**, then execute sprint-02 WhatsApp Meta adapter. |
+| `notifications` | 5 (sprint-00..05) | 11/11 | LIVE `@oven/module-notifications` 48 tests + `@oven/notifications-meta` 21 tests; **REGISTERED** | sprint-02 done | Execute sprint-03-usage-metering. |
 | `module-knowledge-base` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-knowledge-base` | sprint-01 done | Execute sprint-02-embedding-pipeline. |
 | `ui-flows` | 5 (sprint-00..03, 99) | 11/11 | LIVE `@oven/module-ui-flows` | sprint-00 done | Execute sprint-01-foundation. |
 | `agent-ui` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/agent-ui`, vitest suite | sprint-00 not started | Execute sprint-00-discovery drift audit. |
@@ -59,17 +64,17 @@ them correctly at runtime via the package `exports` map.
 | `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | 291 tests (`module-ai`) | **sprint-06 CLOSED** (cycle-11) | Next: sprint-01 (AI Playground UX, 8 findings), then sprint-03 (Workflow engine, 4 findings). Sprints 02/04 remain BLOCKED (module-chat/agent-core absent). |
 | `psychedelic-claude-code-migration` | 12 (sprint-00..11) | N/A (program) | N/A | — | Owned elsewhere -- do not touch. |
 
-## Priority order (post cycle-11)
+## Priority order (post cycle-12)
 
-Sprint-06 is closed. Updated priorities:
+Sprint-06 closed (cycle-11). Notifications sprint-02 closed (cycle-12).
 
 P0: oven-bug-sprint sprint-01 (AI Playground UX, 8 findings)
-P1: notifications sprint-02 (register module first, then adapter)
-P2: files sprint-02 (upload validation)
-P3: subscriptions sprint-02 (usage metering)
-P4: config sprint-02 (dashboard UI)
-P5: auth sprint-00 (discovery, then sprint-01 foundation)
-P6: module-knowledge-base sprint-02 (embedding pipeline)
+P1: files sprint-02 (upload validation)
+P2: subscriptions sprint-02 (usage metering)
+P3: config sprint-02 (dashboard UI)
+P4: auth sprint-00 (discovery, then sprint-01 foundation)
+P5: module-knowledge-base sprint-02 (embedding pipeline)
+P6: notifications sprint-03 (usage metering)
 P7: ui-flows sprint-01 (foundation)
 P8: agent-ui sprint-00 (discovery)
 P9: dashboard-ux-system sprint-01 (foundation)
@@ -85,10 +90,8 @@ SKIP: psychedelic-claude-code-migration (external ownership)
    `RouteHandler` / `"json"` field types in `module-subscriptions` /
    `module-tenants`, and `@oven/module-ai/*` subpath TS2307 errors (32
    total). Unchanged category across cycles 2-11.
-2. **`@oven/module-notifications` is not registered.** The package
-   scaffolded in cycle-3 is not listed in
-   `apps/dashboard/src/lib/modules.ts`. Register before
-   `notifications/sprint-02` lands.
+2. **`@oven/module-notifications` registered (cycle-12).** Resolved.
+   Module + Meta adapter wired in `apps/dashboard/src/lib/modules.ts`.
 3. **`ui-flows` canonical shape uses `sprint-99-acceptance.md`** while
    every other module uses `sprint-NN-acceptance.md`. Minor naming
    inconsistency, not fixing.
@@ -120,12 +123,13 @@ SKIP: psychedelic-claude-code-migration (external ownership)
 - `bk/claude-qa-test-todo-module-K2tpT-20260411` (blocked, cycle-2)
 - `bk/claude-dashboard-ux-system-nESUZ-20260411`
 
-## Merge path to `dev` (post cycle-11)
+## Merge path to `dev` (post cycle-12)
 
-`origin/dev` HEAD is now `63d5601 merge(cycle-11): land oven-bug-sprint
-sprint-06 F-06-02..07`. All sprint-06 work is live.
+`origin/dev` HEAD is now `0b710fd merge(cycle-12): land notifications
+sprint-02 meta adapter`. Notifications sprint-02 is live.
 
 QA evidence:
+- Cycle-12: tests verified inline (48+21 green, no QA-REPORT.md needed for feature work)
 - Cycle-11: `docs/modules/todo/oven-bug-sprint/QA-REPORT.md`
 - Cycle-10: `docs/modules/todo/qa-reports/claude-inspiring-clarke-IODSY-QA-REPORT.md`
 - Cycle-9: `docs/modules/todo/qa-reports/claude-inspiring-clarke-HBa3u-QA-REPORT.md`
