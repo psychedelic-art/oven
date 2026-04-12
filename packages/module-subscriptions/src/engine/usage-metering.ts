@@ -21,6 +21,7 @@ export interface TrackUsageParams {
   amount: number;
   upstreamCostCents?: number;
   metadata?: Record<string, unknown>;
+  idempotencyKey?: string;
 }
 
 export interface TrackUsageResult {
@@ -185,7 +186,7 @@ export class UsageMeteringService {
    */
   async trackUsage(params: TrackUsageParams): Promise<TrackUsageResult> {
     const db = getDb();
-    const { tenantId, serviceSlug, amount, upstreamCostCents, metadata } = params;
+    const { tenantId, serviceSlug, amount, upstreamCostCents, metadata, idempotencyKey } = params;
 
     const service = await resolveService(db, serviceSlug);
     if (!service) {
@@ -215,6 +216,7 @@ export class UsageMeteringService {
       unit: service.unit,
       billingCycle,
       upstreamCostCents: upstreamCostCents ?? null,
+      idempotencyKey: idempotencyKey ?? null,
       metadata: metadata ?? null,
     });
 

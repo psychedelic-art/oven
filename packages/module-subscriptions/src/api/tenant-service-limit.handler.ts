@@ -1,7 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { eq, and } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
-import { notFound } from '@oven/module-registry/api-utils';
+import { notFound, badRequest } from '@oven/module-registry/api-utils';
+
+/** Only allow lowercase alphanumeric + dashes in service slugs. */
+const SERVICE_SLUG_PATTERN = /^[a-z0-9-]+$/;
 import {
   tenantSubscriptions,
   billingPlans,
@@ -18,6 +22,11 @@ export async function GET(
   const db = getDb();
   const { tenantId, serviceSlug } = await params;
   const tid = parseInt(tenantId, 10);
+
+  // Validate slug format (OWASP A03 — injection prevention)
+  if (!SERVICE_SLUG_PATTERN.test(serviceSlug)) {
+    return badRequest('Invalid serviceSlug format. Must match ^[a-z0-9-]+$');
+  }
 
   // 1. Get active subscription
   const [subscription] = await db
