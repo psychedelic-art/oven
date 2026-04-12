@@ -1,52 +1,78 @@
 # Todo Queue Progress
 
-Regenerated fresh on 2026-04-12 after **cycle-19** merge of
-`claude/stoic-hamilton-2ylh0` (ui-flows sprint-01 foundation tests,
-89 total across 13 files) onto `origin/dev` as merge commit `59101dc`.
-Session branch: `claude/stoic-hamilton-JTmbo`.
+Regenerated fresh on 2026-04-12 after **cycle-23** merge of
+`claude/stoic-hamilton-JTmbo` (subscriptions sprint-03 public pricing,
+83 tests green) onto `origin/dev` as merge commit `ff4e60a`.
+Session branch: `claude/stoic-hamilton-Ucqlg`.
 
-## Phase 0 — Branch discovery (cycle-20)
+## Phase 0 — Branch discovery (cycle-24)
 
 | Branch | Module | Ahead | Behind | Contents |
 |--------|--------|-------|--------|----------|
-| `claude/qa-test-todo-module-K2tpT` | (stale) | 1 | 129 | tsbuildinfo artifact only — no feature work |
-| `claude/stoic-hamilton-2ylh0` | (tracking) | 2 | 0 | PROGRESS.md + pnpm-lock.yaml update from cycle-19 |
-| `claude/stoic-hamilton-8IRlF` | (tracking) | 1 | 13 | PROGRESS.md update from cycle-17b |
+| `claude/qa-test-todo-module-K2tpT` | (stale) | 1 | 147 | tsbuildinfo artifact only — no feature work |
+| `claude/stoic-hamilton-2ylh0` | (tracking) | 2 | 18 | PROGRESS.md + pnpm-lock.yaml update from cycle-19 — superseded |
+| `claude/stoic-hamilton-8IRlF` | (tracking) | 1 | 31 | PROGRESS.md update from cycle-17b — superseded |
+| `claude/stoic-hamilton-JTmbo` | (tracking) | 1 | 0 | PROGRESS.md update from cycle-23 — superseded by this regen |
 
 No feature branches with unmerged work exist. All inspiring-clarke-*
-branches are fully merged (ahead=0). The 3 branches above contain
+branches are fully merged (ahead=0). The 4 branches above contain
 only tracking files or build artifacts — no actionable feature work.
 
 No shared unmerged ancestors detected across candidates.
 
-## Active queue (post cycle-19)
+## Cycle merge history (complete)
+
+| Cycle | Module | Sprint | Merge SHA | Test delta |
+|-------|--------|--------|-----------|------------|
+| 4 | auth/tenants/subscriptions | scaffold + tests | `b235741` | +98 |
+| 5 | auth/tenants/files/subscriptions | canonical docs + tests | `2c0086c` | +98 |
+| 6 | composite | canonical docs + module-ai F-05-01/02 rollout | `80a58ac` | +138 |
+| 7 | module-ai | F-05-03 + F-05-04 typed SDK guards | `26d6e1b` | +23 |
+| 8 | tenants | sprint-03 security hardening | `1eb20cf` | +50 |
+| 9 | module-ai | F-05-05 zod boundary validator | `054ad8c` | +45 |
+| 10 | oven-bug-sprint | F-06-01 typed GuardrailRecord | `fa32639` | — |
+| 11 | oven-bug-sprint | sprint-06 F-06-02..07 | `63d5601` | — |
+| 12 | notifications | sprint-02 meta adapter | `0b710fd` | +21 |
+| 13 | files | sprint-02 upload validation | `7f998b5` | — |
+| 14 | subscriptions / oven-bug-sprint | sprint-02 + sprint-01 | `c043b36` / `aaead06` | +28 |
+| 15 | config / auth | sprint-02 + sprint-00 | `a65a4dc` / `0073243` | — |
+| 16 | knowledge-base / ui-flows | sprint-02 + sprint-01 | `948196a` / `2bd0550` | +41 |
+| 17 | auth / agent-ui | sprint-01 + sprint-00 | `8e25df9` / `ef8da48` | +14 |
+| 18 | oven-bug-sprint | sprint-03 workflow engine | `63b7294` | — |
+| 19 | ui-flows | sprint-01 foundation tests | `59101dc` | +89 |
+| 20 | auth | sprint-02 authjs adapter tests | `6b8b4d0` | +16 |
+| 21 | agent-ui | sprint-01 foundation | `15ffa1b` | — |
+| 22 | files | sprint-03 tenant scoping | `f8dc9a9` | — |
+| 23 | subscriptions | sprint-03 public pricing | `ff4e60a` | +3 |
+
+## Active queue (post cycle-23)
 
 | Module / Program | Sprint files | Canonical doc set | Package / tests | Current sprint | Next action |
 |---|---|---|---|---|---|
-| `auth` | 5 (sprint-00..04) | 11/11 | `@oven/module-auth` 14 tests (2 files), `@oven/auth-authjs` 0 tests | **sprint-01 done (cycle-17)** | Execute sprint-02-authjs-adapter (tests for middleware + handlers + password roundtrip). |
-| `files` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-files`, 29 tests (3 files) | sprint-02 done (cycle-13) | Execute sprint-03-tenant-scoping. |
-| `subscriptions` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-subscriptions`, 80 tests (5 files) | sprint-02 done | Execute sprint-03-public-pricing. |
+| `auth` | 5 (sprint-00..04) | 11/11 | `@oven/module-auth` 30 tests (4 files) | **sprint-02 done (cycle-20)** | Execute sprint-03-dashboard-ui. |
+| `files` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-files`, 41 tests (6 files) | **sprint-03 done (cycle-22)** | Execute sprint-04-dashboard-ui (BLOCKED on module-auth/ssr F-05). |
+| `subscriptions` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-subscriptions`, 83 tests (6 files) | **sprint-03 done (cycle-23)** | Execute sprint-04-dashboard-ui. |
 | `tenants` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-tenants`, 78 tests (4 files) | sprint-03 done (cycle-8) | Execute sprint-04-acceptance (BLOCKED on DB-mock harness). |
-| `config` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-config`, 24 tests (2 files) | **sprint-02 done (cycle-15)** | Execute sprint-03-rls-and-migration. |
-| `notifications` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-notifications` 48 tests + `@oven/notifications-meta` 21 tests; REGISTERED | sprint-02 done (cycle-12) | Execute sprint-03-usage-metering. |
-| `module-knowledge-base` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-knowledge-base`, 21 tests (2 files) | **sprint-02 done (cycle-16)** | Execute sprint-03-search-engine. |
+| `config` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-config`, 24 tests (2 files) | **sprint-02 done (cycle-15)** | Execute sprint-03-rls-and-migration (SEMI-BLOCKED: needs Neon preview branch). |
+| `notifications` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-notifications` 48 tests + `@oven/notifications-meta` 21 tests; REGISTERED | **sprint-02 done (cycle-12)** | **Execute sprint-03-usage-metering.** |
+| `module-knowledge-base` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-knowledge-base`, 21 tests (2 files) | **sprint-02 done (cycle-16)** | Execute sprint-03-search-engine (pgvector required). |
 | `ui-flows` | 5 (sprint-00..03, 99) | 11/11 | LIVE `@oven/module-ui-flows`, 89 tests (13 files) | **sprint-01 done (cycle-19)** | Execute sprint-02-portal-app. |
-| `agent-ui` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/agent-ui`, 67 tests (9 files) | **sprint-00 done (cycle-17b)** | Execute sprint-01-foundation. |
+| `agent-ui` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/agent-ui`, 71 tests (10 files) | **sprint-01 done (cycle-21)** | Execute sprint-02-session-sidebar (needs module-chat endpoints). |
 | `dashboard-ux-system` | 8 (sprint-00..07) | N/A (program) | N/A | sprint-00 not started | Execute sprint-01-foundation. |
-| `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | 310 tests (`module-ai` + `module-workflows`) | sprint-01 CLOSED (cycle-14), sprint-03 CLOSED (cycle-18), sprint-05 CLOSED (cycle-9), sprint-06 CLOSED (cycle-11) | No unblocked sprints remain. sprint-02/04 BLOCKED on module-chat/agent-core. |
+| `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | 310+ tests (`module-ai` + `module-workflows`) | sprint-01 CLOSED (cycle-14), sprint-03 CLOSED (cycle-18), sprint-05 CLOSED (cycle-9), sprint-06 CLOSED (cycle-11) | No unblocked sprints remain. sprint-02/04 BLOCKED on module-chat/agent-core. |
 | `psychedelic-claude-code-migration` | 12 (sprint-00..11) | N/A (program) | N/A | -- | Owned elsewhere -- do not touch. |
 
-## Priority order (post cycle-19)
+## Priority order (post cycle-23)
 
-P0: auth sprint-02 (authjs adapter tests -- code exists, tests needed)
-P1: agent-ui sprint-01 (foundation: type tighten + MUI ban)
-P2: files sprint-03 (tenant scoping)
-P3: subscriptions sprint-03 (public pricing)
-P4: config sprint-03 (RLS + migration)
-P5: notifications sprint-03 (usage metering)
-P6: knowledge-base sprint-03 (search engine)
-P7: ui-flows sprint-02 (portal app)
-P8: dashboard-ux-system sprint-01 (foundation)
+P0: notifications sprint-03 (usage metering — all dependencies met)
+P1: subscriptions sprint-04 (dashboard UI — dependencies met)
+P2: auth sprint-03 (dashboard UI + API keys — large scope)
+P3: ui-flows sprint-02 (portal app — large scope, new app)
+P4: agent-ui sprint-02 (session sidebar — needs module-chat endpoints)
+P5: dashboard-ux-system sprint-01 (foundation — docs-only bootstrap)
+P6: config sprint-03 (RLS + migration — needs Neon preview branch)
+P7: knowledge-base sprint-03 (search engine — needs pgvector)
+SKIP: files sprint-04 (blocked on auth/ssr F-05)
 SKIP: tenants sprint-04 (blocked on DB-mock harness)
 SKIP: oven-bug-sprint sprint-02/04 (blocked on module-chat/agent-core)
 SKIP: psychedelic-claude-code-migration (external ownership)
@@ -56,7 +82,7 @@ SKIP: psychedelic-claude-code-migration (external ownership)
 1. **Pre-existing typecheck baseline on `dev` (465+ errors).** All from
    `packages/workflow-editor/` (peer-dep `react` resolution),
    `RouteHandler` / `"json"` field types in modules, and `@oven/module-ai/*`
-   subpath TS2307 errors. Unchanged category across cycles 2-19.
+   subpath TS2307 errors. Unchanged category across cycles 2-23.
 2. **`useTenantContext` not available.** Tenant-aware list filtering (Rule
    6.3) cannot be implemented until the tenant context provider is built
    (dashboard-ux-system program). Config sprint-02 defers this.
@@ -78,6 +104,7 @@ SKIP: psychedelic-claude-code-migration (external ownership)
 
 ## Backup inventory (current)
 
+- `bk/claude-stoic-hamilton-JTmbo-20260412` (cycle-23 — to be created)
 - `bk/claude-stoic-hamilton-2ylh0-20260412` (cycle-18)
 - `bk/claude-stoic-hamilton-bVxUR-20260412` (cycle-17b)
 - `bk/claude-stoic-hamilton-8IRlF-20260412` (cycle-15)
@@ -95,7 +122,7 @@ SKIP: psychedelic-claude-code-migration (external ownership)
 - `bk/claude-qa-test-todo-module-K2tpT-20260411` (blocked, cycle-2)
 - `bk/claude-dashboard-ux-system-nESUZ-20260411`
 
-## Merge path to `dev` (post cycle-19)
+## Merge path to `dev` (post cycle-23)
 
-`origin/dev` HEAD is now `59101dc merge(cycle-19): land ui-flows
-sprint-01 foundation tests (89 total)`.
+`origin/dev` HEAD is now `ff4e60a merge(cycle-23): land subscriptions
+sprint-03 public pricing`.
