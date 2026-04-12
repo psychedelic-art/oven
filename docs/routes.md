@@ -188,6 +188,20 @@ Content-Range: resources 0-24/100
 
 ---
 
+## Subscriptions Module (`@oven/module-subscriptions`)
+
+### Usage Metering
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| POST | `/api/usage/track` | Required | Record a usage event. Accepts optional `X-Usage-Idempotency-Key` header (UUID v4, lowercase) for safe retries. |
+| GET | `/api/usage/summary` | Required | Aggregated usage per service for a tenant. Query: `?tenantId=X&billingCycle=2026-04` |
+| GET | `/api/tenant-subscriptions/[tenantId]/usage` | Required | Usage vs effective limits (remaining quota) for a tenant across all plan services. |
+
+**Events emitted**: `subscriptions.quota.exceeded`
+
+---
+
 ## Route Statistics
 
 | Module | Routes | Handlers | Tables |
@@ -198,4 +212,5 @@ Content-Range: resources 0-24/100
 | module-player-map-position | 9 | 5 | 3 (assignments, positions, visitedChunks) |
 | module-workflows | 18 | 15 | 5 (workflows, executions, nodeExecutions, moduleConfigs, versions) |
 | module-registry | 7 | 0 (inline) | 1 (eventWirings) |
-| **Total** | **60** | **35** | **15** |
+| module-subscriptions | 3 | 3 | 9 (serviceCategories, services, providers, providerServices, billingPlans, planQuotas, tenantSubscriptions, subscriptionQuotaOverrides, usageRecords) |
+| **Total** | **63** | **38** | **24** |

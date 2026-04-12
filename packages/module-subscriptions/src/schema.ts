@@ -9,7 +9,9 @@ import {
   jsonb,
   index,
   unique,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 // ─── Service Catalog ──────────────────────────────────────────
 
@@ -151,6 +153,7 @@ export const usageRecords = pgTable('sub_usage_records', {
   amount: integer('amount').notNull(),
   unit: varchar('unit', { length: 64 }).notNull(),
   billingCycle: varchar('billing_cycle', { length: 32 }),
+  idempotencyKey: varchar('idempotency_key', { length: 64 }),
   upstreamCostCents: integer('upstream_cost_cents'),
   metadata: jsonb('metadata'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -159,6 +162,9 @@ export const usageRecords = pgTable('sub_usage_records', {
   index('sur_service_id_idx').on(table.serviceId),
   index('sur_billing_cycle_idx').on(table.billingCycle),
   index('sur_created_at_idx').on(table.createdAt),
+  uniqueIndex('sur_idempotency_tenant_idx')
+    .on(table.tenantId, table.idempotencyKey)
+    .where(sql`${table.idempotencyKey} is not null`),
 ]);
 
 // ─── Schema export ────────────────────────────────────────────

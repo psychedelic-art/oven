@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq, and } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
-import { notFound } from '@oven/module-registry/api-utils';
+import { notFound, badRequest } from '@oven/module-registry/api-utils';
 import {
   tenantSubscriptions,
   billingPlans,
@@ -9,6 +9,8 @@ import {
   services,
   subscriptionQuotaOverrides,
 } from '../schema';
+
+const SERVICE_SLUG_PATTERN = /^[a-z0-9-]+$/;
 
 // GET /api/tenant-subscriptions/[tenantId]/limits/[serviceSlug] — Single service limit
 export async function GET(
@@ -18,6 +20,11 @@ export async function GET(
   const db = getDb();
   const { tenantId, serviceSlug } = await params;
   const tid = parseInt(tenantId, 10);
+
+  // Validate serviceSlug before touching the DB (OWASP A03 — injection)
+  if (!SERVICE_SLUG_PATTERN.test(serviceSlug)) {
+    return badRequest('serviceSlug must match ^[a-z0-9-]+$');
+  }
 
   // 1. Get active subscription
   const [subscription] = await db

@@ -19,6 +19,7 @@ export interface TrackUsageParams {
   tenantId: number;
   serviceSlug: string;
   amount: number;
+  idempotencyKey?: string;
   upstreamCostCents?: number;
   metadata?: Record<string, unknown>;
 }
@@ -185,7 +186,7 @@ export class UsageMeteringService {
    */
   async trackUsage(params: TrackUsageParams): Promise<TrackUsageResult> {
     const db = getDb();
-    const { tenantId, serviceSlug, amount, upstreamCostCents, metadata } = params;
+    const { tenantId, serviceSlug, amount, idempotencyKey, upstreamCostCents, metadata } = params;
 
     const service = await resolveService(db, serviceSlug);
     if (!service) {
@@ -193,6 +194,33 @@ export class UsageMeteringService {
     }
 
     const billingCycle = getCurrentBillingCycle();
+
+    // Idempotency check: if a key was provided, look for an existing
+    // record with the same (tenantId, idempotencyKey). If found, skip
+    // the insert and return the current quota state instead.
+    if (idempotencyKey) {
+      const [existing] = await db
+        .select({ id: usageRecords.id })
+        .from(usageRecords)
+        .where(
+          and(
+            eq(usageRecords.tenantId, tenantId),
+            eq(usageRecords.idempotencyKey, idempotencyKey)
+          )
+        )
+        .limit(1);
+
+      if (existing) {
+        const effectiveLimit = await getEffectiveLimit(db, tenantId, service.id);
+        if (!effectiveLimit) {
+          return { recorded: true, remaining: 0, exceeded: false };
+        }
+        const used = await getCurrentUsage(db, tenantId, service.id, billingCycle);
+        const remaining = computeRemaining(effectiveLimit.limit, used);
+        const exceeded = used > effectiveLimit.limit;
+        return { recorded: true, remaining, exceeded };
+      }
+    }
 
     // Get active subscription ID for the record
     const [subscription] = await db
@@ -214,6 +242,7 @@ export class UsageMeteringService {
       amount,
       unit: service.unit,
       billingCycle,
+      idempotencyKey: idempotencyKey ?? null,
       upstreamCostCents: upstreamCostCents ?? null,
       metadata: metadata ?? null,
     });
