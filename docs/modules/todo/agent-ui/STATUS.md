@@ -2,7 +2,7 @@
 
 | Sprint | Title | Status | Last commit | Notes |
 |--------|-------|--------|-------------|-------|
-| 00 | Discovery & drift audit | ⏳ Planned | — | Canonical docs scaffolded in cycle-5. No drift audit run yet. |
+| 00 | Discovery & drift audit | Done | cycle-17b | INVENTORY.md: 40 files, 67 tests, 50 R-IDs mapped. 5 MISSING docs, 3 MISSING tests, 13 NEEDS VERIFY. |
 | 01 | Foundation: type tighten + lint rule | ⏳ Planned | — | Remaining `any` spots across hooks; add `eslint-no-restricted-imports` rule banning `@mui/*` inside `packages/agent-ui/**`. |
 | 02 | Session sidebar completion | ⏳ Planned | — | Pin/unpin wiring partial. |
 | 03 | Widget bundle guardrails | ⏳ Planned | — | Add size budget, document manual cross-browser matrix. |
