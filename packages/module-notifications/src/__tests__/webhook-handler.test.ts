@@ -10,6 +10,27 @@ vi.mock('@oven/module-registry', () => ({
   eventBus: { emit: vi.fn() },
 }));
 
+// Mock usage services so webhook tests focus on signature/routing logic
+vi.mock('../services/usage-metering', () => ({
+  checkUsageLimit: vi.fn().mockResolvedValue({
+    allowed: true,
+    limit: 300,
+    used: 10,
+    remaining: 290,
+    source: 'config',
+    periodStart: '2026-04-01',
+  }),
+  incrementUsage: vi.fn().mockResolvedValue({
+    oldCount: 10,
+    newCount: 11,
+    limit: 300,
+    warningEmitted: false,
+    limitExceededEmitted: false,
+  }),
+  getMonthStart: () => '2026-04-01',
+  getPeriodEnd: () => '2026-04-30',
+}));
+
 import { GET, POST } from '../api/notifications-whatsapp-webhook.handler';
 import { registerNotificationAdapter, clearAdapters } from '../adapters/registry';
 
