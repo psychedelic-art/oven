@@ -18,11 +18,16 @@ import { filesModule } from '@oven/module-files';
 import { knowledgeBaseModule } from '@oven/module-knowledge-base';
 import { agentCoreModule } from '@oven/module-agent-core';
 import { chatModule } from '@oven/module-chat';
-import { notificationsModule } from '@oven/module-notifications';
+import {
+  notificationsModule,
+  registerNotificationAdapter,
+} from '@oven/module-notifications';
+import { metaAdapter } from '@oven/notifications-meta';
 import { workflowAgentsModule } from '@oven/module-workflow-agents';
 
-// Register auth adapter before module registration
+// Register adapters before module registration
 registerAuthAdapter(authJsAdapter);
+registerNotificationAdapter(metaAdapter);
 
 // Register modules in dependency order
 registry.register(mapsModule);                    // No deps
