@@ -7,6 +7,7 @@ import {
   ReferenceInput,
   DateTimeInput,
 } from 'react-admin';
+import OverrideEditor from '@oven/module-subscriptions/components/OverrideEditor';
 
 export default function TenantSubscriptionEdit() {
   return (
@@ -30,6 +31,7 @@ export default function TenantSubscriptionEdit() {
         <DateTimeInput source="startsAt" label="Start Date" fullWidth />
         <DateTimeInput source="expiresAt" label="Expires At" fullWidth />
         <DateTimeInput source="trialEndsAt" label="Trial Ends At" fullWidth />
+        <OverrideEditor />
       </SimpleForm>
     </Edit>
   );

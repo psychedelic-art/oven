@@ -13,10 +13,12 @@ import {
   TopToolbar,
   EditButton,
   Button,
+  useRecordContext,
 } from 'react-admin';
 import { Chip, Typography, Box } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { Link } from 'react-router-dom';
+import UsageMeter from '@oven/module-subscriptions/components/UsageMeter';
 
 function TenantShowActions() {
   return (
@@ -30,6 +32,12 @@ function TenantShowActions() {
       />
     </TopToolbar>
   );
+}
+
+function TenantUsageSection() {
+  const record = useRecordContext();
+  if (!record?.id) return null;
+  return <UsageMeter tenantId={record.id} />;
 }
 
 export default function TenantShow() {
@@ -59,6 +67,11 @@ export default function TenantShow() {
         />
         <DateField source="createdAt" label="Created" showTime />
         <DateField source="updatedAt" label="Updated" showTime />
+
+        <Box sx={{ mt: 3, mb: 1 }}>
+          <Typography variant="h6">Usage Limits</Typography>
+        </Box>
+        <TenantUsageSection />
 
         <Box sx={{ mt: 3, mb: 1 }}>
           <Typography variant="h6">Members</Typography>
