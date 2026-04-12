@@ -179,26 +179,26 @@ function useAliasesAndProviders() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     async function load() {
       try {
         const [aliasRes, providerRes] = await Promise.all([
-          fetch('/api/ai-aliases?range=[0,99]'),
-          fetch('/api/ai-providers?range=[0,99]'),
+          fetch('/api/ai-aliases?range=[0,99]', { signal: controller.signal }),
+          fetch('/api/ai-providers?range=[0,99]', { signal: controller.signal }),
         ]);
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         const aliasData = aliasRes.ok ? await aliasRes.json() : [];
         const providerData = providerRes.ok ? await providerRes.json() : [];
         setAliases(Array.isArray(aliasData) ? aliasData : []);
         setProviders(Array.isArray(providerData) ? providerData : []);
-      } catch {
-        // ignore fetch errors
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }
     load();
-    return () => { cancelled = true; };
+    return () => { controller.abort(); };
   }, []);
 
   const textAliases = useMemo(
