@@ -16,10 +16,13 @@ export async function POST(
   if (isNaN(numId)) return notFound('Invalid workflow ID');
 
   let payload: Record<string, unknown> = {};
-  try {
-    payload = await request.json();
-  } catch {
-    // Empty body is OK — some workflows don't need input
+  const body = await request.text();
+  if (body.length > 0) {
+    try {
+      payload = JSON.parse(body);
+    } catch {
+      return badRequest('Invalid JSON');
+    }
   }
 
   try {

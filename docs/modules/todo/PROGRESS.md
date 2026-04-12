@@ -1,63 +1,53 @@
 # Todo Queue Progress
 
-Regenerated fresh on 2026-04-12 after **cycle-17** landing of
-`claude/stoic-hamilton-8IRlF` (auth sprint-01 foundation tests, 14 new)
-onto `origin/dev` as merge commit `8e25df9`.
-Session branch: `claude/stoic-hamilton-8IRlF`.
+Regenerated fresh on 2026-04-12 after **cycle-18** session start on
+`claude/stoic-hamilton-2ylh0`. Previous session branch
+`claude/stoic-hamilton-8IRlF` has 1 unmerged commit (PROGRESS.md
+cycle-17b update, docs-only). dev HEAD is `ef8da48`.
 
-## Cycle-16 merge audit
+## Branch discovery (cycle-18)
 
-| # | Branch | Modules landed | Backup | Tests | Verdict |
-|---|--------|----------------|--------|-------|---------|
-| 1 | `claude/stoic-hamilton-8IRlF` | knowledge-base sprint-02 (usage metering + event listeners, +2 tests) | `bk/claude-stoic-hamilton-8IRlF-20260412` | `@oven/module-knowledge-base` 19 -> **21** | **MERGED to `origin/dev`** as `948196a` (cycle-16 merge) |
+| Branch | Module | Ahead | Behind | Content | Action |
+|--------|--------|-------|--------|---------|--------|
+| `claude/stoic-hamilton-8IRlF` | tracking | 1 | 0 | PROGRESS.md cycle-17b agent-ui update | Land as cycle-18a |
+| `claude/qa-test-todo-module-K2tpT` | stale | 1 | 116 | tsbuildinfo refresh only | Skip (stale, superseded) |
 
-## Cycle-15b merge audit
+No shared unmerged ancestors between candidates.
 
-| # | Branch | Modules landed | Backup | Tests | Verdict |
-|---|--------|----------------|--------|-------|---------|
-| 1 | `claude/stoic-hamilton-8IRlF` | auth sprint-00 discovery (inventory.md — 16 hits, 3 call-site migrations) | `bk/claude-stoic-hamilton-8IRlF-20260412` | Docs only — no tests affected. | **MERGED to `origin/dev`** as `0073243` (cycle-15b merge) |
-
-## Cycle-15 merge audit
+## Cycle-17b merge audit (previous session)
 
 | # | Branch | Modules landed | Backup | Tests | Verdict |
 |---|--------|----------------|--------|-------|---------|
-| 1 | `claude/stoic-hamilton-8IRlF` | config sprint-02 (resolve-batch shim, Platform menu, JSON validation in Create/Edit) | `bk/claude-stoic-hamilton-8IRlF-20260412` | `@oven/module-config` 24 (unchanged). | **MERGED to `origin/dev`** as `a65a4dc` (cycle-15 merge) |
+| 1 | `claude/stoic-hamilton-8IRlF` | agent-ui sprint-00 discovery (40 files, 50 R-IDs) | `bk/claude-stoic-hamilton-8IRlF-20260412` | Docs only | **MERGED to `origin/dev`** as `ef8da48` |
 
-## Cycle-14 merge audit (parallel session)
-
-| # | Branch | Modules landed | Backup | Tests | Verdict |
-|---|--------|----------------|--------|-------|---------|
-| 1 | (parallel) | subscriptions sprint-02 (idempotency key + slug validation, +28 tests) | — | `@oven/module-subscriptions` 52 -> **80** | **MERGED to `origin/dev`** as `c043b36` |
-| 2 | (parallel) | oven-bug-sprint sprint-01 (AI Playground UX, 7 findings) | — | — | **MERGED to `origin/dev`** as `aaead06` |
-
-## Active queue (post cycle-15)
+## Active queue (post cycle-17b, audited cycle-18)
 
 | Module / Program | Sprint files | Canonical doc set | Package / tests | Current sprint | Next action |
 |---|---|---|---|---|---|
-| `auth` | 5 (sprint-00..04) | 11/11 | `@oven/module-auth`, **14 tests** | **sprint-01 done (cycle-17)** | Execute sprint-02-authjs-adapter. |
+| `auth` | 5 (sprint-00..04) | 11/11 | `@oven/module-auth`, 14 tests (2 files) | **sprint-01 done (cycle-17)** | Execute sprint-02-authjs-adapter. |
 | `files` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-files`, 29 tests | sprint-02 done | Execute sprint-03-tenant-scoping. |
-| `subscriptions` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-subscriptions`, 80 tests | sprint-02 done | Execute sprint-03-public-pricing. |
+| `subscriptions` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-subscriptions`, 80 tests | sprint-02 done (cycle-14) | Execute sprint-03-public-pricing. |
 | `tenants` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-tenants`, 78 tests | sprint-03 done | Execute sprint-04-acceptance (BLOCKED on DB-mock harness). |
 | `config` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-config`, 24 tests | **sprint-02 done (cycle-15)** | Execute sprint-03-rls-and-migration. |
 | `notifications` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-notifications` 48 tests + `@oven/notifications-meta` 21 tests; REGISTERED | sprint-02 done | Execute sprint-03-usage-metering. |
 | `module-knowledge-base` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-knowledge-base`, 21 tests | **sprint-02 done (cycle-16)** | Execute sprint-03-search-engine. |
-| `ui-flows` | 5 (sprint-00..03, 99) | 11/11 | LIVE `@oven/module-ui-flows`, 41 tests | **sprint-01 partial (cycle-16b)** | Continue sprint-01 (API handler tests). |
-| `agent-ui` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/agent-ui`, 67 tests | sprint-00 not started | Execute sprint-00-discovery drift audit. |
+| `ui-flows` | 5 (sprint-00..03, 99) | 11/11 | LIVE `@oven/module-ui-flows`, 41 tests (2 test files: slug-utils, module-definition) | **sprint-01 partial (cycle-16b)** | Continue sprint-01 (API handler tests needed). |
+| `agent-ui` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/agent-ui`, 67 tests (9 test files) | **sprint-00 done (cycle-17b)** | Execute sprint-01-foundation. |
 | `dashboard-ux-system` | 8 (sprint-00..07) | N/A (program) | N/A | sprint-00 not started | Execute sprint-01-foundation. |
-| `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | 291 tests (`module-ai`) | **sprint-01 CLOSED** (cycle-14), sprint-06 CLOSED (cycle-11) | Next: sprint-03 (Workflow engine, 4 findings). Sprints 02/04 remain BLOCKED (module-chat/agent-core absent). |
-| `psychedelic-claude-code-migration` | 12 (sprint-00..11) | N/A (program) | N/A | — | Owned elsewhere -- do not touch. |
+| `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | 291 tests (`module-ai`) | sprint-01 CLOSED (cycle-14), sprint-06 CLOSED (cycle-11) | Next: sprint-03 (Workflow engine, 4 findings). Sprints 02/04 BLOCKED. |
+| `psychedelic-claude-code-migration` | 12 (sprint-00..11) | N/A (program) | N/A | -- | Owned elsewhere -- do not touch. |
 
-## Priority order (post cycle-15)
+## Priority order (cycle-18)
 
-P0: auth sprint-01 (foundation — package skeleton, middleware hardening)
-P1: module-knowledge-base sprint-02 (embedding pipeline)
-P2: ui-flows sprint-01 (foundation)
-P3: agent-ui sprint-00 (discovery)
-P4: oven-bug-sprint sprint-03 (workflow engine, 4 findings)
-P5: files sprint-03 (tenant scoping)
-P6: subscriptions sprint-03 (public pricing)
-P7: config sprint-03 (RLS + migration)
-P8: notifications sprint-03 (usage metering)
+P0: oven-bug-sprint sprint-03 (workflow engine, 4 findings -- all target files verified present)
+P1: ui-flows sprint-01 continuation (API handler tests -- 2 of 14 test files done)
+P2: auth sprint-02 (authjs adapter -- package + handlers + middleware)
+P3: agent-ui sprint-01 (foundation)
+P4: files sprint-03 (tenant scoping)
+P5: subscriptions sprint-03 (public pricing)
+P6: config sprint-03 (RLS + migration)
+P7: notifications sprint-03 (usage metering)
+P8: knowledge-base sprint-03 (search engine)
 P9: dashboard-ux-system sprint-01 (foundation)
 SKIP: tenants sprint-04 (blocked on DB-mock harness)
 SKIP: oven-bug-sprint sprint-02/04 (blocked on module-chat/agent-core)
@@ -68,7 +58,7 @@ SKIP: psychedelic-claude-code-migration (external ownership)
 1. **Pre-existing typecheck baseline on `dev` (465+ errors).** All from
    `packages/workflow-editor/` (peer-dep `react` resolution),
    `RouteHandler` / `"json"` field types in modules, and `@oven/module-ai/*`
-   subpath TS2307 errors. Unchanged category across cycles 2-15.
+   subpath TS2307 errors. Unchanged category across cycles 2-17.
 2. **`useTenantContext` not available.** Tenant-aware list filtering (Rule
    6.3) cannot be implemented until the tenant context provider is built
    (dashboard-ux-system program). Config sprint-02 defers this.
@@ -86,10 +76,12 @@ SKIP: psychedelic-claude-code-migration (external ownership)
 10. **Config module registration order.** Currently registered after
     `workflowsModule`. Should be before, but deferred to sprint-03 when
     the `moduleConfigs` table ownership transfers from workflows to config.
+11. **`module-workflows` has 0 test files.** Sprint-03 will add first tests.
 
 ## Backup inventory (current)
 
-- `bk/claude-stoic-hamilton-8IRlF-20260412` (cycle-15 -- **new**)
+- `bk/claude-stoic-hamilton-bVxUR-20260412` (cycle-17b)
+- `bk/claude-stoic-hamilton-8IRlF-20260412` (cycle-15)
 - `bk/claude-stoic-hamilton-iouNt-20260412` (cycle-12)
 - `bk/claude-inspiring-clarke-IODSY-20260412` (cycle-10)
 - `bk/claude-inspiring-clarke-HBa3u-20260412` (cycle-9)
@@ -104,15 +96,7 @@ SKIP: psychedelic-claude-code-migration (external ownership)
 - `bk/claude-qa-test-todo-module-K2tpT-20260411` (blocked, cycle-2)
 - `bk/claude-dashboard-ux-system-nESUZ-20260411`
 
-## Merge path to `dev` (post cycle-15)
+## Merge path to `dev` (post cycle-17b)
 
-`origin/dev` HEAD is now `a65a4dc merge(cycle-15): land config
-sprint-02 dashboard UI`.
-
-QA evidence:
-- Cycle-15: inline (24 green, no new test files for this UI sprint)
-- Cycle-14 (parallel): inline (subscriptions 80, oven-bug-sprint UX fixes)
-- Cycle-13: `docs/modules/todo/qa-reports/` (files sprint-02)
-- Cycle-12: inline (notifications 48+21)
-- Cycle-11: `docs/modules/todo/oven-bug-sprint/QA-REPORT.md`
-- Cycle-10: `docs/modules/todo/qa-reports/claude-inspiring-clarke-IODSY-QA-REPORT.md`
+`origin/dev` HEAD is now `ef8da48 merge(cycle-17b): land agent-ui
+sprint-00 discovery inventory`.

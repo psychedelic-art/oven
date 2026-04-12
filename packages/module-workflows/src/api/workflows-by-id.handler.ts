@@ -4,6 +4,7 @@ import { getDb } from '@oven/module-registry/db';
 import { notFound } from '@oven/module-registry/api-utils';
 import { eventBus } from '@oven/module-registry/event-bus';
 import { workflows, workflowVersions } from '../schema';
+import { structurallyEqual } from '../canonicalize';
 
 export async function GET(
   _request: NextRequest,
@@ -42,9 +43,12 @@ export async function PUT(
     .limit(1);
   if (!existing) return notFound('Workflow not found');
 
-  // Increment version if definition changed
+  // Increment version only if the definition structurally changed.
+  // Uses canonicalized comparison (sorted keys, trimmed strings) so
+  // whitespace-only or key-order-only edits don't bump the version.
+  // Sprint-03 F-03-01: https://docs/modules/todo/oven-bug-sprint/sprint-03-workflow-engine.md
   const newVersion =
-    body.definition && JSON.stringify(body.definition) !== JSON.stringify(existing.definition)
+    body.definition && !structurallyEqual(body.definition, existing.definition)
       ? existing.version + 1
       : existing.version;
 
