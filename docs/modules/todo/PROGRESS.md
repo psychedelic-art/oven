@@ -1,9 +1,15 @@
 # Todo Queue Progress
 
-Regenerated fresh on 2026-04-12 after **cycle-15b** landing of
-`claude/stoic-hamilton-8IRlF` (auth sprint-00 discovery inventory)
-onto `origin/dev` as merge commit `0073243`.
+Regenerated fresh on 2026-04-12 after **cycle-16** landing of
+`claude/stoic-hamilton-8IRlF` (knowledge-base sprint-02 -- usage metering
++ event listeners) onto `origin/dev` as merge commit `948196a`.
 Session branch: `claude/stoic-hamilton-8IRlF`.
+
+## Cycle-16 merge audit
+
+| # | Branch | Modules landed | Backup | Tests | Verdict |
+|---|--------|----------------|--------|-------|---------|
+| 1 | `claude/stoic-hamilton-8IRlF` | knowledge-base sprint-02 (usage metering + event listeners, +2 tests) | `bk/claude-stoic-hamilton-8IRlF-20260412` | `@oven/module-knowledge-base` 19 -> **21** | **MERGED to `origin/dev`** as `948196a` (cycle-16 merge) |
 
 ## Cycle-15b merge audit
 
@@ -34,7 +40,7 @@ Session branch: `claude/stoic-hamilton-8IRlF`.
 | `tenants` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-tenants`, 78 tests | sprint-03 done | Execute sprint-04-acceptance (BLOCKED on DB-mock harness). |
 | `config` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-config`, 24 tests | **sprint-02 done (cycle-15)** | Execute sprint-03-rls-and-migration. |
 | `notifications` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-notifications` 48 tests + `@oven/notifications-meta` 21 tests; REGISTERED | sprint-02 done | Execute sprint-03-usage-metering. |
-| `module-knowledge-base` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-knowledge-base`, 19 tests | sprint-01 done | Execute sprint-02-embedding-pipeline. |
+| `module-knowledge-base` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-knowledge-base`, 21 tests | **sprint-02 done (cycle-16)** | Execute sprint-03-search-engine. |
 | `ui-flows` | 5 (sprint-00..03, 99) | 11/11 | LIVE `@oven/module-ui-flows` | sprint-00 done | Execute sprint-01-foundation. |
 | `agent-ui` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/agent-ui`, 67 tests | sprint-00 not started | Execute sprint-00-discovery drift audit. |
 | `dashboard-ux-system` | 8 (sprint-00..07) | N/A (program) | N/A | sprint-00 not started | Execute sprint-01-foundation. |
