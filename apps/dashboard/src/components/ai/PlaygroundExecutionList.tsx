@@ -18,6 +18,25 @@ import {
 } from '@oven/module-ai/view/playground-execution-record';
 import { TypedFunctionField } from './_fields/TypedFunctionField';
 
+const renderType = (record: PlaygroundExecutionRecord) => (
+  <Chip
+    label={record.type}
+    size="small"
+    color={resolveExecutionTypeColor(record.type)}
+  />
+);
+
+const renderStatus = (record: PlaygroundExecutionRecord) => (
+  <Chip
+    label={record.status}
+    size="small"
+    color={resolveExecutionStatusColor(record.status)}
+  />
+);
+
+const renderCost = (record: PlaygroundExecutionRecord) =>
+  formatCostCents(record.costCents);
+
 const executionFilters = [
   <TextInput key="model" source="model" label="Model" alwaysOn />,
   <SelectInput
@@ -51,28 +70,16 @@ export default function PlaygroundExecutionList() {
         <TextField source="id" />
         <TypedFunctionField<PlaygroundExecutionRecord>
           label="Type"
-          render={(record) => (
-            <Chip
-              label={record.type}
-              size="small"
-              color={resolveExecutionTypeColor(record.type)}
-            />
-          )}
+          render={renderType}
         />
         <TextField source="model" />
         <TypedFunctionField<PlaygroundExecutionRecord>
           label="Status"
-          render={(record) => (
-            <Chip
-              label={record.status}
-              size="small"
-              color={resolveExecutionStatusColor(record.status)}
-            />
-          )}
+          render={renderStatus}
         />
         <TypedFunctionField<PlaygroundExecutionRecord>
           label="Cost"
-          render={(record) => formatCostCents(record.costCents)}
+          render={renderCost}
         />
         <NumberField source="latencyMs" label="Latency (ms)" />
         <DateField source="createdAt" showTime />
