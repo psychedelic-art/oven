@@ -836,7 +836,7 @@ function TextGenerationTab({
           <Button
             variant="contained"
             onClick={handleGenerate}
-            disabled={loading || !prompt}
+            disabled={!model || !prompt || loading}
           >
             {loading ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}
             {loading ? 'Generating...' : 'Generate'}
@@ -1134,7 +1134,7 @@ function ImageGenerationTab({
           <Button
             variant="contained"
             onClick={handleGenerate}
-            disabled={loading || !prompt}
+            disabled={!model || !prompt || loading}
           >
             {loading ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}
             {loading ? 'Generating...' : 'Generate'}
@@ -1341,7 +1341,7 @@ function StructuredOutputTab({
           <Button
             variant="contained"
             onClick={handleGenerate}
-            disabled={loading || !prompt}
+            disabled={!model || !prompt || loading}
           >
             {loading ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}
             {loading ? 'Generating...' : 'Generate'}
@@ -1514,7 +1514,7 @@ function VisionTab({
         )}
         <TextField label="Prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} multiline rows={3} fullWidth />
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <Button variant="contained" onClick={handleGenerate} disabled={loading || !prompt}>
+          <Button variant="contained" onClick={handleGenerate} disabled={!model || !prompt || loading}>
             {loading ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}
             {loading ? 'Analyzing...' : 'Generate'}
           </Button>
