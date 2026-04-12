@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server';
-import { sql, asc, desc, eq, and, ilike } from 'drizzle-orm';
+import { sql, asc, desc, eq, and, or, ilike, isNull, inArray } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
 import { parseListParams, listResponse, badRequest } from '@oven/module-registry/api-utils';
+import { getTenantIdsFromRequest } from '@oven/module-auth/auth-utils';
 import { files } from '../schema';
 import { getOrderColumn } from './_utils/sort';
 
@@ -33,7 +34,18 @@ export async function GET(request: NextRequest) {
   }
   const orderFn = params.order === 'desc' ? desc(resolved.column) : asc(resolved.column);
 
-  const conditions: any[] = [];
+  const callerTenantIds = await getTenantIdsFromRequest(request);
+
+  const conditions: ReturnType<typeof eq>[] = [];
+
+  // Tenant scoping: show platform-global rows (tenantId IS NULL)
+  // plus rows belonging to the caller's tenants.
+  if (callerTenantIds.length > 0) {
+    conditions.push(
+      or(isNull(files.tenantId), inArray(files.tenantId, callerTenantIds))!,
+    );
+  }
+
   if (params.filter.q) {
     conditions.push(ilike(files.filename, `%${params.filter.q}%`));
   }

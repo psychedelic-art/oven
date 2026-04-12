@@ -549,6 +549,9 @@ importers:
       '@neondatabase/serverless':
         specifier: ^0.10.0
         version: 0.10.4
+      '@oven/module-auth':
+        specifier: workspace:*
+        version: link:../module-auth
       '@oven/module-registry':
         specifier: workspace:*
         version: link:../module-registry

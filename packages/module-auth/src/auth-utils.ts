@@ -1,5 +1,7 @@
+import type { NextRequest } from 'next/server';
 import { getAuthAdapter } from './adapters/registry';
 import type { AuthUser, SessionToken, ApiKeyInfo } from './adapters/types';
+import { authMiddleware } from './middleware/auth-middleware';
 
 // ─── Auth Utilities ──────────────────────────────────────────────
 // Thin wrappers that delegate to the currently active auth adapter.
@@ -58,4 +60,18 @@ export async function verifyPassword(
     );
   }
   return adapter.verifyPassword(password, hash);
+}
+
+/**
+ * Extract the tenant IDs the caller is authorized for from a request.
+ * Runs the auth middleware to get the auth context, then returns
+ * the caller's tenant ID as a single-element array. Returns an empty
+ * array if the request is unauthenticated or has no tenant.
+ */
+export async function getTenantIdsFromRequest(
+  request: NextRequest
+): Promise<number[]> {
+  const ctx = await authMiddleware(request);
+  if (!ctx || ctx.tenantId == null) return [];
+  return [ctx.tenantId];
 }

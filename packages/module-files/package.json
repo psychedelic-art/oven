@@ -16,6 +16,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@oven/module-auth": "workspace:*",
     "@oven/module-registry": "workspace:*",
     "@vercel/blob": "^2.2.0",
     "drizzle-orm": "^0.38.0",

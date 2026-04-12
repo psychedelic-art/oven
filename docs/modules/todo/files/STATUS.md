@@ -6,7 +6,7 @@
 | Package | `packages/module-files/` |
 | Top-level spec | `docs/modules/14-files.md` (373 lines) |
 | Canonical doc set | **complete (11/11)** — scaffolded cycle-4 |
-| Current sprint | `sprint-02-upload-validation.md` **SHIPPED cycle-13** — 29/29 tests green; next is `sprint-03-tenant-scoping.md` |
+| Current sprint | `sprint-03-tenant-scoping.md` **SHIPPED cycle-22** — 41/41 tests green; next is `sprint-04-dashboard-ui.md` |
 | Sprint queue | 6 files (00 → 05-acceptance) |
 | Active branch | `claude/inspiring-clarke-JuFO1` (cycle-4) |
 | Backup branch | none yet — first feature work against this module ships cycle-4 |
@@ -40,7 +40,7 @@
 - **ModuleDefinition**: `filesModule` with 2 configSchema entries,
   2 typed events, 3 chat action schemas.
 - **Dashboard UI**: 0 components (spec §6 missing).
-- **Tests**: 29 (sprint-01 sort guard + sprint-02 magic-bytes + upload-processor — all green).
+- **Tests**: 41 (sprint-01 sort guard + sprint-02 magic-bytes + upload-processor + sprint-03 handler tests — all green).
 
 ## Known gaps
 
@@ -51,13 +51,13 @@
 | 3 | ~~Size limit not enforced on upload~~ — **CLOSED sprint-02 (cycle-13)** | — | — |
 | 4 | ~~Magic-byte verification missing~~ — **CLOSED sprint-02 (cycle-13)** | — | — |
 | 5 | `tenantId` from request body is not clamped against JWT tenant set | HIGH | BLOCKED on module-auth/ssr |
-| 6 | List/get/delete do not filter by tenant (cross-tenant enumeration) | HIGH | sprint-03 |
+| 6 | ~~List/get/delete do not filter by tenant~~ — **CLOSED sprint-03 (cycle-22)** | — | — |
 | 7 | ~~Upload processor not unit-testable~~ — **CLOSED sprint-02 (cycle-13)** adapter injection | — | — |
 | 8 | `PUT /api/files/[id]` handler missing | MEDIUM | sprint-04 |
 | 9 | Download + public-serve handlers missing | MEDIUM | sprint-05 |
 | 10 | React Admin `FileList`/`FileShow` missing | MEDIUM | sprint-04 |
 | 11 | `<FileUpload />`/`<FilePreview />`/`<FilePicker />` not exported | MEDIUM | sprint-04 |
-| 12 | `THUMBNAIL_MAX_SIZE`, `MAX_FILES_PER_TENANT` config keys not defined | LOW | sprint-03 |
+| 12 | ~~`THUMBNAIL_MAX_SIZE`, `MAX_FILES_PER_TENANT` config keys~~ — **CLOSED sprint-03 (cycle-22)** | — | — |
 | 13 | RLS policies planned but not applied | MEDIUM | blocked on `module-auth` |
 
 ## Acceptance checklist

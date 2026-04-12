@@ -74,6 +74,19 @@ export const filesModule: ModuleDefinition = {
       defaultValue: 'image/*,application/pdf',
       instanceScoped: true,
     },
+    {
+      key: 'THUMBNAIL_MAX_SIZE',
+      type: 'number',
+      description: 'Maximum thumbnail dimension in pixels',
+      defaultValue: 200,
+    },
+    {
+      key: 'MAX_FILES_PER_TENANT',
+      type: 'number',
+      description: 'Maximum total files per tenant (0 = unlimited)',
+      defaultValue: 0,
+      instanceScoped: true,
+    },
   ],
   events: {
     emits: [
