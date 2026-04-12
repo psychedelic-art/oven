@@ -41,6 +41,8 @@ import type { SyntheticEvent, Dispatch, SetStateAction } from 'react';
 
 // ─── Session State Persistence ───────────────────────────────
 
+let sessionStorageWarned = false;
+
 function useSessionState<T>(key: string, initial: T): [T, Dispatch<SetStateAction<T>>] {
   const storageKey = `playground:${key}`;
   const [value, setValue] = useState<T>(() => {
@@ -57,7 +59,14 @@ function useSessionState<T>(key: string, initial: T): [T, Dispatch<SetStateActio
     try {
       sessionStorage.setItem(storageKey, JSON.stringify(value));
     } catch {
-      // sessionStorage full or unavailable
+      // sessionStorage full or unavailable — value persists in memory
+      // only (lost on page refresh). Warn once per session.
+      if (!sessionStorageWarned) {
+        sessionStorageWarned = true;
+        console.warn(
+          'Playground: sessionStorage quota exceeded. State will not persist across refreshes.',
+        );
+      }
     }
   }, [storageKey, value]);
 
