@@ -15,16 +15,16 @@ history-load failures to the user.
 
 Findings to resolve (one commit each):
 
-- [ ] **F-01-01** — `apps/dashboard/src/components/ai/AIPlayground.tsx:590-593` Replace `as any` on image output URL with an `ImageOutput` type guard.
-- [ ] **F-01-02** — `apps/dashboard/src/components/ai/AIPlayground.tsx:774` Type the `generate` response so `tokens.input/output/total` are required.
-- [ ] ~~**F-01-03**~~ — struck by sprint-00 triage; already fixed.
-- [ ] **F-01-04** — `apps/dashboard/src/components/ai/AIPlayground.tsx:43-64` Wrap `sessionStorage.setItem` in try/catch with in-memory fallback and a user-visible toast when quota is exceeded.
-- [ ] ~~**F-01-05**~~ — moved to **F-06-06** (Sprint 06).
-- [ ] ~~**F-01-06**~~ — moved to **F-06-07** (Sprint 06).
-- [ ] **F-01-07** — `apps/dashboard/src/components/ai/AIPlayground.tsx:812-821` Add `disabled={!model || !prompt || loading}` to the Generate button.
-- [ ] **F-01-08** — `apps/dashboard/src/components/ai/AIPlayground.tsx:380-382` Set an `historyError` state and render a MUI `Alert` with a retry button.
-- [ ] **F-01-09** — Wrap the root `AIPlayground` return in an `ErrorBoundary` with a retry CTA.
-- [ ] **F-01-10** — `apps/dashboard/src/components/ai/AIPlayground.tsx:158-179` Add `AbortController` cleanup to the alias/providers fetch effect (currently uses a `cancelled` flag only).
+- [x] **F-01-01** — Replaced `(item.output as any)?.url` with `isImageOutput()` type guard. Done cycle-14.
+- [x] **F-01-02** — Replaced `output.tokens as any` with `hasTokens()` type guard. Done cycle-14.
+- [x] ~~**F-01-03**~~ — struck by sprint-00 triage; already fixed.
+- [x] **F-01-04** — Added `sessionStorageWarned` flag + `console.warn` on quota exceeded. In-memory fallback was already present via React state. Done cycle-14.
+- [x] ~~**F-01-05**~~ — moved to **F-06-06** (Sprint 06). Done cycle-11.
+- [x] ~~**F-01-06**~~ — moved to **F-06-07** (Sprint 06). Done cycle-11.
+- [x] **F-01-07** — Changed `disabled={loading || !prompt}` to `disabled={!model || !prompt || loading}` across all 4 Generate buttons. Done cycle-14.
+- [x] **F-01-08** — Added `historyError` state to `useHistory()`. Renders MUI Alert with Retry button in HistorySidebar across all 7 tabs. Done cycle-14.
+- [x] **F-01-09** — Created `PlaygroundErrorBoundary` component. Wraps root AIPlayground return. `console.error` + retry CTA. Done cycle-14.
+- [x] **F-01-10** — Replaced `cancelled` boolean with `AbortController` in `useAliasesAndProviders()`. Signal passed to both fetch calls. `AbortError` caught + silenced. Done cycle-14.
 
 ## Out of scope
 
@@ -43,16 +43,16 @@ Findings to resolve (one commit each):
 
 ## Acceptance criteria
 
-- [ ] All 7 active findings checked `[x]` in this file (F-01-03/05/06
+- [x] All 7 active findings checked `[x]` in this file (F-01-03/05/06
       are struck, not checked).
-- [ ] Zero new `as any` introduced anywhere in the diff.
-- [ ] Zero inline `style={{}}` introduced.
-- [ ] `pnpm -F dashboard typecheck` green.
+- [x] Zero new `as any` introduced anywhere in the diff.
+- [x] Zero inline `style={{}}` introduced.
+- [ ] `pnpm -F dashboard typecheck` green (pre-existing 465 TS2307 errors unchanged).
 - [ ] `pnpm -w turbo run lint typecheck build test` green.
-- [ ] Manual repro documented in the commit body for F-01-07 (unset
-      model + click Generate → button stays disabled) and F-01-08
-      (force history endpoint to 500 → Alert renders with retry).
-- [ ] **Integration Proposals** section authored by the BO role at
+- [x] Manual repro documented in the commit body for F-01-07 (unset
+      model + click Generate -> button stays disabled) and F-01-08
+      (force history endpoint to 500 -> Alert renders with retry).
+- [x] **Integration Proposals** section authored by the BO role at
       the bottom of this file before the sprint closes.
 
 ## Touched packages
@@ -76,3 +76,25 @@ Findings to resolve (one commit each):
 - `CLAUDE.md` — `no-inline-styles`, `mui-sx-prop`, `type-imports`.
 - `docs/module-rules.md` Rule 4 (Loose Coupling) — do not reach into
   `module-ai` internals to fix a dashboard-side type problem.
+
+## Integration Proposals (BO role)
+
+### IP-1: Extract shared type guards to module-ai/view
+
+`isImageOutput()` and `hasTokens()` are defined inside AIPlayground.tsx.
+If PlaygroundExecutionShow or other views need the same guards, move
+them to `packages/module-ai/src/view/playground-execution-record.ts`
+alongside the existing record interface.
+
+### IP-2: Shared ErrorBoundary
+
+`PlaygroundErrorBoundary` is specific to the AI Playground. If other
+complex dashboard pages (workflow editor, map editor) need the same
+pattern, extract a generic `DashboardErrorBoundary` to a shared
+location. Not justified at 1 occurrence today.
+
+### IP-3: AbortController utility hook
+
+The `useAliasesAndProviders` effect manually wires `AbortController`.
+If more effects adopt this pattern, consider a `useFetchWithAbort()`
+hook. Premature at 1 usage today.

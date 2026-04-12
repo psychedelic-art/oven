@@ -38,8 +38,11 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { FileUploader, FilePickerCombobox, FilePicker, useFileUpload } from '../files';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import type { SyntheticEvent, Dispatch, SetStateAction } from 'react';
+import { PlaygroundErrorBoundary } from './PlaygroundErrorBoundary';
 
 // ─── Session State Persistence ───────────────────────────────
+
+let sessionStorageWarned = false;
 
 function useSessionState<T>(key: string, initial: T): [T, Dispatch<SetStateAction<T>>] {
   const storageKey = `playground:${key}`;
@@ -57,7 +60,14 @@ function useSessionState<T>(key: string, initial: T): [T, Dispatch<SetStateActio
     try {
       sessionStorage.setItem(storageKey, JSON.stringify(value));
     } catch {
-      // sessionStorage full or unavailable
+      // sessionStorage full or unavailable — value persists in memory
+      // only (lost on page refresh). Warn once per session.
+      if (!sessionStorageWarned) {
+        sessionStorageWarned = true;
+        console.warn(
+          'Playground: sessionStorage quota exceeded. State will not persist across refreshes.',
+        );
+      }
     }
   }, [storageKey, value]);
 
@@ -75,6 +85,28 @@ interface PlaygroundExecution {
   status: string;
   latencyMs: number | null;
   createdAt: string;
+}
+
+/** Type guard for image-type execution outputs that carry a URL. */
+function isImageOutput(output: unknown): output is { url: string } {
+  return (
+    output != null &&
+    typeof output === 'object' &&
+    'url' in output &&
+    typeof (output as Record<string, unknown>).url === 'string'
+  );
+}
+
+/** Type guard for outputs with token usage info. */
+function hasTokens(
+  output: unknown,
+): output is { tokens: { input?: number; output?: number; total?: number } } {
+  return (
+    output != null &&
+    typeof output === 'object' &&
+    'tokens' in output &&
+    typeof (output as Record<string, unknown>).tokens === 'object'
+  );
 }
 
 interface ParameterField {
@@ -157,26 +189,26 @@ function useAliasesAndProviders() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     async function load() {
       try {
         const [aliasRes, providerRes] = await Promise.all([
-          fetch('/api/ai-aliases?range=[0,99]'),
-          fetch('/api/ai-providers?range=[0,99]'),
+          fetch('/api/ai-aliases?range=[0,99]', { signal: controller.signal }),
+          fetch('/api/ai-providers?range=[0,99]', { signal: controller.signal }),
         ]);
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         const aliasData = aliasRes.ok ? await aliasRes.json() : [];
         const providerData = providerRes.ok ? await providerRes.json() : [];
         setAliases(Array.isArray(aliasData) ? aliasData : []);
         setProviders(Array.isArray(providerData) ? providerData : []);
-      } catch {
-        // ignore fetch errors
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }
     load();
-    return () => { cancelled = true; };
+    return () => { controller.abort(); };
   }, []);
 
   const textAliases = useMemo(
@@ -351,8 +383,10 @@ function useHistory(type: string) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(true);
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
+    setHistoryError(null);
     try {
       const filter: Record<string, unknown> = { type };
       if (search.trim()) {
@@ -369,7 +403,6 @@ function useHistory(type: string) {
       if (res.ok) {
         const data = await res.json();
         setHistory(data);
-        // Parse total from Content-Range header
         const contentRange = res.headers.get('Content-Range');
         if (contentRange) {
           const match = contentRange.match(/\/(\d+)/);
@@ -377,9 +410,11 @@ function useHistory(type: string) {
         } else {
           setTotal(data.length);
         }
+      } else {
+        setHistoryError(`Failed to load history (${res.status})`);
       }
     } catch {
-      // ignore
+      setHistoryError('Failed to load history');
     }
   }, [type, page, search]);
 
@@ -387,7 +422,6 @@ function useHistory(type: string) {
     refresh();
   }, [refresh]);
 
-  // Reset to page 1 when search changes
   const setSearchAndReset = useCallback((q: string) => {
     setSearch(q);
     setPage(1);
@@ -395,7 +429,7 @@ function useHistory(type: string) {
 
   const totalPages = Math.max(1, Math.ceil(total / HISTORY_PAGE_SIZE));
 
-  return { history, total, page, setPage, totalPages, search, setSearch: setSearchAndReset, open, setOpen, refresh };
+  return { history, total, page, setPage, totalPages, search, setSearch: setSearchAndReset, open, setOpen, refresh, historyError };
 }
 
 // ─── Provider Status Banner ─────────────────────────────────
@@ -528,6 +562,8 @@ function HistorySidebar({
   page,
   totalPages,
   onPageChange,
+  historyError,
+  onRetry,
 }: {
   history: PlaygroundExecution[];
   open: boolean;
@@ -538,6 +574,8 @@ function HistorySidebar({
   page: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  historyError: string | null;
+  onRetry: () => void;
 }) {
   return (
     <Box sx={{ width: 300, flexShrink: 0, ml: 2 }}>
@@ -551,6 +589,19 @@ function HistorySidebar({
         </IconButton>
       </Box>
       <Collapse in={open}>
+        {historyError && (
+          <Alert
+            severity="error"
+            sx={{ mb: 1 }}
+            action={
+              <Button color="inherit" size="small" onClick={onRetry}>
+                Retry
+              </Button>
+            }
+          >
+            {historyError}
+          </Alert>
+        )}
         <TextField
           placeholder="Search history..."
           value={search}
@@ -588,10 +639,10 @@ function HistorySidebar({
                   onClick={() => onSelect(item)}
                   sx={{ py: 1, px: 1.5 }}
                 >
-                  {item.type === 'image' && (item.output as any)?.url && (
+                  {item.type === 'image' && isImageOutput(item.output) && (
                     <Box
                       component="img"
-                      src={(item.output as any).url}
+                      src={item.output.url}
                       alt=""
                       sx={{ width: 40, height: 40, borderRadius: 0.5, objectFit: 'cover', mr: 1, flexShrink: 0 }}
                     />
@@ -694,7 +745,7 @@ function TextGenerationTab({
   const [error, setError] = useState('');
   const [usage, setUsage] = useState<UsageInfo | null>(null);
   const [loading, setLoading] = useState(false);
-  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage } = useHistory('text');
+  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage, historyError } = useHistory('text');
   const { params, setParam, schema } = useDynamicParams(textAliases, model);
 
   // Set default model when aliases load
@@ -770,13 +821,13 @@ function TextGenerationTab({
     setError('');
     if (output?.text) setResponse(output.text as string);
     else setResponse('');
-    if (output?.tokens || output?.costCents) {
+    if (hasTokens(output) || output?.costCents) {
       setUsage({
-        tokens: output.tokens as any,
-        costCents: output.costCents as number,
+        tokens: hasTokens(output) ? output.tokens : undefined,
+        costCents: output?.costCents as number,
         latencyMs: item.latencyMs ?? 0,
-        model: output.model as string,
-        provider: output.provider as string,
+        model: output?.model as string,
+        provider: output?.provider as string,
       });
     }
   };
@@ -814,7 +865,7 @@ function TextGenerationTab({
           <Button
             variant="contained"
             onClick={handleGenerate}
-            disabled={loading || !prompt}
+            disabled={!model || !prompt || loading}
           >
             {loading ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}
             {loading ? 'Generating...' : 'Generate'}
@@ -845,6 +896,8 @@ function TextGenerationTab({
         page={page}
         totalPages={totalPages}
         onPageChange={setPage}
+        historyError={historyError}
+        onRetry={refresh}
       />
     </Box>
   );
@@ -865,7 +918,7 @@ function EmbeddingsTab({
   const [error, setError] = useState('');
   const [usage, setUsage] = useState<UsageInfo | null>(null);
   const [loading, setLoading] = useState(false);
-  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage } = useHistory('embedding');
+  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage, historyError } = useHistory('embedding');
   const { params, setParam, schema } = useDynamicParams(embeddingAliases, model);
 
   useEffect(() => {
@@ -993,6 +1046,8 @@ function EmbeddingsTab({
         page={page}
         totalPages={totalPages}
         onPageChange={setPage}
+        historyError={historyError}
+        onRetry={refresh}
       />
     </Box>
   );
@@ -1013,7 +1068,7 @@ function ImageGenerationTab({
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [savedFileId, setSavedFileId] = useState<number | null>(null);
-  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage } = useHistory('image');
+  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage, historyError } = useHistory('image');
   const { params, setParam, schema } = useDynamicParams(imageAliases, model);
   const { uploadFromUrl, uploading: savingToFiles } = useFileUpload({
     folder: 'ai-images',
@@ -1112,7 +1167,7 @@ function ImageGenerationTab({
           <Button
             variant="contained"
             onClick={handleGenerate}
-            disabled={loading || !prompt}
+            disabled={!model || !prompt || loading}
           >
             {loading ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}
             {loading ? 'Generating...' : 'Generate'}
@@ -1167,6 +1222,8 @@ function ImageGenerationTab({
         page={page}
         totalPages={totalPages}
         onPageChange={setPage}
+        historyError={historyError}
+        onRetry={refresh}
       />
     </Box>
   );
@@ -1201,7 +1258,7 @@ function StructuredOutputTab({
   const [error, setError] = useState('');
   const [usage, setUsage] = useState<UsageInfo | null>(null);
   const [loading, setLoading] = useState(false);
-  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage } = useHistory('structured-output');
+  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage, historyError } = useHistory('structured-output');
   const { params, setParam, schema: paramSchema } = useDynamicParams(textAliases, model);
 
   useEffect(() => {
@@ -1319,7 +1376,7 @@ function StructuredOutputTab({
           <Button
             variant="contained"
             onClick={handleGenerate}
-            disabled={loading || !prompt}
+            disabled={!model || !prompt || loading}
           >
             {loading ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}
             {loading ? 'Generating...' : 'Generate'}
@@ -1358,6 +1415,8 @@ function StructuredOutputTab({
         page={page}
         totalPages={totalPages}
         onPageChange={setPage}
+        historyError={historyError}
+        onRetry={refresh}
       />
     </Box>
   );
@@ -1381,7 +1440,7 @@ function VisionTab({
   const [usage, setUsage] = useState<UsageInfo | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage } = useHistory('vision');
+  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage, historyError } = useHistory('vision');
   const { params, setParam, schema } = useDynamicParams(textAliases, model);
 
   useEffect(() => {
@@ -1492,7 +1551,7 @@ function VisionTab({
         )}
         <TextField label="Prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} multiline rows={3} fullWidth />
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <Button variant="contained" onClick={handleGenerate} disabled={loading || !prompt}>
+          <Button variant="contained" onClick={handleGenerate} disabled={!model || !prompt || loading}>
             {loading ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}
             {loading ? 'Analyzing...' : 'Generate'}
           </Button>
@@ -1506,7 +1565,7 @@ function VisionTab({
           </Paper>
         )}
       </Box>
-      <HistorySidebar history={history} open={open} onToggle={() => setOpen((o) => !o)} onSelect={handleHistorySelect} search={search} onSearchChange={setSearch} page={page} totalPages={totalPages} onPageChange={setPage} />
+      <HistorySidebar history={history} open={open} onToggle={() => setOpen((o) => !o)} onSelect={handleHistorySelect} search={search} onSearchChange={setSearch} page={page} totalPages={totalPages} onPageChange={setPage} historyError={historyError} onRetry={refresh} />
     </Box>
   );
 }
@@ -1551,7 +1610,7 @@ function SpeechToTextPanel({
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [audioPickerOpen, setAudioPickerOpen] = useState(false);
-  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage } = useHistory('stt');
+  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage, historyError } = useHistory('stt');
 
   useEffect(() => {
     if (!model && sttAliases.length > 0) setModel(sttAliases[0].alias);
@@ -1659,7 +1718,7 @@ function SpeechToTextPanel({
           </Paper>
         )}
       </Box>
-      <HistorySidebar history={history} open={open} onToggle={() => setOpen((o) => !o)} onSelect={handleHistorySelect} search={search} onSearchChange={setSearch} page={page} totalPages={totalPages} onPageChange={setPage} />
+      <HistorySidebar history={history} open={open} onToggle={() => setOpen((o) => !o)} onSelect={handleHistorySelect} search={search} onSearchChange={setSearch} page={page} totalPages={totalPages} onPageChange={setPage} historyError={historyError} onRetry={refresh} />
     </Box>
   );
 }
@@ -1677,7 +1736,7 @@ function TextToSpeechPanel({
   const [audioResultUrl, setAudioResultUrl] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage } = useHistory('tts');
+  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage, historyError } = useHistory('tts');
   const { params, setParam, schema } = useDynamicParams(ttsAliases, model);
 
   useEffect(() => {
@@ -1751,7 +1810,7 @@ function TextToSpeechPanel({
           </Paper>
         )}
       </Box>
-      <HistorySidebar history={history} open={open} onToggle={() => setOpen((o) => !o)} onSelect={handleHistorySelect} search={search} onSearchChange={setSearch} page={page} totalPages={totalPages} onPageChange={setPage} />
+      <HistorySidebar history={history} open={open} onToggle={() => setOpen((o) => !o)} onSelect={handleHistorySelect} search={search} onSearchChange={setSearch} page={page} totalPages={totalPages} onPageChange={setPage} historyError={historyError} onRetry={refresh} />
     </Box>
   );
 }
@@ -1768,42 +1827,44 @@ export default function AIPlayground() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" gutterBottom>
-        AI Playground
-      </Typography>
-      <ProviderStatusBanner
-        hasConnectedProvider={hasConnectedProvider}
-        loading={loading}
-      />
-      <Paper sx={{ p: 2 }}>
-        <Tabs value={tab} onChange={handleTabChange}>
-          <Tab label="Text Generation" />
-          <Tab label="Vision" />
-          <Tab label="Embeddings" />
-          <Tab label="Image Generation" />
-          <Tab label="Audio" />
-          <Tab label="Structured Output" />
-        </Tabs>
-        <TabPanel value={tab} index={0}>
-          <TextGenerationTab textAliases={textAliases} aliasLoading={loading} />
-        </TabPanel>
-        <TabPanel value={tab} index={1}>
-          <VisionTab textAliases={textAliases} aliasLoading={loading} />
-        </TabPanel>
-        <TabPanel value={tab} index={2}>
-          <EmbeddingsTab embeddingAliases={embeddingAliases} aliasLoading={loading} />
-        </TabPanel>
-        <TabPanel value={tab} index={3}>
-          <ImageGenerationTab imageAliases={imageAliases} aliasLoading={loading} />
-        </TabPanel>
-        <TabPanel value={tab} index={4}>
-          <AudioTab audioAliases={audioAliases} aliasLoading={loading} />
-        </TabPanel>
-        <TabPanel value={tab} index={5}>
-          <StructuredOutputTab textAliases={textAliases} aliasLoading={loading} />
-        </TabPanel>
-      </Paper>
-    </Box>
+    <PlaygroundErrorBoundary>
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h5" gutterBottom>
+          AI Playground
+        </Typography>
+        <ProviderStatusBanner
+          hasConnectedProvider={hasConnectedProvider}
+          loading={loading}
+        />
+        <Paper sx={{ p: 2 }}>
+          <Tabs value={tab} onChange={handleTabChange}>
+            <Tab label="Text Generation" />
+            <Tab label="Vision" />
+            <Tab label="Embeddings" />
+            <Tab label="Image Generation" />
+            <Tab label="Audio" />
+            <Tab label="Structured Output" />
+          </Tabs>
+          <TabPanel value={tab} index={0}>
+            <TextGenerationTab textAliases={textAliases} aliasLoading={loading} />
+          </TabPanel>
+          <TabPanel value={tab} index={1}>
+            <VisionTab textAliases={textAliases} aliasLoading={loading} />
+          </TabPanel>
+          <TabPanel value={tab} index={2}>
+            <EmbeddingsTab embeddingAliases={embeddingAliases} aliasLoading={loading} />
+          </TabPanel>
+          <TabPanel value={tab} index={3}>
+            <ImageGenerationTab imageAliases={imageAliases} aliasLoading={loading} />
+          </TabPanel>
+          <TabPanel value={tab} index={4}>
+            <AudioTab audioAliases={audioAliases} aliasLoading={loading} />
+          </TabPanel>
+          <TabPanel value={tab} index={5}>
+            <StructuredOutputTab textAliases={textAliases} aliasLoading={loading} />
+          </TabPanel>
+        </Paper>
+      </Box>
+    </PlaygroundErrorBoundary>
   );
 }
