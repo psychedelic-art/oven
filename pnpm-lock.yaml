@@ -476,6 +476,10 @@ importers:
       react:
         specifier: '>=19.0.0'
         version: 19.2.4
+    devDependencies:
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.19.10)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.31.1)(tsx@4.21.0)
 
   packages/module-chat:
     dependencies:
@@ -617,6 +621,9 @@ importers:
       '@oven/module-roles':
         specifier: workspace:*
         version: link:../module-roles
+      '@oven/module-subscriptions':
+        specifier: workspace:*
+        version: link:../module-subscriptions
       '@oven/module-tenants':
         specifier: workspace:*
         version: link:../module-tenants
@@ -846,6 +853,10 @@ importers:
       react:
         specifier: '>=19.0.0'
         version: 19.2.4
+    devDependencies:
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.19.10)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.31.1)(tsx@4.21.0)
 
   packages/module-workflow-agents:
     dependencies:
@@ -925,6 +936,10 @@ importers:
       xstate:
         specifier: ^5.19.0
         version: 5.26.0
+    devDependencies:
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.19.10)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.31.1)(tsx@4.21.0)
 
   packages/notifications-meta:
     dependencies:
