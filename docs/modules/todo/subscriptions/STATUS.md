@@ -5,9 +5,9 @@
 - **Top-level spec**: `docs/modules/21-module-subscriptions.md` (887 lines) — LIVE
 - **Canonical doc set**: `docs/modules/subscriptions/` — **scaffolded this session** (11 files)
 - **Package**: `packages/module-subscriptions/` — already on `dev`
-- **Unit tests**: **80** — sprint-02 usage metering shipped cycle-11+
+- **Unit tests**: **83** — sprint-03 public pricing shipped cycle-23
 - **Sprint queue**: 6 files (`sprint-00..05`)
-- **Active sprint**: `sprint-02-usage-metering` DONE. Next: `sprint-03`.
+- **Active sprint**: `sprint-03-public-pricing` DONE. Next: `sprint-04-dashboard-ui`.
 
 ## History
 

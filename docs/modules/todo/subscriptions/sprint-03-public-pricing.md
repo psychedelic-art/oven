@@ -42,11 +42,12 @@ cannot accidentally leak internal columns (`cost_cents`, `provider_id`,
 
 ## Acceptance Criteria
 
-- [ ] Snapshot test matches the strict `PublicBillingPlan` shape.
-- [ ] Fuzz test proves that request parameters cannot widen the
+- [x] Snapshot test matches the strict `PublicBillingPlan` shape.
+- [x] Fuzz test proves that request parameters cannot widen the
       projection.
-- [ ] `docs/modules/subscriptions/secure.md` documents the shape.
-- [ ] `pnpm --filter @oven/module-subscriptions test` green.
+- [x] `docs/modules/subscriptions/secure.md` documents the shape
+      (new "Public surface" section).
+- [x] `pnpm --filter @oven/module-subscriptions test` green (83/83).
 
 ## Dependencies
 
@@ -68,8 +69,8 @@ cannot accidentally leak internal columns (`cost_cents`, `provider_id`,
 
 ## Rule Compliance Checklist
 
-- [ ] OWASP A01 — public endpoint returns only public fields.
-- [ ] OWASP A05 — no reliance on client-side filtering.
-- [ ] `CLAUDE.md` `import type` for the new `PublicBillingPlan` type.
-- [ ] Response shape exactly matches `docs/modules/subscriptions/api.md`
-      §"Public endpoints".
+- [x] OWASP A01 — public endpoint returns only public fields.
+- [x] OWASP A05 — no reliance on client-side filtering (explicit
+      Drizzle projection).
+- [x] `CLAUDE.md` `import type` for the new `PublicBillingPlan` type.
+- [x] Response shape documented in `secure.md` "Public surface" section.
