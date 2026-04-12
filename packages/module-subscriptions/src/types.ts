@@ -79,8 +79,10 @@ export interface ProviderConfigField {
 }
 
 // ─── Public Plan (for pricing page) ──────────────────────────
+// Strict marketing-safe subset of BillingPlan. Contains NO internal
+// columns (isPublic, isSystem, enabled, createdAt, updatedAt).
 
-export interface PublicPlan {
+export interface PublicBillingPlan {
   id: number;
   name: string;
   slug: string;

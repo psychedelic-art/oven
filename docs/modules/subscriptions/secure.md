@@ -144,6 +144,41 @@ inputs.
 - No outbound HTTP in this package. Upstream provider calls
   live in `module-ai` / `module-notifications`.
 
+## Public surface — GET /api/billing-plans/public
+
+This is the only unauthenticated endpoint in the subscriptions module.
+The handler uses an explicit Drizzle `select({ ... })` projection to
+ensure internal columns are never loaded from the database, let alone
+returned in the response.
+
+Exact response shape (`PublicBillingPlan[]`):
+
+```ts
+{
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  price: number | null;
+  currency: string | null;
+  billingCycle: string | null;
+  features: Record<string, unknown> | null;
+  order: number;
+  quotas: Array<{
+    service: string;
+    unit: string;
+    quota: number;
+    period: string;
+  }>;
+}
+```
+
+Forbidden columns (must NEVER appear): `isPublic`, `isSystem`,
+`enabled`, `createdAt`, `updatedAt`, `costCents`, `providerId`,
+`marginPercent`, `internalNotes`, any key starting with `_private`.
+
+Enforced by `public-pricing.test.ts` (snapshot + fuzz).
+
 ## Row-level security policies
 
 Applied at deployment time by a Drizzle migration:
