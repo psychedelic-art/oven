@@ -6,11 +6,36 @@ import {
   TextField,
   NumberField,
   DateField,
-  FunctionField,
   TextInput,
   SelectInput,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import {
+  resolveExecutionStatusColor,
+  resolveExecutionTypeColor,
+  formatCostCents,
+  type PlaygroundExecutionRecord,
+} from '@oven/module-ai/view/playground-execution-record';
+import { TypedFunctionField } from './_fields/TypedFunctionField';
+
+const renderType = (record: PlaygroundExecutionRecord) => (
+  <Chip
+    label={record.type}
+    size="small"
+    color={resolveExecutionTypeColor(record.type)}
+  />
+);
+
+const renderStatus = (record: PlaygroundExecutionRecord) => (
+  <Chip
+    label={record.status}
+    size="small"
+    color={resolveExecutionStatusColor(record.status)}
+  />
+);
+
+const renderCost = (record: PlaygroundExecutionRecord) =>
+  formatCostCents(record.costCents);
 
 const executionFilters = [
   <TextInput key="model" source="model" label="Model" alwaysOn />,
@@ -38,49 +63,23 @@ const executionFilters = [
   />,
 ];
 
-const statusColors: Record<string, 'success' | 'error' | 'default'> = {
-  completed: 'success',
-  failed: 'error',
-};
-
-const typeColors: Record<string, 'primary' | 'secondary' | 'info' | 'warning'> = {
-  text: 'primary',
-  embedding: 'secondary',
-  image: 'info',
-  'structured-output': 'warning',
-};
-
 export default function PlaygroundExecutionList() {
   return (
     <List filters={executionFilters} sort={{ field: 'createdAt', order: 'DESC' }}>
       <Datagrid rowClick="show">
         <TextField source="id" />
-        <FunctionField
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Type"
-          render={(record: any) => (
-            <Chip
-              label={record.type}
-              size="small"
-              color={typeColors[record.type] ?? 'default'}
-            />
-          )}
+          render={renderType}
         />
         <TextField source="model" />
-        <FunctionField
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Status"
-          render={(record: any) => (
-            <Chip
-              label={record.status}
-              size="small"
-              color={statusColors[record.status] ?? 'default'}
-            />
-          )}
+          render={renderStatus}
         />
-        <FunctionField
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Cost"
-          render={(record: any) =>
-            record.costCents != null ? `$${(record.costCents / 100).toFixed(2)}` : '-'
-          }
+          render={renderCost}
         />
         <NumberField source="latencyMs" label="Latency (ms)" />
         <DateField source="createdAt" showTime />

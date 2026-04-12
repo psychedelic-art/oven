@@ -7,7 +7,6 @@ import {
   NumberField,
   BooleanField,
   DateField,
-  FunctionField,
   TextInput,
   SelectInput,
   BooleanInput,
@@ -20,6 +19,7 @@ import {
   resolveGuardrailActionColor,
   truncateGuardrailPattern,
 } from '@oven/module-ai/view/guardrail-record';
+import { TypedFunctionField } from './_fields/TypedFunctionField';
 
 const ruleTypeChoices = [
   { id: 'keyword', name: 'Keyword' },
@@ -45,19 +45,19 @@ export default function GuardrailList() {
     <List filters={filters} sort={{ field: 'priority', order: 'ASC' }}>
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <TextField source="name" label="Name" />
-        <FunctionField<GuardrailRecord>
+        <TypedFunctionField<GuardrailRecord>
           label="Rule Type"
           render={(record) => (
             <Chip label={record?.ruleType} size="small" variant="outlined" />
           )}
         />
-        <FunctionField<GuardrailRecord>
+        <TypedFunctionField<GuardrailRecord>
           label="Scope"
           render={(record) => (
             <Chip label={record?.scope} size="small" variant="outlined" />
           )}
         />
-        <FunctionField<GuardrailRecord>
+        <TypedFunctionField<GuardrailRecord>
           label="Action"
           render={(record) => (
             <Chip
@@ -67,7 +67,7 @@ export default function GuardrailList() {
             />
           )}
         />
-        <FunctionField<GuardrailRecord>
+        <TypedFunctionField<GuardrailRecord>
           label="Pattern"
           render={(record) => {
             const truncated = truncateGuardrailPattern(record?.pattern);
