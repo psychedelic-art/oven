@@ -36,6 +36,7 @@ describe('notificationsModule', () => {
       'notification-channels/[id]',
       'notification-conversations',
       'notification-conversations/[id]',
+      'notifications/usage',
       'notifications/whatsapp/webhook',
     ]);
   });

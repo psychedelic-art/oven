@@ -28,7 +28,7 @@ A configured communication endpoint for a tenant — a WhatsApp phone number, an
 A threaded exchange between a tenant's channel and an external user (patient, customer). Conversations are identified by channel type + external user ID (phone number, email address). A conversation can optionally be backed by an agent session from `module-agent-core`.
 
 ### Usage Tracking
-Per-tenant, per-channel, per-period message counting. Monthly periods track inbound message count against the tenant's limit (e.g., 300 WhatsApp messages/month, 500 web messages/month). Limits come from the tenant's config in `module-tenants`.
+Per-tenant, per-channel, per-period message counting. Monthly periods track inbound message count against the tenant's limit. Limits are resolved via a three-tier cascade: (1) `module-subscriptions` plan quotas keyed by service slugs `notifications-whatsapp`, `notifications-sms`, `notifications-email`; (2) `module-config` fallback defaults (`DEFAULT_WHATSAPP_LIMIT`, `DEFAULT_SMS_LIMIT`, `DEFAULT_EMAIL_LIMIT`); (3) fail-safe deny (limit=0).
 
 ### Escalation
 When a conversation cannot be handled by the AI agent — due to clinical/out-of-scope questions, user request, or usage limit exceeded — the system creates an escalation record and provides human contact information instead.
@@ -274,7 +274,10 @@ Meta sends status webhooks (sent → delivered → read → failed). The handler
 
 - Counts **inbound** messages per tenant per channel per month
 - Period resets on the 1st of each month
-- Limit comes from `module-tenants`: `tenant.whatsappLimit` (default 300) and `tenant.webLimit` (default 500)
+- Limit resolved via three-tier cascade (see `packages/module-notifications/src/services/usage-limit-resolver.ts`):
+  1. `module-subscriptions` plan quota for service slugs `notifications-whatsapp` / `notifications-sms` / `notifications-email` (HTTP, Rule 3.1)
+  2. `module-config` fallback: `DEFAULT_WHATSAPP_LIMIT` (300), `DEFAULT_SMS_LIMIT` (200), `DEFAULT_EMAIL_LIMIT` (1000)
+  3. Fail-safe: limit=0, deny all (prevents unlimited messaging on misconfigured install)
 
 ### Check Usage Limit Utility
 

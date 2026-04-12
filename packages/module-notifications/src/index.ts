@@ -10,6 +10,7 @@ import * as channelsByIdHandler from './api/notification-channels-by-id.handler'
 import * as conversationsHandler from './api/notification-conversations.handler';
 import * as conversationsByIdHandler from './api/notification-conversations-by-id.handler';
 import * as whatsappWebhookHandler from './api/notifications-whatsapp-webhook.handler';
+import * as usageHandler from './api/notifications-usage.handler';
 
 // ─── Module Definition ──────────────────────────────────────────
 //
@@ -68,6 +69,9 @@ export const notificationsModule: ModuleDefinition = {
     'notifications/whatsapp/webhook': {
       GET: whatsappWebhookHandler.GET,
       POST: whatsappWebhookHandler.POST,
+    },
+    'notifications/usage': {
+      GET: usageHandler.GET,
     },
   },
   // Dashboard resources + menu items ship in sprint-04; keep empty.
@@ -218,6 +222,24 @@ export {
   listAdapters,
   clearAdapters,
 } from './adapters/registry';
+export {
+  resolveUsageLimit,
+} from './services/usage-limit-resolver';
+export type {
+  UsageLimitResult,
+  UsageLimitResolverDeps,
+} from './services/usage-limit-resolver';
+export {
+  checkUsageLimit,
+  incrementUsage,
+  getMonthStart,
+  getPeriodEnd,
+  createHttpDeps,
+} from './services/usage-metering';
+export type {
+  CheckUsageLimitResult,
+  IncrementUsageResult,
+} from './services/usage-metering';
 export type {
   NotificationAdapter,
   ChannelType,

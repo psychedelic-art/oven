@@ -9,6 +9,14 @@ vi.mock('@oven/module-registry', () => ({
   eventBus: { emit: vi.fn() },
 }));
 
+// Mock usage services so pipeline tests focus on conversation logic
+vi.mock('../services/usage-metering', () => ({
+  checkUsageLimit: vi.fn(),
+  incrementUsage: vi.fn(),
+  getMonthStart: () => '2026-04-01',
+  getPeriodEnd: () => '2026-04-30',
+}));
+
 import { ingestInboundMessage } from '../services/conversation-pipeline';
 import type { InboundMessage } from '../types';
 import { NOTIFICATION_EVENTS } from '../events';
@@ -21,8 +29,26 @@ const INBOUND_MSG: InboundMessage = {
 };
 
 describe('ingestInboundMessage', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+
+    // Default: usage check passes, increment succeeds
+    const { checkUsageLimit, incrementUsage } = await import('../services/usage-metering');
+    vi.mocked(checkUsageLimit).mockResolvedValue({
+      allowed: true,
+      limit: 300,
+      used: 10,
+      remaining: 290,
+      source: 'config',
+      periodStart: '2026-04-01',
+    });
+    vi.mocked(incrementUsage).mockResolvedValue({
+      oldCount: 10,
+      newCount: 11,
+      limit: 300,
+      warningEmitted: false,
+      limitExceededEmitted: false,
+    });
   });
 
   it('creates a new conversation when none exists', async () => {
@@ -40,6 +66,7 @@ describe('ingestInboundMessage', () => {
     expect(result.isNewConversation).toBe(true);
     expect(result.conversationId).toBe(100);
     expect(result.messageId).toBe(200);
+    expect(result.limitExceeded).toBe(false);
 
     const { eventBus } = await import('@oven/module-registry');
     expect(eventBus.emit).toHaveBeenCalledWith(
@@ -87,12 +114,10 @@ describe('ingestInboundMessage', () => {
     expect(eventNames).not.toContain(NOTIFICATION_EVENTS.CONVERSATION_CREATED);
   });
 
-  it('increments usage counter', async () => {
+  it('calls incrementUsage after inserting message', async () => {
     const { getDb } = await import('@oven/module-registry/db');
-    const mockDb = createMockPipelineDb({
-      existingConversation: null,
-      existingUsage: { id: 10, messageCount: 5 },
-    });
+    const { incrementUsage } = await import('../services/usage-metering');
+    const mockDb = createMockPipelineDb({ existingConversation: null });
     vi.mocked(getDb).mockReturnValue(mockDb as ReturnType<typeof getDb>);
 
     await ingestInboundMessage({
@@ -102,26 +127,34 @@ describe('ingestInboundMessage', () => {
       message: INBOUND_MSG,
     });
 
-    // Verify update was called (the mock records it)
-    expect(mockDb._updateCalled).toBe(true);
+    expect(incrementUsage).toHaveBeenCalledWith(42, 'whatsapp', 300);
   });
 
-  it('creates usage row when none exists for period', async () => {
-    const { getDb } = await import('@oven/module-registry/db');
-    const mockDb = createMockPipelineDb({
-      existingConversation: null,
-      existingUsage: null,
+  it('short-circuits with limitExceeded when usage check fails', async () => {
+    const { checkUsageLimit } = await import('../services/usage-metering');
+    vi.mocked(checkUsageLimit).mockResolvedValue({
+      allowed: false,
+      limit: 300,
+      used: 300,
+      remaining: 0,
+      source: 'config',
+      periodStart: '2026-04-01',
     });
-    vi.mocked(getDb).mockReturnValue(mockDb as ReturnType<typeof getDb>);
 
-    await ingestInboundMessage({
+    const result = await ingestInboundMessage({
       tenantId: 42,
       channelId: 1,
       channelType: 'whatsapp',
       message: INBOUND_MSG,
     });
 
-    expect(mockDb._insertCount).toBeGreaterThanOrEqual(2); // conversation + message + usage
+    expect(result.limitExceeded).toBe(true);
+    expect(result.conversationId).toBe(0);
+    expect(result.messageId).toBe(0);
+
+    // Should NOT emit any events
+    const { eventBus } = await import('@oven/module-registry');
+    expect(eventBus.emit).not.toHaveBeenCalled();
   });
 });
 
@@ -129,56 +162,31 @@ describe('ingestInboundMessage', () => {
 
 function createMockPipelineDb(opts: {
   existingConversation: { id: number; tenantId: number } | null;
-  existingUsage?: { id: number; messageCount: number } | null;
 }) {
-  let selectCallCount = 0;
   let insertCallCount = 0;
 
-  const db: Record<string, unknown> & {
-    _updateCalled: boolean;
-    _insertCount: number;
-  } = {
-    _updateCalled: false,
-    _insertCount: 0,
+  const db: Record<string, unknown> = {
     select: () => db,
     from: () => db,
     where: () => db,
     limit: () => {
-      selectCallCount++;
-      if (selectCallCount === 1) {
-        // Conversation lookup
-        return Promise.resolve(
-          opts.existingConversation ? [opts.existingConversation] : [],
-        );
-      }
-      if (selectCallCount === 2) {
-        // Usage lookup
-        return Promise.resolve(
-          opts.existingUsage ? [opts.existingUsage] : [],
-        );
-      }
-      return Promise.resolve([]);
+      // Conversation lookup
+      return Promise.resolve(
+        opts.existingConversation ? [opts.existingConversation] : [],
+      );
     },
     insert: () => {
       insertCallCount++;
-      db._insertCount = insertCallCount;
       return db;
     },
-    update: () => {
-      db._updateCalled = true;
-      return db;
-    },
+    update: () => db,
     set: () => db,
     values: () => db,
     returning: () => {
-      // Return appropriate IDs based on insert order
       if (!opts.existingConversation && insertCallCount === 1) {
         return Promise.resolve([{ id: 100 }]); // new conversation
       }
-      if (insertCallCount <= 2) {
-        return Promise.resolve([{ id: 200 }]); // message
-      }
-      return Promise.resolve([{ id: 300 }]); // usage
+      return Promise.resolve([{ id: 200 }]); // message
     },
   };
 
