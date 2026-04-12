@@ -19,7 +19,11 @@ import { knowledgeBaseModule } from '@oven/module-knowledge-base';
 import { agentCoreModule } from '@oven/module-agent-core';
 import { chatModule } from '@oven/module-chat';
 import { workflowAgentsModule } from '@oven/module-workflow-agents';
-import { notificationsModule } from '@oven/module-notifications';
+import {
+  notificationsModule,
+  registerNotificationAdapter,
+} from '@oven/module-notifications';
+import { metaAdapter } from '@oven/notifications-meta';
 
 // Register auth adapter before module registration
 registerAuthAdapter(authJsAdapter);

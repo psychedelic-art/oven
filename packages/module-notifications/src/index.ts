@@ -5,6 +5,11 @@ import {
   NOTIFICATION_EVENT_NAMES,
   notificationEventSchemas,
 } from './events';
+import * as channelsHandler from './api/notification-channels.handler';
+import * as channelsByIdHandler from './api/notification-channels-by-id.handler';
+import * as conversationsHandler from './api/notification-conversations.handler';
+import * as conversationsByIdHandler from './api/notification-conversations-by-id.handler';
+import * as whatsappWebhookHandler from './api/notifications-whatsapp-webhook.handler';
 
 // ─── Module Definition ──────────────────────────────────────────
 //
@@ -44,11 +49,28 @@ export const notificationsModule: ModuleDefinition = {
   ],
   schema: notificationsSchema,
   seed: seedNotifications,
-  // Handlers ship in sprint-02; keep empty for now.
-  apiHandlers: {},
-  // Dashboard resources + menu items ship in sprint-04; keep empty.
-  resources: [],
-  menuItems: [],
+  apiHandlers: {
+    'notification-channels': { GET: channelsHandler.GET, POST: channelsHandler.POST },
+    'notification-channels/[id]': {
+      GET: channelsByIdHandler.GET,
+      PUT: channelsByIdHandler.PUT,
+      DELETE: channelsByIdHandler.DELETE,
+    },
+    'notification-conversations': { GET: conversationsHandler.GET },
+    'notification-conversations/[id]': { GET: conversationsByIdHandler.GET },
+    'notifications/whatsapp/webhook': {
+      GET: whatsappWebhookHandler.GET,
+      POST: whatsappWebhookHandler.POST,
+    },
+  },
+  resources: [
+    { name: 'notification-channels', options: { label: 'Channels' } },
+    { name: 'notification-conversations', options: { label: 'Conversations' } },
+  ],
+  menuItems: [
+    { label: 'Channels', to: '/notification-channels' },
+    { label: 'Conversations', to: '/notification-conversations' },
+  ],
   customRoutes: [],
   // configSchema — see docs/modules/notifications/module-design.md#configschema.
   // DEFAULT_*_LIMIT keys close the Rule 13 drift described in
