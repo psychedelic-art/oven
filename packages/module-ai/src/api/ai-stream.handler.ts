@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { badRequest } from '@oven/module-registry/api-utils';
 import { aiStreamText } from '../tools/generate';
 

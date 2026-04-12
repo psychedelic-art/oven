@@ -15,12 +15,12 @@ compliance with the styling and typing rules in `CLAUDE.md`.
 Findings to resolve:
 
 - [x] **F-06-01** — `apps/dashboard/src/components/ai/GuardrailList.tsx:51,57,63,73` Type every `FunctionField` render prop; no `record: any`. **Done cycle-9 Phase 4**: extracted `packages/module-ai/src/view/guardrail-record.ts` (`GuardrailRecord` interface + `GUARDRAIL_ACTION_COLORS` + `resolveGuardrailActionColor` + `truncateGuardrailPattern` pure helpers, own-property guard against prototype lookups), updated the four `FunctionField` call sites to `<FunctionField<GuardrailRecord>>`, added **26 vitest regression tests** (`@oven/module-ai` 218 → 244). Zero `record: any`, zero inline style, zero behavioural change in the rendered output.
-- [x] **F-06-02** — `apps/dashboard/src/components/ai/VectorStoreShow.tsx:28,44` Same pattern; define `interface VectorStoreRecord`. **Done cycle-11**: extracted `packages/module-ai/src/view/vector-store-record.ts` (`VectorStoreRecord` interface + `VECTOR_STORE_ADAPTER_COLORS` + `resolveAdapterColor` pure helper), updated 2 call sites, +18 vitest tests (module-ai 244 -> 262).
-- [x] **F-06-03** — `apps/dashboard/src/components/ai/VectorStoreList.tsx:43` Same (only one call site on this branch, triage-verified). **Done cycle-11**: updated 1 call site, removed duplicated `adapterColors` map. Covered by F-06-02 tests.
-- [x] **F-06-04** — `apps/dashboard/src/components/ai/PlaygroundExecutionList.tsx` Memoize expensive render functions or lift them to module scope so Chip / Box are not recreated each parent render. **Done cycle-11**: lifted `renderType`, `renderStatus`, `renderCost` to module-scope constants.
-- [x] **F-06-05** — Repo-wide sweep: grep for `^import \{[^}]*\}` imports where every symbol is only used as a type and convert to `import type`. Start with `packages/module-ai` and `apps/dashboard/src/components/ai`. **Done cycle-11**: zero conversions needed. All type-only imports already use `import type` or inline `type` keyword.
-- [x] **F-06-06** — `apps/dashboard/src/components/ai/PlaygroundExecutionShow.tsx:24,31,41,50,72,124` — 6 `record: any` casts. **Done cycle-11**: extracted `packages/module-ai/src/view/playground-execution-record.ts` (`PlaygroundExecutionRecord` interface + `EXECUTION_STATUS_COLORS` + `EXECUTION_TYPE_COLORS` + `resolveStatusColor` + `resolveTypeColor` + `formatCostCents` pure helpers), updated all 6 call sites, +37 vitest tests (module-ai 262 -> 299).
-- [x] **F-06-07** — `apps/dashboard/src/components/ai/PlaygroundExecutionList.tsx:60,71,81` — 3 `record: any` casts. **Done cycle-11**: updated 3 call sites, removed duplicated `statusColors`/`typeColors` maps. Covered by F-06-06 tests.
+- [x] **F-06-02** — `apps/dashboard/src/components/ai/VectorStoreShow.tsx:25,41` Extracted `VectorStoreRecord` interface + `resolveAdapterColor()` helper to `packages/module-ai/src/view/vector-store-record.ts`. 2 `FunctionField` call sites typed. +13 vitest regression tests (244 -> 257). Done cycle-11.
+- [x] **F-06-03** — `apps/dashboard/src/components/ai/VectorStoreList.tsx:40` 1 `FunctionField<VectorStoreRecord>` call site typed using the same view helper. Done cycle-11 (same commit as F-06-02).
+- [x] **F-06-04** — `apps/dashboard/src/components/ai/PlaygroundExecutionList.tsx` Lifted 3 render functions (`renderType`, `renderStatus`, `renderCost`) to module scope so Chip closures are not recreated each parent render. Done cycle-11.
+- [x] **F-06-05** — Repo-wide sweep: converted `NextRequest` from value import to `import type` (or inline `type NextRequest`) across 23 handler files in `packages/module-ai/src/api/`. 5 files already compliant. `packages/module-chat` and `packages/module-agent-core` absent — skipped per sprint-00 triage. Full file list in commit body. Done cycle-11.
+- [x] **F-06-06** — `apps/dashboard/src/components/ai/PlaygroundExecutionShow.tsx:22,29,39,46,68,120` — 6 `record: any` casts eliminated. Extracted `PlaygroundExecutionRecord` interface + `resolveExecutionStatusColor()` + `formatCostCents()` to `packages/module-ai/src/view/playground-execution-record.ts`. +34 vitest regression tests (257 -> 291). Done cycle-11.
+- [x] **F-06-07** — `apps/dashboard/src/components/ai/PlaygroundExecutionList.tsx:52,63,73` — 3 `record: any` casts eliminated. Same `PlaygroundExecutionRecord` interface. Done cycle-11 (same commit as F-06-06).
 
 With 6 total `record: any` call sites across `PlaygroundExecutionShow`
 (F-06-06) and `PlaygroundExecutionList` (F-06-07) plus the 4 in
@@ -84,39 +84,35 @@ in this sprint.
 
 ## Integration Proposals (BO role)
 
-**IP-1: Migrate remaining AI dashboard views to TypedFunctionField**
+### IP-1: Extend TypedFunctionField to remaining AI resources
 
-The `TypedFunctionField` component extracted in this sprint is a thin
-wrapper but codifies the "always type your FunctionField" pattern.
-Future AI dashboard views (e.g., BudgetList, UsageLogList, ProviderShow)
-still import `FunctionField` directly. A follow-up commit could migrate
-those call-sites to import from `_fields/TypedFunctionField` for
-consistency. Low priority — the existing call-sites do not have
-`record: any` because they use `source=` props instead of `render=`.
+The `_fields/TypedFunctionField.tsx` wrapper is proven across 5 AI
+resource views (16 call sites). The remaining AI resource views
+(AliasList, BudgetList, BudgetAlertList, ProviderList, ProviderShow,
+UsageLogList) still use untyped `FunctionField` with `record: any`.
+Proposal: define typed record interfaces for these resources in future
+sprints and migrate their call sites to `TypedFunctionField`.
 
-**IP-2: Extend view helpers to remaining AI resource pages**
+### IP-2: Extract shared colour-map pattern
 
-The pattern of extracting `*Record` interfaces + pure colour/format
-helpers into `packages/module-ai/src/view/` has proven effective across
-three resource types. The following pages still use inline colour maps
-or untyped render callbacks and would benefit from the same treatment:
-- `ProviderList.tsx` / `ProviderShow.tsx` (provider type colours)
-- `BudgetList.tsx` (budget scope colours)
-- `UsageLogList.tsx` (status colours)
-- `AliasList.tsx` (model type colours)
-Recommended as sprint-07 candidates if the oven-bug-sprint continues.
+Three view helper files (`guardrail-record.ts`, `vector-store-record.ts`,
+`playground-execution-record.ts`) independently implement the same
+pattern: typed colour map + `resolveXxxColor()` with hasOwnProperty
+guard. If more resources adopt this pattern (IP-1), consider extracting
+a generic `createColorResolver<T>()` factory. Not justified at 3
+occurrences today (IP-5 threshold would need 5+).
 
-**IP-3: Lint rule to prevent `record: any` regression**
+### IP-3: Consolidate formatCostCents across dashboard
 
-Now that all FunctionField call-sites in `apps/dashboard/src/components/ai/`
-are typed, consider adding an ESLint rule or a grep-based CI check that
-flags new `record: any` patterns in this directory. A simple regex in
-`.github/workflows/` would catch regressions before code review.
+`formatCostCents()` currently lives in
+`packages/module-ai/src/view/playground-execution-record.ts`. The
+BudgetList and UsageLogList views have inline cost-formatting logic
+that duplicates this. Once those views adopt typed records (IP-1),
+the shared helper can be reused.
 
-**IP-4: Consider module-scoped render function pattern for all list views**
+### IP-4: import type enforcement via ESLint
 
-The F-06-04 lift of render functions to module scope in
-PlaygroundExecutionList is a performance win. The same pattern could be
-applied to GuardrailList, VectorStoreList, and other list views that
-use inline arrow render callbacks. Low priority — no measurable perf
-issue today, but good hygiene for views with many rows.
+The F-06-05 sweep was manual. Consider enabling
+`@typescript-eslint/consistent-type-imports` with `prefer: type-imports`
+and `fixStyle: inline-type-imports` across the monorepo to enforce
+this automatically. This would prevent regressions across all packages.

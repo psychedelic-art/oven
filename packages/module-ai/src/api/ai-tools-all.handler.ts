@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@oven/module-registry/db';
 import { registry } from '@oven/module-registry';
 import { aiTools } from '../schema';

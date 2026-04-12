@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { badRequest } from '@oven/module-registry/api-utils';
 import { getDb } from '@oven/module-registry/db';
 import { aiUsageLogs } from '../schema';

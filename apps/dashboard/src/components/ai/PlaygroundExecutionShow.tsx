@@ -6,44 +6,44 @@ import {
   TextField,
   NumberField,
   DateField,
-  FunctionField,
 } from 'react-admin';
 import { Box, Typography, Chip } from '@mui/material';
 import {
-  type PlaygroundExecutionRecord,
-  resolveStatusColor,
+  resolveExecutionStatusColor,
   formatCostCents,
+  type PlaygroundExecutionRecord,
 } from '@oven/module-ai/view/playground-execution-record';
+import { TypedFunctionField } from './_fields/TypedFunctionField';
 
 export default function PlaygroundExecutionShow() {
   return (
     <Show>
       <SimpleShowLayout>
-        <FunctionField<PlaygroundExecutionRecord>
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Type"
           render={(record) => (
-            <Chip label={record?.type} size="small" color="primary" />
+            <Chip label={record.type} size="small" color="primary" />
           )}
         />
         <TextField source="model" />
-        <FunctionField<PlaygroundExecutionRecord>
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Status"
           render={(record) => (
             <Chip
-              label={record?.status}
+              label={record.status}
               size="small"
-              color={resolveStatusColor(record?.status)}
+              color={resolveExecutionStatusColor(record.status)}
             />
           )}
         />
-        <FunctionField<PlaygroundExecutionRecord>
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Cost"
-          render={(record) => formatCostCents(record?.costCents)}
+          render={(record) => formatCostCents(record.costCents)}
         />
         <NumberField source="latencyMs" label="Latency (ms)" />
         <DateField source="createdAt" showTime />
 
-        <FunctionField<PlaygroundExecutionRecord>
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Input"
           render={(record) => (
             <Box
@@ -60,22 +60,21 @@ export default function PlaygroundExecutionShow() {
                 overflow: 'auto',
               }}
             >
-              {JSON.stringify(record?.input, null, 2)}
+              {JSON.stringify(record.input, null, 2)}
             </Box>
           )}
         />
 
-        <FunctionField<PlaygroundExecutionRecord>
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Output"
           render={(record) => {
             // If image type with a url, show image preview
-            const output = record?.output as { url?: string; [key: string]: unknown } | undefined;
-            if (record?.type === 'image' && output?.url) {
+            if (record.type === 'image' && record.output?.url) {
               return (
                 <Box>
                   <Box
                     component="img"
-                    src={output.url}
+                    src={record.output.url}
                     alt="Generated"
                     sx={{ maxWidth: '100%', maxHeight: 400, borderRadius: 1, mb: 1 }}
                   />
@@ -91,7 +90,7 @@ export default function PlaygroundExecutionShow() {
                       m: 0,
                     }}
                   >
-                    {JSON.stringify(output, null, 2)}
+                    {JSON.stringify(record.output, null, 2)}
                   </Box>
                 </Box>
               );
@@ -111,19 +110,19 @@ export default function PlaygroundExecutionShow() {
                   overflow: 'auto',
                 }}
               >
-                {JSON.stringify(record?.output, null, 2)}
+                {JSON.stringify(record.output, null, 2)}
               </Box>
             );
           }}
         />
 
         {/* Error field only shown if present */}
-        <FunctionField<PlaygroundExecutionRecord>
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Error"
           render={(record) =>
-            record?.error ? (
+            record.error ? (
               <Typography color="error" variant="body2">
-                {record?.error}
+                {record.error}
               </Typography>
             ) : (
               <Typography variant="body2" color="text.secondary">

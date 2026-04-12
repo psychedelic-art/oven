@@ -7,7 +7,6 @@ import {
   NumberField,
   BooleanField,
   DateField,
-  FunctionField,
   TextInput,
   SelectInput,
   BooleanInput,
@@ -15,9 +14,10 @@ import {
 } from 'react-admin';
 import { Chip } from '@mui/material';
 import {
-  type VectorStoreRecord,
   resolveAdapterColor,
+  type VectorStoreRecord,
 } from '@oven/module-ai/view/vector-store-record';
+import { TypedFunctionField } from './_fields/TypedFunctionField';
 
 const adapterChoices = [
   { id: 'pgvector', name: 'pgvector' },
@@ -37,7 +37,7 @@ export default function VectorStoreList() {
         <TextField source="name" label="Name" />
         <TextField source="slug" label="Slug" />
         <NumberField source="tenantId" label="Tenant" />
-        <FunctionField<VectorStoreRecord>
+        <TypedFunctionField<VectorStoreRecord>
           label="Adapter"
           render={(record) => (
             <Chip

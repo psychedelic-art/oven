@@ -6,17 +6,36 @@ import {
   TextField,
   NumberField,
   DateField,
-  FunctionField,
   TextInput,
   SelectInput,
 } from 'react-admin';
 import { Chip } from '@mui/material';
 import {
-  type PlaygroundExecutionRecord,
-  resolveStatusColor,
-  resolveTypeColor,
+  resolveExecutionStatusColor,
+  resolveExecutionTypeColor,
   formatCostCents,
+  type PlaygroundExecutionRecord,
 } from '@oven/module-ai/view/playground-execution-record';
+import { TypedFunctionField } from './_fields/TypedFunctionField';
+
+const renderType = (record: PlaygroundExecutionRecord) => (
+  <Chip
+    label={record.type}
+    size="small"
+    color={resolveExecutionTypeColor(record.type)}
+  />
+);
+
+const renderStatus = (record: PlaygroundExecutionRecord) => (
+  <Chip
+    label={record.status}
+    size="small"
+    color={resolveExecutionStatusColor(record.status)}
+  />
+);
+
+const renderCost = (record: PlaygroundExecutionRecord) =>
+  formatCostCents(record.costCents);
 
 const executionFilters = [
   <TextInput key="model" source="model" label="Model" alwaysOn />,
@@ -44,40 +63,21 @@ const executionFilters = [
   />,
 ];
 
-const renderType = (record: PlaygroundExecutionRecord) => (
-  <Chip
-    label={record?.type}
-    size="small"
-    color={resolveTypeColor(record?.type)}
-  />
-);
-
-const renderStatus = (record: PlaygroundExecutionRecord) => (
-  <Chip
-    label={record?.status}
-    size="small"
-    color={resolveStatusColor(record?.status)}
-  />
-);
-
-const renderCost = (record: PlaygroundExecutionRecord) =>
-  formatCostCents(record?.costCents);
-
 export default function PlaygroundExecutionList() {
   return (
     <List filters={executionFilters} sort={{ field: 'createdAt', order: 'DESC' }}>
       <Datagrid rowClick="show">
         <TextField source="id" />
-        <FunctionField<PlaygroundExecutionRecord>
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Type"
           render={renderType}
         />
         <TextField source="model" />
-        <FunctionField<PlaygroundExecutionRecord>
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Status"
           render={renderStatus}
         />
-        <FunctionField<PlaygroundExecutionRecord>
+        <TypedFunctionField<PlaygroundExecutionRecord>
           label="Cost"
           render={renderCost}
         />

@@ -7,13 +7,13 @@ import {
   NumberField,
   BooleanField,
   DateField,
-  FunctionField,
 } from 'react-admin';
 import { Chip, Box } from '@mui/material';
 import {
-  type VectorStoreRecord,
   resolveAdapterColor,
+  type VectorStoreRecord,
 } from '@oven/module-ai/view/vector-store-record';
+import { TypedFunctionField } from './_fields/TypedFunctionField';
 
 export default function VectorStoreShow() {
   return (
@@ -22,7 +22,7 @@ export default function VectorStoreShow() {
         <TextField source="name" />
         <TextField source="slug" />
         <NumberField source="tenantId" label="Tenant ID" />
-        <FunctionField<VectorStoreRecord>
+        <TypedFunctionField<VectorStoreRecord>
           label="Adapter"
           render={(record) => (
             <Chip
@@ -38,7 +38,7 @@ export default function VectorStoreShow() {
         <TextField source="distanceMetric" label="Distance Metric" />
         <NumberField source="documentCount" label="Document Count" />
         <BooleanField source="enabled" />
-        <FunctionField<VectorStoreRecord>
+        <TypedFunctionField<VectorStoreRecord>
           label="Connection Config"
           render={(record) => {
             const config = record?.connectionConfig;
