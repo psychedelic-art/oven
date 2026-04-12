@@ -10,7 +10,8 @@
     "./types": "./src/types.ts",
     "./api/*": "./src/api/*",
     "./engine/*": "./src/engine/*",
-    "./vector-store/*": "./src/vector-store/*"
+    "./vector-store/*": "./src/vector-store/*",
+    "./view/*": "./src/view/*"
   },
   "scripts": {
     "test": "vitest run",

@@ -52,7 +52,7 @@ See `PROGRESS.md` for the live state table. Snapshot:
 | `config` | Module | `claude/eager-curie-INifN` | Canonical doc set graduated; cascade resolver tests (24) passing |
 | `notifications` | Module | `claude/eager-curie-4GaQC` | Canonical doc set graduated; `@oven/module-notifications` package scaffolded, tests (37) passing — NOT YET registered in `apps/dashboard/src/lib/modules.ts` |
 | `module-knowledge-base` | Module | `claude/eager-curie-LRIhN` | Todo sprints added (sprint-00..05); canonical folder `Readme.md` only — remaining 10 files missing |
-| `oven-bug-sprint` | Program | `claude/eager-curie-0da9Q` | Triage (sprint-00) + 6 sprints imported; F-05-01 sort allowlist helper shipped cycle-3 |
+| `oven-bug-sprint` | Program | `claude/eager-curie-0da9Q` | Triage (sprint-00) + 6 sprints imported; sprint-05 handler type-safety **CLOSED cycle-9** (F-05-01..F-05-05 all shipped; `module-ai` 218/218 green) |
 | `auth` | Module | `claude/inspiring-clarke-JuFO1` (cycle-5) | Canonical 11-file doc set graduated cycle-5; 5 sprint files (00-discovery..04-acceptance); package not yet implemented |
 | `tenants` | Module | `claude/inspiring-clarke-JGiXk` (cycle-8) | Canonical 11-file doc set graduated cycle-5; 5 sprint files (00..04); **sprint-03 security hardening landed cycle-8** (DRIFT-2/3/4/5 — 78 vitest tests, +50); only sprint-04 acceptance and DRIFT-6 seed-idempotency lock remaining (both blocked on DB-mock infra) |
 | `subscriptions` | Module | `claude/inspiring-clarke-JuFO1` (cycle-5) | Canonical 11-file doc set graduated cycle-5; todo folder + 6 sprint files; sprint-01 foundation shipped — **52 tests green** (billing-cycle 10 + resolver 25 + module-definition 17); next is sprint-02 usage-metering hardening |
@@ -92,6 +92,25 @@ bring `@oven/module-tenants` to **78/78** green; dashboard `tsc
 idempotency) deferred — already uses `onConflictDoNothing()` and
 needs DB-mock infra. See
 `qa-reports/claude-inspiring-clarke-JGiXk-QA-REPORT.md`.
+
+Cycle-9 landing (2026-04-12): `module-ai` F-05-05 landed on
+`origin/dev` as merge commit `054ad8c` from
+`claude/inspiring-clarke-HBa3u`. Closes the last open row in
+`oven-bug-sprint/sprint-05-handler-typesafety` — new
+`packages/module-ai/src/api/_utils/generate-object-input.ts` zod
+boundary validator for `POST /api/ai/generate-object` with a JSON
+Schema structural-keyword gate (`type / $ref / $schema / properties
+/ items / oneOf / anyOf / allOf / enum / const / not`),
+`GenerateObjectSchema<T> = z.ZodSchema<T> \| Schema<T>` widening in
+`tools/generate-object.ts`, and removal of the `(schema as any)`
+escape hatch in `ai-generate-object.handler.ts`. 45 new vitest
+tests (happy-path, structural keyword coverage, prompt / schema /
+optional-field rejection, prototype-bypass normalisation) bring
+`@oven/module-ai` to **218/218** green (was 173); dashboard `tsc
+--noEmit` delta 0 (460 baseline unchanged). With this landing,
+**zero** `(schema as any) / (sdkProvider as any) / (sub-client as
+any)` remain anywhere under `packages/module-ai/src/api/**`. See
+`qa-reports/claude-inspiring-clarke-HBa3u-QA-REPORT.md`.
 
 ## Graduation definition of done
 

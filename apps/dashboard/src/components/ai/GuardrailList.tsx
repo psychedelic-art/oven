@@ -15,6 +15,11 @@ import {
   DeleteButton,
 } from 'react-admin';
 import { Chip, Typography } from '@mui/material';
+import {
+  type GuardrailRecord,
+  resolveGuardrailActionColor,
+  truncateGuardrailPattern,
+} from '@oven/module-ai/view/guardrail-record';
 
 const ruleTypeChoices = [
   { id: 'keyword', name: 'Keyword' },
@@ -28,12 +33,6 @@ const scopeChoices = [
   { id: 'both', name: 'Both' },
 ];
 
-const actionColors: Record<string, 'error' | 'warning' | 'info'> = {
-  block: 'error',
-  warn: 'warning',
-  modify: 'info',
-};
-
 const filters = [
   <TextInput key="q" source="q" label="Search" alwaysOn />,
   <SelectInput key="ruleType" source="ruleType" label="Rule Type" choices={ruleTypeChoices} />,
@@ -46,34 +45,33 @@ export default function GuardrailList() {
     <List filters={filters} sort={{ field: 'priority', order: 'ASC' }}>
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <TextField source="name" label="Name" />
-        <FunctionField
+        <FunctionField<GuardrailRecord>
           label="Rule Type"
-          render={(record: any) => (
+          render={(record) => (
             <Chip label={record?.ruleType} size="small" variant="outlined" />
           )}
         />
-        <FunctionField
+        <FunctionField<GuardrailRecord>
           label="Scope"
-          render={(record: any) => (
+          render={(record) => (
             <Chip label={record?.scope} size="small" variant="outlined" />
           )}
         />
-        <FunctionField
+        <FunctionField<GuardrailRecord>
           label="Action"
-          render={(record: any) => (
+          render={(record) => (
             <Chip
               label={record?.action}
               size="small"
-              color={actionColors[record?.action] ?? 'default'}
+              color={resolveGuardrailActionColor(record?.action)}
             />
           )}
         />
-        <FunctionField
+        <FunctionField<GuardrailRecord>
           label="Pattern"
-          render={(record: any) => {
-            const pattern = record?.pattern;
-            if (!pattern) return '-';
-            const truncated = pattern.length > 40 ? `${pattern.slice(0, 40)}...` : pattern;
+          render={(record) => {
+            const truncated = truncateGuardrailPattern(record?.pattern);
+            if (truncated === null) return '-';
             return (
               <Typography
                 variant="body2"
@@ -93,3 +91,4 @@ export default function GuardrailList() {
     </List>
   );
 }
+
