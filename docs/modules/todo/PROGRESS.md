@@ -1,9 +1,15 @@
 # Todo Queue Progress
 
-Regenerated fresh on 2026-04-12 after **cycle-18** merge of
-`claude/stoic-hamilton-2ylh0` (oven-bug-sprint sprint-03 workflow engine,
-4 findings, +19 tests) onto `origin/dev` as merge commit `63b7294`.
+Regenerated fresh on 2026-04-12 after **cycle-19** merge of
+`claude/stoic-hamilton-2ylh0` (ui-flows sprint-01 foundation tests,
+89 total across 13 files) onto `origin/dev` as merge commit `59101dc`.
 Session branch: `claude/stoic-hamilton-2ylh0`.
+
+## Cycle-19 merge audit
+
+| # | Branch | Modules landed | Backup | Tests | Verdict |
+|---|--------|----------------|--------|-------|---------|
+| 1 | `claude/stoic-hamilton-2ylh0` | ui-flows sprint-01 (11 API handler test files, +48 tests) | `bk/claude-stoic-hamilton-2ylh0-20260412` | `@oven/module-ui-flows` 41 -> **89** | **MERGED to `origin/dev`** as `59101dc` (cycle-19 merge) |
 
 ## Cycle-18 merge audit
 
@@ -22,7 +28,7 @@ Session branch: `claude/stoic-hamilton-2ylh0`.
 | `config` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-config`, 24 tests | **sprint-02 done (cycle-15)** | Execute sprint-03-rls-and-migration. |
 | `notifications` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-notifications` 48 tests + `@oven/notifications-meta` 21 tests; REGISTERED | sprint-02 done | Execute sprint-03-usage-metering. |
 | `module-knowledge-base` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-knowledge-base`, 21 tests | **sprint-02 done (cycle-16)** | Execute sprint-03-search-engine. |
-| `ui-flows` | 5 (sprint-00..03, 99) | 11/11 | LIVE `@oven/module-ui-flows`, 41 tests (2 test files: slug-utils, module-definition) | **sprint-01 partial (cycle-16b)** | Continue sprint-01 (API handler tests needed). |
+| `ui-flows` | 5 (sprint-00..03, 99) | 11/11 | LIVE `@oven/module-ui-flows`, **89 tests** (13 test files) | **sprint-01 done (cycle-19)** | Execute sprint-02-portal-app. |
 | `agent-ui` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/agent-ui`, 67 tests (9 test files) | **sprint-00 done (cycle-17b)** | Execute sprint-01-foundation. |
 | `dashboard-ux-system` | 8 (sprint-00..07) | N/A (program) | N/A | sprint-00 not started | Execute sprint-01-foundation. |
 | `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | 291+19 = 310 tests (`module-ai` + `module-workflows`) | sprint-01 CLOSED (cycle-14), sprint-03 CLOSED (cycle-18), sprint-06 CLOSED (cycle-11) | Next: sprint-02/04 remain BLOCKED on module-chat/agent-core. No unblocked sprints remain. |
@@ -30,9 +36,9 @@ Session branch: `claude/stoic-hamilton-2ylh0`.
 
 ## Priority order (post cycle-18)
 
-P0: ui-flows sprint-01 continuation (API handler tests -- 2 of 14 test files done)
-P1: auth sprint-02 (authjs adapter -- package + handlers + middleware)
-P2: agent-ui sprint-01 (foundation)
+P0: auth sprint-02 (authjs adapter -- package + handlers + middleware)
+P1: agent-ui sprint-01 (foundation)
+P2: ui-flows sprint-02 (portal app)
 P3: files sprint-03 (tenant scoping)
 P4: subscriptions sprint-03 (public pricing)
 P5: config sprint-03 (RLS + migration)
@@ -89,5 +95,5 @@ SKIP: psychedelic-claude-code-migration (external ownership)
 
 ## Merge path to `dev` (post cycle-18)
 
-`origin/dev` HEAD is now `63b7294 merge(cycle-18): land oven-bug-sprint
-sprint-03 (workflow engine, 4 findings)`.
+`origin/dev` HEAD is now `59101dc merge(cycle-19): land ui-flows
+sprint-01 foundation tests (89 total)`.
