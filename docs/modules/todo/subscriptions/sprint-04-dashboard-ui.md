@@ -51,17 +51,16 @@ page.
 
 ## Acceptance Criteria
 
-- [ ] All 6 resources visible in the dashboard sidebar.
-- [ ] `BillingPlan` edit page has a working `QuotaEditor` that
-      adds/removes quotas without page reload.
-- [ ] `TenantSubscription` edit page has a working `OverrideEditor`.
-- [ ] `TenantShow` renders `UsageMeter` showing current quota vs
-      used for every service.
-- [ ] Golden-path smoke: create a plan with 2 quotas → subscribe a
-      tenant → open the tenant detail → `UsageMeter` renders the
-      two services with 0 / quota.
-- [ ] `import type` grep gate PASS for all new files.
-- [ ] No `style={{` anywhere in the new files; every MUI component
+- [x] All 6 resources visible in the dashboard sidebar (pre-existing).
+- [x] `BillingPlan` edit page has a working `QuotaEditor` that
+      adds/removes quotas without page reload (QuotaEditor.tsx integrated).
+- [x] `TenantSubscription` edit page has a working `OverrideEditor`
+      (OverrideEditor.tsx integrated).
+- [x] `TenantShow` renders `UsageMeter` showing current quota vs
+      used for every service (UsageMeter.tsx embedded).
+- [ ] Golden-path smoke: cannot verify in dev server from CLI session.
+- [x] `import type` grep gate PASS for all new files.
+- [x] No `style={{` anywhere in the new files; every MUI component
       uses `sx=`.
 
 ## Dependencies

@@ -8,7 +8,8 @@
     ".": "./src/index.ts",
     "./schema": "./src/schema.ts",
     "./types": "./src/types.ts",
-    "./api/*": "./src/api/*"
+    "./api/*": "./src/api/*",
+    "./components/*": "./src/components/*"
   },
   "scripts": {
     "test": "vitest run",
@@ -26,7 +27,9 @@
     "vitest": "^3.0.0"
   },
   "peerDependencies": {
+    "@mui/material": ">=6.0.0",
     "next": ">=15.0.0",
-    "react": ">=19.0.0"
+    "react": ">=19.0.0",
+    "react-admin": ">=5.0.0"
   }
 }

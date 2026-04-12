@@ -8,6 +8,7 @@ import {
   BooleanInput,
   SelectInput,
 } from 'react-admin';
+import QuotaEditor from '@oven/module-subscriptions/components/QuotaEditor';
 
 export default function BillingPlanEdit() {
   return (
@@ -45,6 +46,7 @@ export default function BillingPlanEdit() {
         <BooleanInput source="isPublic" label="Public" />
         <BooleanInput source="enabled" label="Enabled" />
         <NumberInput source="order" label="Display Order" />
+        <QuotaEditor />
       </SimpleForm>
     </Edit>
   );
