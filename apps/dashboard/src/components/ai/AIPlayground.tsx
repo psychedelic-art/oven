@@ -373,8 +373,10 @@ function useHistory(type: string) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(true);
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
+    setHistoryError(null);
     try {
       const filter: Record<string, unknown> = { type };
       if (search.trim()) {
@@ -391,7 +393,6 @@ function useHistory(type: string) {
       if (res.ok) {
         const data = await res.json();
         setHistory(data);
-        // Parse total from Content-Range header
         const contentRange = res.headers.get('Content-Range');
         if (contentRange) {
           const match = contentRange.match(/\/(\d+)/);
@@ -399,9 +400,11 @@ function useHistory(type: string) {
         } else {
           setTotal(data.length);
         }
+      } else {
+        setHistoryError(`Failed to load history (${res.status})`);
       }
     } catch {
-      // ignore
+      setHistoryError('Failed to load history');
     }
   }, [type, page, search]);
 
@@ -409,7 +412,6 @@ function useHistory(type: string) {
     refresh();
   }, [refresh]);
 
-  // Reset to page 1 when search changes
   const setSearchAndReset = useCallback((q: string) => {
     setSearch(q);
     setPage(1);
@@ -417,7 +419,7 @@ function useHistory(type: string) {
 
   const totalPages = Math.max(1, Math.ceil(total / HISTORY_PAGE_SIZE));
 
-  return { history, total, page, setPage, totalPages, search, setSearch: setSearchAndReset, open, setOpen, refresh };
+  return { history, total, page, setPage, totalPages, search, setSearch: setSearchAndReset, open, setOpen, refresh, historyError };
 }
 
 // ─── Provider Status Banner ─────────────────────────────────
@@ -550,6 +552,8 @@ function HistorySidebar({
   page,
   totalPages,
   onPageChange,
+  historyError,
+  onRetry,
 }: {
   history: PlaygroundExecution[];
   open: boolean;
@@ -560,6 +564,8 @@ function HistorySidebar({
   page: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  historyError: string | null;
+  onRetry: () => void;
 }) {
   return (
     <Box sx={{ width: 300, flexShrink: 0, ml: 2 }}>
@@ -573,6 +579,19 @@ function HistorySidebar({
         </IconButton>
       </Box>
       <Collapse in={open}>
+        {historyError && (
+          <Alert
+            severity="error"
+            sx={{ mb: 1 }}
+            action={
+              <Button color="inherit" size="small" onClick={onRetry}>
+                Retry
+              </Button>
+            }
+          >
+            {historyError}
+          </Alert>
+        )}
         <TextField
           placeholder="Search history..."
           value={search}
@@ -716,7 +735,7 @@ function TextGenerationTab({
   const [error, setError] = useState('');
   const [usage, setUsage] = useState<UsageInfo | null>(null);
   const [loading, setLoading] = useState(false);
-  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage } = useHistory('text');
+  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage, historyError } = useHistory('text');
   const { params, setParam, schema } = useDynamicParams(textAliases, model);
 
   // Set default model when aliases load
@@ -867,6 +886,8 @@ function TextGenerationTab({
         page={page}
         totalPages={totalPages}
         onPageChange={setPage}
+        historyError={historyError}
+        onRetry={refresh}
       />
     </Box>
   );
@@ -887,7 +908,7 @@ function EmbeddingsTab({
   const [error, setError] = useState('');
   const [usage, setUsage] = useState<UsageInfo | null>(null);
   const [loading, setLoading] = useState(false);
-  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage } = useHistory('embedding');
+  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage, historyError } = useHistory('embedding');
   const { params, setParam, schema } = useDynamicParams(embeddingAliases, model);
 
   useEffect(() => {
@@ -1015,6 +1036,8 @@ function EmbeddingsTab({
         page={page}
         totalPages={totalPages}
         onPageChange={setPage}
+        historyError={historyError}
+        onRetry={refresh}
       />
     </Box>
   );
@@ -1035,7 +1058,7 @@ function ImageGenerationTab({
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [savedFileId, setSavedFileId] = useState<number | null>(null);
-  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage } = useHistory('image');
+  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage, historyError } = useHistory('image');
   const { params, setParam, schema } = useDynamicParams(imageAliases, model);
   const { uploadFromUrl, uploading: savingToFiles } = useFileUpload({
     folder: 'ai-images',
@@ -1189,6 +1212,8 @@ function ImageGenerationTab({
         page={page}
         totalPages={totalPages}
         onPageChange={setPage}
+        historyError={historyError}
+        onRetry={refresh}
       />
     </Box>
   );
@@ -1223,7 +1248,7 @@ function StructuredOutputTab({
   const [error, setError] = useState('');
   const [usage, setUsage] = useState<UsageInfo | null>(null);
   const [loading, setLoading] = useState(false);
-  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage } = useHistory('structured-output');
+  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage, historyError } = useHistory('structured-output');
   const { params, setParam, schema: paramSchema } = useDynamicParams(textAliases, model);
 
   useEffect(() => {
@@ -1380,6 +1405,8 @@ function StructuredOutputTab({
         page={page}
         totalPages={totalPages}
         onPageChange={setPage}
+        historyError={historyError}
+        onRetry={refresh}
       />
     </Box>
   );
@@ -1403,7 +1430,7 @@ function VisionTab({
   const [usage, setUsage] = useState<UsageInfo | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage } = useHistory('vision');
+  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage, historyError } = useHistory('vision');
   const { params, setParam, schema } = useDynamicParams(textAliases, model);
 
   useEffect(() => {
@@ -1528,7 +1555,7 @@ function VisionTab({
           </Paper>
         )}
       </Box>
-      <HistorySidebar history={history} open={open} onToggle={() => setOpen((o) => !o)} onSelect={handleHistorySelect} search={search} onSearchChange={setSearch} page={page} totalPages={totalPages} onPageChange={setPage} />
+      <HistorySidebar history={history} open={open} onToggle={() => setOpen((o) => !o)} onSelect={handleHistorySelect} search={search} onSearchChange={setSearch} page={page} totalPages={totalPages} onPageChange={setPage} historyError={historyError} onRetry={refresh} />
     </Box>
   );
 }
@@ -1573,7 +1600,7 @@ function SpeechToTextPanel({
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [audioPickerOpen, setAudioPickerOpen] = useState(false);
-  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage } = useHistory('stt');
+  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage, historyError } = useHistory('stt');
 
   useEffect(() => {
     if (!model && sttAliases.length > 0) setModel(sttAliases[0].alias);
@@ -1681,7 +1708,7 @@ function SpeechToTextPanel({
           </Paper>
         )}
       </Box>
-      <HistorySidebar history={history} open={open} onToggle={() => setOpen((o) => !o)} onSelect={handleHistorySelect} search={search} onSearchChange={setSearch} page={page} totalPages={totalPages} onPageChange={setPage} />
+      <HistorySidebar history={history} open={open} onToggle={() => setOpen((o) => !o)} onSelect={handleHistorySelect} search={search} onSearchChange={setSearch} page={page} totalPages={totalPages} onPageChange={setPage} historyError={historyError} onRetry={refresh} />
     </Box>
   );
 }
@@ -1699,7 +1726,7 @@ function TextToSpeechPanel({
   const [audioResultUrl, setAudioResultUrl] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage } = useHistory('tts');
+  const { history, open, setOpen, refresh, search, setSearch, page, totalPages, setPage, historyError } = useHistory('tts');
   const { params, setParam, schema } = useDynamicParams(ttsAliases, model);
 
   useEffect(() => {
@@ -1773,7 +1800,7 @@ function TextToSpeechPanel({
           </Paper>
         )}
       </Box>
-      <HistorySidebar history={history} open={open} onToggle={() => setOpen((o) => !o)} onSelect={handleHistorySelect} search={search} onSearchChange={setSearch} page={page} totalPages={totalPages} onPageChange={setPage} />
+      <HistorySidebar history={history} open={open} onToggle={() => setOpen((o) => !o)} onSelect={handleHistorySelect} search={search} onSearchChange={setSearch} page={page} totalPages={totalPages} onPageChange={setPage} historyError={historyError} onRetry={refresh} />
     </Box>
   );
 }
