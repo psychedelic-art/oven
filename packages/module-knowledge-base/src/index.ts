@@ -1,6 +1,7 @@
 import type { ModuleDefinition, EventSchemaMap } from '@oven/module-registry';
 import { kbSchema } from './schema';
 import { seedKnowledgeBase } from './seed';
+import { embedEntry } from './engine/embedding-pipeline';
 import * as kbCategoriesHandler from './api/kb-categories.handler';
 import * as kbCategoriesByIdHandler from './api/kb-categories-by-id.handler';
 import * as kbEntriesHandler from './api/kb-entries.handler';
@@ -209,6 +210,14 @@ export const knowledgeBaseModule: ModuleDefinition = {
       'kb.entry.embedded',
       'kb.search.executed',
     ],
+    listeners: {
+      'kb.entry.created': async (payload: { id: number }) => {
+        embedEntry(payload.id).catch(() => {});
+      },
+      'kb.entry.updated': async (payload: { id: number; version?: number }) => {
+        embedEntry(payload.id).catch(() => {});
+      },
+    },
     schemas: eventSchemas,
   },
   chat: {

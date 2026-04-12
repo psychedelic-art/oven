@@ -1,6 +1,7 @@
 import { getDb } from '@oven/module-registry/db';
 import { eventBus } from '@oven/module-registry';
 import { aiEmbed } from '@oven/module-ai';
+import { usageMeteringService } from '@oven/module-subscriptions';
 import { kbEntries } from '../schema';
 import { eq, and, sql } from 'drizzle-orm';
 import type { EmbedEntryResult, BulkEmbedOptions, BulkEmbedResult } from '../types';
@@ -48,7 +49,14 @@ export async function embedEntry(
       WHERE id = ${entryId}
     `);
 
-    // 5. Emit event
+    // 5. Track usage (one embed call = one unit of ai-embeddings)
+    await usageMeteringService.trackUsage({
+      tenantId: entry.tenantId,
+      serviceSlug: 'ai-embeddings',
+      amount: 1,
+    });
+
+    // 6. Emit event
     await eventBus.emit('kb.entry.embedded', {
       id: entryId,
       tenantId: entry.tenantId,
