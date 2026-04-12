@@ -3,12 +3,13 @@ import { eq } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
 import { notFound } from '@oven/module-registry/api-utils';
 import { eventBus } from '@oven/module-registry';
+import { getTenantIdsFromRequest } from '@oven/module-auth/auth-utils';
 import { files } from '../schema';
 import { getStorageAdapter } from '../engine/storage-adapter';
 
 // GET /api/files/[id]
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const db = getDb();
@@ -19,12 +20,21 @@ export async function GET(
     .where(eq(files.id, parseInt(id, 10)));
 
   if (!result) return notFound('File not found');
+
+  // Tenant scoping: return 404 (not 403) for cross-tenant access
+  if (result.tenantId != null) {
+    const callerTenantIds = await getTenantIdsFromRequest(request);
+    if (!callerTenantIds.includes(result.tenantId)) {
+      return notFound('File not found');
+    }
+  }
+
   return NextResponse.json(result);
 }
 
 // DELETE /api/files/[id]
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const db = getDb();
@@ -37,7 +47,15 @@ export async function DELETE(
 
   if (!record) return notFound('File not found');
 
-  // Delete from storage
+  // Tenant scoping: return 404 (not 403) for cross-tenant access
+  if (record.tenantId != null) {
+    const callerTenantIds = await getTenantIdsFromRequest(request);
+    if (!callerTenantIds.includes(record.tenantId)) {
+      return notFound('File not found');
+    }
+  }
+
+  // Delete from storage — log and continue on failure
   try {
     const adapter = await getStorageAdapter();
     await adapter.delete(record.publicUrl);
