@@ -15,10 +15,10 @@ swallowing malformed payloads.
 
 Findings to resolve (one commit each):
 
-- [ ] **F-03-01** — `packages/module-workflows/src/api/workflows-by-id.handler.ts:47` Use a canonicalized structural compare (sort keys, strip insignificant whitespace) before bumping the version. Extract the helper into `packages/module-workflows/src/canonicalize.ts`.
-- [ ] **F-03-02** — `packages/module-workflows/src/engine.ts:237` Replace `JSON.stringify(machineContext)` with a `Set<stateId>` visited set (see BO IP-7). *(Path corrected by triage.)*
-- [ ] **F-03-03** — `packages/module-workflows/src/api/workflows-execute.handler.ts:18-23` Distinguish empty body (`""`) from parse error. Return `400 Invalid JSON` on failure, empty object on empty body only.
-- [ ] **F-03-04** — `packages/module-config/src/api/module-configs.handler.ts:57` Wrap `await request.json()` in a try/catch that returns `400 Invalid JSON`. *(Line shifted from 43.)*
+- [x] **F-03-01** — `packages/module-workflows/src/api/workflows-by-id.handler.ts:47` Use a canonicalized structural compare (sort keys, strip insignificant whitespace) before bumping the version. Extract the helper into `packages/module-workflows/src/canonicalize.ts`. **Done**: `structurallyEqual()` replaces raw `JSON.stringify` comparison. 13 regression tests in `canonicalize.test.ts`.
+- [x] **F-03-02** — `packages/module-workflows/src/engine.ts:237` Replace `JSON.stringify(machineContext)` with a `Set<stateId>` visited set (see BO IP-7). *(Path corrected by triage.)* **Done**: `visitedTransitions` Set tracks `previousState->currentState` pairs. 1 regression test in `engine-loop-detection.test.ts`.
+- [x] **F-03-03** — `packages/module-workflows/src/api/workflows-execute.handler.ts:18-23` Distinguish empty body (`""`) from parse error. Return `400 Invalid JSON` on failure, empty object on empty body only. **Done**: reads `request.text()` first, parses only if non-empty. 5 regression tests in `workflows-execute-handler.test.ts`.
+- [x] **F-03-04** — `packages/module-config/src/api/module-configs.handler.ts:57` Wrap `await request.json()` in a try/catch that returns `400 Invalid JSON`. *(Line shifted from 43.)* **Done**: try/catch around `request.json()` in POST handler.
 
 ## Out of scope
 
@@ -40,11 +40,11 @@ Findings to resolve (one commit each):
 
 ## Acceptance criteria
 
-- [ ] All 4 findings checked `[x]` in this file.
-- [ ] `pnpm -F module-workflows test` green.
-- [ ] `pnpm -F module-config test` green.
+- [x] All 4 findings checked `[x]` in this file.
+- [x] `pnpm -F module-workflows test` green (19 tests, 3 files).
+- [x] `pnpm -F module-config test` green (24 tests, 2 files).
 - [ ] `pnpm -w turbo run lint typecheck build test` green.
-- [ ] **Integration Proposals** section authored by the BO role at
+- [x] **Integration Proposals** section authored by the BO role at
       the bottom of this file before the sprint closes.
 
 ## Touched packages
@@ -69,3 +69,27 @@ Findings to resolve (one commit each):
 - `docs/module-rules.md` Rule 7.2 (versions snapshot table),
   Rule 10 (API envelope / error shape).
 - `CLAUDE.md` `type-imports`.
+
+## Integration Proposals (BO)
+
+**IP-8 — Canonical snapshot migration**
+When F-03-01 lands, existing stored workflow definitions have
+non-canonical key ordering. The first real edit to any pre-existing
+workflow will correctly detect structural equality (canonicalize
+normalizes both sides). However, a one-time migration script that
+re-canonicalizes all stored `definition` JSON blobs would improve
+consistency and make version-history diffs cleaner. Recommend
+scheduling for the next DB migration window.
+
+**IP-9 — Transition budget per execution**
+F-03-02 now tracks transition pairs. Consider exposing the
+`visitedTransitions.size` metric as part of the execution summary
+(via `workflowExecutions.metadata`). This enables dashboards to
+show "execution complexity" and helps operators tune `maxIterations`
+per workflow rather than relying on the global default (100).
+
+**IP-10 — Consistent JSON validation middleware**
+F-03-03 and F-03-04 add per-handler JSON parsing guards. A shared
+`parseJsonBody()` utility in `@oven/module-registry/api-utils` would
+centralize this pattern. All handlers that call `request.json()`
+would benefit. Recommend extracting in a future cross-cutting sprint.
