@@ -4,14 +4,15 @@
 |---|---|
 | Module | `tenants` |
 | Package | `packages/module-tenants/` |
-| Current sprint | `sprint-04-acceptance.md` (next); sprint-03 complete on session |
-| Sprint state | **sprint-03 complete on session branch (cycle-8)** — DRIFT-2/3/4/5 closed; 78 unit tests green (28 compute-business-hours + 23 sort-guard + 15 member-guards + 12 public-response) |
-| Active branch | `claude/inspiring-clarke-JGiXk` (cycle-8 session) |
-| Backup branch | `bk/claude-inspiring-clarke-JGiXk-20260411` (will be created at next Phase 2 gate) |
+| Current sprint | `sprint-04-acceptance.md` (next); sprint-03 **landed on `dev`** cycle-8 |
+| Sprint state | **sprint-03 LANDED on `dev`** via `1eb20cf` (cycle-8) — DRIFT-2/3/4/5 closed; 78 unit tests green (28 compute-business-hours + 23 sort-guard + 15 member-guards + 12 public-response) |
+| Active branch | none — work landed |
+| Backup branch | `bk/claude-inspiring-clarke-JGiXk-20260411` (pushed cycle-8) |
+| Merge commit | `1eb20cf merge(cycle-8): land tenants sprint-03 security hardening (+50 tests)` |
 | Open PR | none (do not create without explicit user approval) |
 | Test framework | `vitest` 3.2.4 (matches module-config / module-notifications / module-ai) |
 | Canonical doc set | **complete (11/11)** — scaffolded cycle-2 |
-| QA verdict | n/a — no merge target this cycle |
+| QA verdict | **MERGE** — `docs/modules/todo/qa-reports/claude-inspiring-clarke-JGiXk-QA-REPORT.md` |
 | Blockers | none |
 
 ## Last updates
