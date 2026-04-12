@@ -15,6 +15,12 @@ vi.mock('@oven/module-registry', () => ({
   },
 }));
 
+vi.mock('@oven/module-subscriptions', () => ({
+  usageMeteringService: {
+    trackUsage: vi.fn().mockResolvedValue({ recorded: true, remaining: 100, exceeded: false }),
+  },
+}));
+
 // Track what select().from().where().limit() returns
 let selectResult: unknown[] = [];
 
@@ -52,6 +58,7 @@ vi.mock('@oven/module-registry/db', () => ({
 import { embedEntry, bulkEmbed } from '../engine/embedding-pipeline';
 import { aiEmbed } from '@oven/module-ai';
 import { eventBus } from '@oven/module-registry';
+import { usageMeteringService } from '@oven/module-subscriptions';
 
 describe('EmbeddingPipeline', () => {
   beforeEach(() => {
@@ -116,6 +123,23 @@ describe('EmbeddingPipeline', () => {
         expect.any(String),
         'text-embedding-3-large'
       );
+    });
+
+    it('tracks usage metering on successful embed', async () => {
+      selectResult = [mockEntry];
+      await embedEntry(42);
+      expect(usageMeteringService.trackUsage).toHaveBeenCalledWith({
+        tenantId: 5,
+        serviceSlug: 'ai-embeddings',
+        amount: 1,
+      });
+    });
+
+    it('does NOT track usage metering on failed embed', async () => {
+      selectResult = [mockEntry];
+      vi.mocked(aiEmbed).mockRejectedValueOnce(new Error('API error'));
+      await embedEntry(42);
+      expect(usageMeteringService.trackUsage).not.toHaveBeenCalled();
     });
   });
 

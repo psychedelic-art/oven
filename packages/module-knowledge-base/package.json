@@ -15,6 +15,7 @@
   "dependencies": {
     "@oven/module-registry": "workspace:*",
     "@oven/module-ai": "workspace:*",
+    "@oven/module-subscriptions": "workspace:*",
     "@oven/module-tenants": "workspace:*",
     "@oven/module-roles": "workspace:*",
     "drizzle-orm": "^0.38.0",
