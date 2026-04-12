@@ -1,8 +1,8 @@
 # Todo Queue Progress
 
-Regenerated fresh on 2026-04-12 after **cycle-16b** landing of
-`claude/stoic-hamilton-8IRlF` (ui-flows sprint-01 foundation tests, 41 new)
-onto `origin/dev` as merge commit `2bd0550`.
+Regenerated fresh on 2026-04-12 after **cycle-17** landing of
+`claude/stoic-hamilton-8IRlF` (auth sprint-01 foundation tests, 14 new)
+onto `origin/dev` as merge commit `8e25df9`.
 Session branch: `claude/stoic-hamilton-8IRlF`.
 
 ## Cycle-16 merge audit
@@ -34,7 +34,7 @@ Session branch: `claude/stoic-hamilton-8IRlF`.
 
 | Module / Program | Sprint files | Canonical doc set | Package / tests | Current sprint | Next action |
 |---|---|---|---|---|---|
-| `auth` | 5 (sprint-00..04) | 11/11 | `@oven/module-auth` exists, 0 tests | **sprint-00 done (cycle-15b)** | Execute sprint-01-foundation. |
+| `auth` | 5 (sprint-00..04) | 11/11 | `@oven/module-auth`, **14 tests** | **sprint-01 done (cycle-17)** | Execute sprint-02-authjs-adapter. |
 | `files` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-files`, 29 tests | sprint-02 done | Execute sprint-03-tenant-scoping. |
 | `subscriptions` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-subscriptions`, 80 tests | sprint-02 done | Execute sprint-03-public-pricing. |
 | `tenants` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-tenants`, 78 tests | sprint-03 done | Execute sprint-04-acceptance (BLOCKED on DB-mock harness). |
