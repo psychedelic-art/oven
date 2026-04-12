@@ -1,43 +1,43 @@
-import { type NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { sql, asc, desc, eq, and } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
 import { parseListParams, listResponse } from '@oven/module-registry/api-utils';
 import { notificationConversations } from '../schema';
 
-// GET /api/notification-conversations
 export async function GET(request: NextRequest) {
-  const db = getDb();
   const params = parseListParams(request);
+  const db = getDb();
 
-  const conditions: unknown[] = [];
+  const conditions = [];
   if (params.filter.tenantId) {
-    conditions.push(
-      eq(notificationConversations.tenantId, parseInt(params.filter.tenantId as string, 10)),
-    );
+    conditions.push(eq(notificationConversations.tenantId, Number(params.filter.tenantId)));
   }
   if (params.filter.channelType) {
-    conditions.push(
-      eq(notificationConversations.channelType, params.filter.channelType as string),
-    );
+    conditions.push(eq(notificationConversations.channelType, String(params.filter.channelType)));
   }
   if (params.filter.status) {
-    conditions.push(
-      eq(notificationConversations.status, params.filter.status as string),
-    );
+    conditions.push(eq(notificationConversations.status, String(params.filter.status)));
   }
-
-  const orderFn = params.order === 'desc'
-    ? desc(notificationConversations.id)
-    : asc(notificationConversations.id);
+  if (params.filter.channelId) {
+    conditions.push(eq(notificationConversations.channelId, Number(params.filter.channelId)));
+  }
 
   const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const [rows, countResult] = await Promise.all([
+  const orderCol =
+    params.sort === 'status'
+      ? notificationConversations.status
+      : params.sort === 'createdAt'
+        ? notificationConversations.createdAt
+        : notificationConversations.id;
+  const orderFn = params.order === 'desc' ? desc : asc;
+
+  const [data, countResult] = await Promise.all([
     db
       .select()
       .from(notificationConversations)
       .where(where)
-      .orderBy(orderFn)
+      .orderBy(orderFn(orderCol))
       .limit(params.limit)
       .offset(params.offset),
     db
@@ -46,5 +46,5 @@ export async function GET(request: NextRequest) {
       .where(where),
   ]);
 
-  return listResponse(rows, 'notification-conversations', params, countResult[0].count);
+  return listResponse(data, 'notification-conversations', params, countResult[0].count);
 }

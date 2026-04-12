@@ -1,129 +1,106 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
-import type { ChannelConfig, MessageContent } from '@oven/module-notifications/adapters';
-
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { sendMetaMessage } from '../send';
 
-const CHANNEL: ChannelConfig = {
-  accessToken: 'test-token',
-  phoneNumberId: 'phone-123',
+const CHANNEL_CONFIG = {
+  phoneNumberId: '123456789',
+  accessToken: 'test-access-token',
   apiVersion: 'v21.0',
 };
 
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
-}
-
 describe('sendMetaMessage', () => {
-  const originalFetch = globalThis.fetch;
-
   beforeEach(() => {
-    globalThis.fetch = vi.fn();
+    vi.restoreAllMocks();
   });
 
-  afterEach(() => {
-    globalThis.fetch = originalFetch;
-  });
-
-  it('sends a text message and returns the external message ID', async () => {
-    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
-      jsonResponse({ messages: [{ id: 'wamid.sent123' }] }),
-    );
-
-    const content: MessageContent = { type: 'text', text: 'Hello!' };
-    const result = await sendMetaMessage(CHANNEL, '+5511999999999', content);
-
-    expect(result.externalMessageId).toBe('wamid.sent123');
-    expect(result.status).toBe('sent');
-    expect(result.error).toBeUndefined();
-
-    // Verify the fetch was called correctly
-    const [url, init] = vi.mocked(globalThis.fetch).mock.calls[0]!;
-    expect(url).toBe(
-      'https://graph.facebook.com/v21.0/phone-123/messages',
-    );
-    expect(init?.method).toBe('POST');
-
-    const body = JSON.parse(init?.body as string);
-    expect(body).toEqual({
-      messaging_product: 'whatsapp',
-      to: '+5511999999999',
-      type: 'text',
-      text: { body: 'Hello!' },
+  it('sends a text message and returns the external id', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        messages: [{ id: 'wamid.SENT123' }],
+      }),
     });
+    vi.stubGlobal('fetch', mockFetch);
 
-    const headers = init?.headers as Record<string, string>;
-    expect(headers['Authorization']).toBe('Bearer test-token');
-  });
-
-  it('returns failed status when the API responds with an error', async () => {
-    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
-      jsonResponse(
-        { error: { message: 'Invalid access token', code: 190 } },
-        401,
-      ),
+    const result = await sendMetaMessage(
+      CHANNEL_CONFIG,
+      '15551234567',
+      { type: 'text', text: 'Hello' },
     );
 
-    const content: MessageContent = { type: 'text', text: 'Hello!' };
-    const result = await sendMetaMessage(CHANNEL, '+5511999999999', content);
+    expect(result.status).toBe('sent');
+    expect(result.externalMessageId).toBe('wamid.SENT123');
+
+    expect(mockFetch).toHaveBeenCalledOnce();
+    const [url, options] = mockFetch.mock.calls[0];
+    expect(url).toBe(
+      'https://graph.facebook.com/v21.0/123456789/messages',
+    );
+    expect(options.method).toBe('POST');
+    expect(options.headers.Authorization).toBe('Bearer test-access-token');
+
+    const body = JSON.parse(options.body);
+    expect(body.messaging_product).toBe('whatsapp');
+    expect(body.to).toBe('15551234567');
+    expect(body.type).toBe('text');
+    expect(body.text.body).toBe('Hello');
+  });
+
+  it('sends a template message', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ messages: [{ id: 'wamid.TPL1' }] }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const result = await sendMetaMessage(
+      CHANNEL_CONFIG,
+      '15551234567',
+      {
+        type: 'template',
+        templateName: 'welcome',
+        templateParams: { name: 'Alice' },
+      },
+    );
+
+    expect(result.status).toBe('sent');
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.type).toBe('template');
+    expect(body.template.name).toBe('welcome');
+  });
+
+  it('returns failed status on API error', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      text: async () => '{"error":{"message":"Invalid phone"}}',
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const result = await sendMetaMessage(
+      CHANNEL_CONFIG,
+      'invalid',
+      { type: 'text', text: 'Hello' },
+    );
 
     expect(result.status).toBe('failed');
-    expect(result.error).toBe('Invalid access token');
+    expect(result.error).toContain('400');
     expect(result.externalMessageId).toBe('');
   });
 
-  it('uses default apiVersion when not specified', async () => {
-    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
-      jsonResponse({ messages: [{ id: 'wamid.default' }] }),
+  it('defaults apiVersion to v21.0', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ messages: [{ id: 'wamid.X' }] }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    await sendMetaMessage(
+      { phoneNumberId: '999', accessToken: 'tok' },
+      '15551234567',
+      { type: 'text', text: 'Hi' },
     );
 
-    const channelWithoutVersion: ChannelConfig = {
-      accessToken: 'test-token',
-      phoneNumberId: 'phone-456',
-    };
-
-    const content: MessageContent = { type: 'text', text: 'Hi' };
-    await sendMetaMessage(channelWithoutVersion, '+5511999999999', content);
-
-    const [url] = vi.mocked(globalThis.fetch).mock.calls[0]!;
-    expect(url).toBe(
-      'https://graph.facebook.com/v21.0/phone-456/messages',
-    );
-  });
-
-  it('builds a template message request body correctly', async () => {
-    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
-      jsonResponse({ messages: [{ id: 'wamid.tmpl1' }] }),
-    );
-
-    const content: MessageContent = {
-      type: 'template',
-      templateName: 'order_update',
-      templateParams: { status: 'shipped', tracking: 'ABC123' },
-    };
-
-    const result = await sendMetaMessage(CHANNEL, '+5511999999999', content);
-    expect(result.status).toBe('sent');
-
-    const body = JSON.parse(
-      vi.mocked(globalThis.fetch).mock.calls[0]![1]?.body as string,
-    );
-    expect(body.type).toBe('template');
-    expect(body.template.name).toBe('order_update');
-  });
-
-  it('handles non-JSON error responses gracefully', async () => {
-    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
-      new Response('Internal Server Error', { status: 500 }),
-    );
-
-    const content: MessageContent = { type: 'text', text: 'Hello!' };
-    const result = await sendMetaMessage(CHANNEL, '+5511999999999', content);
-
-    expect(result.status).toBe('failed');
-    expect(result.error).toContain('500');
+    const url = mockFetch.mock.calls[0][0];
+    expect(url).toContain('v21.0');
   });
 });

@@ -2,43 +2,39 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { sql, asc, desc, eq, and } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
 import { parseListParams, listResponse, badRequest } from '@oven/module-registry/api-utils';
-import { eventBus } from '@oven/module-registry';
 import { notificationChannels } from '../schema';
 
-// GET /api/notification-channels
 export async function GET(request: NextRequest) {
-  const db = getDb();
   const params = parseListParams(request);
+  const db = getDb();
 
-  const conditions: unknown[] = [];
+  const conditions = [];
   if (params.filter.tenantId) {
-    conditions.push(
-      eq(notificationChannels.tenantId, parseInt(params.filter.tenantId as string, 10)),
-    );
+    conditions.push(eq(notificationChannels.tenantId, Number(params.filter.tenantId)));
   }
   if (params.filter.channelType) {
-    conditions.push(
-      eq(notificationChannels.channelType, params.filter.channelType as string),
-    );
+    conditions.push(eq(notificationChannels.channelType, String(params.filter.channelType)));
   }
   if (params.filter.enabled !== undefined) {
-    conditions.push(
-      eq(notificationChannels.enabled, params.filter.enabled === 'true' || params.filter.enabled === true),
-    );
+    conditions.push(eq(notificationChannels.enabled, Boolean(params.filter.enabled)));
   }
-
-  const orderFn = params.order === 'desc'
-    ? desc(notificationChannels.id)
-    : asc(notificationChannels.id);
 
   const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const [rows, countResult] = await Promise.all([
+  const orderCol =
+    params.sort === 'name'
+      ? notificationChannels.name
+      : params.sort === 'channelType'
+        ? notificationChannels.channelType
+        : notificationChannels.id;
+  const orderFn = params.order === 'desc' ? desc : asc;
+
+  const [data, countResult] = await Promise.all([
     db
       .select()
       .from(notificationChannels)
       .where(where)
-      .orderBy(orderFn)
+      .orderBy(orderFn(orderCol))
       .limit(params.limit)
       .offset(params.offset),
     db
@@ -47,37 +43,29 @@ export async function GET(request: NextRequest) {
       .where(where),
   ]);
 
-  return listResponse(rows, 'notification-channels', params, countResult[0].count);
+  return listResponse(data, 'notification-channels', params, countResult[0].count);
 }
 
-// POST /api/notification-channels
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { tenantId, channelType, adapterName, name, config, webhookVerifyToken } = body;
 
-  if (!tenantId || !channelType || !adapterName || !name || !config) {
-    return badRequest('Missing required fields: tenantId, channelType, adapterName, name, config');
+  if (!body.tenantId || !body.channelType || !body.adapterName || !body.name || !body.config) {
+    return badRequest('tenantId, channelType, adapterName, name, and config are required');
   }
 
   const db = getDb();
-  const [inserted] = await db
+  const [result] = await db
     .insert(notificationChannels)
     .values({
-      tenantId,
-      channelType,
-      adapterName,
-      name,
-      config,
-      webhookVerifyToken: webhookVerifyToken ?? null,
+      tenantId: body.tenantId,
+      channelType: body.channelType,
+      adapterName: body.adapterName,
+      name: body.name,
+      config: body.config,
+      webhookVerifyToken: body.webhookVerifyToken ?? null,
+      enabled: body.enabled ?? true,
     })
     .returning();
 
-  await eventBus.emit('notifications.channel.created', {
-    id: inserted.id,
-    tenantId: inserted.tenantId,
-    channelType: inserted.channelType,
-    adapterName: inserted.adapterName,
-  });
-
-  return NextResponse.json(inserted, { status: 201 });
+  return NextResponse.json(result, { status: 201 });
 }

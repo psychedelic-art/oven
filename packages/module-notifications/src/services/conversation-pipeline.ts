@@ -1,4 +1,4 @@
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
 import { eventBus } from '@oven/module-registry';
 import {
@@ -6,12 +6,13 @@ import {
   notificationMessages,
   notificationUsage,
 } from '../schema';
-import type { InboundMessage } from '../types';
+import { NOTIFICATION_EVENTS } from '../events';
+import type { InboundMessage, ChannelType } from '../types';
 
 interface IngestParams {
   tenantId: number;
   channelId: number;
-  channelType: string;
+  channelType: ChannelType;
   message: InboundMessage;
 }
 
@@ -24,9 +25,9 @@ interface IngestResult {
 /**
  * Ingest an inbound message into the conversation pipeline.
  *
- * 1. Look up or create a conversation for the sender.
+ * 1. Find or create a conversation for the (channel, externalUserId) pair.
  * 2. Insert the message row.
- * 3. Increment the usage counter for the tenant/channel/period.
+ * 3. Increment the usage counter for the current period.
  * 4. Emit events.
  */
 export async function ingestInboundMessage(
@@ -50,11 +51,12 @@ export async function ingestInboundMessage(
     .limit(1);
 
   let conversationId: number;
+
   if (existing.length > 0) {
     conversationId = existing[0].id;
   } else {
     isNewConversation = true;
-    const [inserted] = await db
+    const [conv] = await db
       .insert(notificationConversations)
       .values({
         tenantId,
@@ -64,7 +66,7 @@ export async function ingestInboundMessage(
         status: 'active',
       })
       .returning({ id: notificationConversations.id });
-    conversationId = inserted.id;
+    conversationId = conv.id;
   }
 
   // 2. Insert message
@@ -76,60 +78,68 @@ export async function ingestInboundMessage(
       messageType: message.content.type,
       content: message.content,
       externalMessageId: message.externalMessageId,
-      status: 'delivered',
+      status: 'sent',
     })
     .returning({ id: notificationMessages.id });
 
-  // 3. Increment usage (current month)
+  // 3. Increment usage (upsert for current period)
   const now = new Date();
-  const periodStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const periodEnd = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-01`;
+  const periodStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    .toISOString()
+    .split('T')[0];
+  const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    .toISOString()
+    .split('T')[0];
 
-  await db
-    .insert(notificationUsage)
-    .values({
+  const existingUsage = await db
+    .select()
+    .from(notificationUsage)
+    .where(
+      and(
+        eq(notificationUsage.tenantId, tenantId),
+        eq(notificationUsage.channelType, channelType),
+        eq(notificationUsage.periodStart, periodStart),
+      ),
+    )
+    .limit(1);
+
+  if (existingUsage.length > 0) {
+    await db
+      .update(notificationUsage)
+      .set({
+        messageCount: existingUsage[0].messageCount + 1,
+        updatedAt: new Date(),
+      })
+      .where(eq(notificationUsage.id, existingUsage[0].id));
+  } else {
+    await db.insert(notificationUsage).values({
       tenantId,
       channelType,
       period: 'monthly',
       periodStart,
       periodEnd,
       messageCount: 1,
-      limit: 0,
-    })
-    .onConflictDoUpdate({
-      target: [
-        notificationUsage.tenantId,
-        notificationUsage.channelType,
-        notificationUsage.periodStart,
-      ],
-      set: {
-        messageCount: sql`${notificationUsage.messageCount} + 1`,
-        updatedAt: new Date(),
-      },
+      limit: 300, // fallback; resolved from module-config in sprint-03
     });
+  }
 
   // 4. Emit events
+  eventBus.emit(NOTIFICATION_EVENTS.MESSAGE_RECEIVED, {
+    conversationId,
+    tenantId,
+    channelType,
+    from: message.from,
+    messageType: message.content.type,
+  });
+
   if (isNewConversation) {
-    await eventBus.emit('notifications.conversation.created', {
-      conversationId,
+    eventBus.emit(NOTIFICATION_EVENTS.CONVERSATION_CREATED, {
+      id: conversationId,
       tenantId,
-      channelId,
       channelType,
       externalUserId: message.from,
     });
   }
-
-  await eventBus.emit('notifications.message.received', {
-    conversationId,
-    messageId: msg.id,
-    tenantId,
-    channelId,
-    channelType,
-    from: message.from,
-    messageType: message.content.type,
-    externalMessageId: message.externalMessageId,
-  });
 
   return {
     conversationId,

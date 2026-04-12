@@ -29,8 +29,15 @@ describe('notificationsModule', () => {
     ]);
   });
 
-  it('has apiHandlers={} (handlers ship in sprint-02)', () => {
-    expect(notificationsModule.apiHandlers).toEqual({});
+  it('has apiHandlers with channel, conversation, and webhook routes', () => {
+    const keys = Object.keys(notificationsModule.apiHandlers ?? {}).sort();
+    expect(keys).toEqual([
+      'notification-channels',
+      'notification-channels/[id]',
+      'notification-conversations',
+      'notification-conversations/[id]',
+      'notifications/whatsapp/webhook',
+    ]);
   });
 
   it('has resources=[] (UI ships in sprint-04)', () => {

@@ -1,55 +1,57 @@
-import crypto from 'node:crypto';
-import { describe, expect, it } from 'vitest';
-
+import { describe, it, expect } from 'vitest';
+import { createHmac } from 'crypto';
 import { verifyMetaSignature } from '../signature';
 
-const APP_SECRET = 'test-app-secret-12345';
+const APP_SECRET = 'test-app-secret-1234';
 
-function sign(body: string, secret: string): string {
-  const hmac = crypto.createHmac('sha256', secret).update(body).digest('hex');
-  return `sha256=${hmac}`;
+function makeSignature(body: string, secret: string): string {
+  const hex = createHmac('sha256', secret).update(body, 'utf8').digest('hex');
+  return `sha256=${hex}`;
 }
 
 describe('verifyMetaSignature', () => {
-  it('returns true for a valid HMAC-SHA256 signature', () => {
-    const body = '{"object":"whatsapp_business_account"}';
-    const header = sign(body, APP_SECRET);
+  const body = '{"entry":[]}';
 
-    expect(verifyMetaSignature(body, header, APP_SECRET)).toBe(true);
+  it('returns true for a valid signature', () => {
+    const sig = makeSignature(body, APP_SECRET);
+    expect(verifyMetaSignature(body, sig, APP_SECRET)).toBe(true);
   });
 
-  it('returns false when the payload has been tampered with', () => {
-    const body = '{"object":"whatsapp_business_account"}';
-    const header = sign(body, APP_SECRET);
-
-    const tampered = body + ' ';
-    expect(verifyMetaSignature(tampered, header, APP_SECRET)).toBe(false);
+  it('returns false for a tampered body', () => {
+    const sig = makeSignature(body, APP_SECRET);
+    expect(verifyMetaSignature(body + 'x', sig, APP_SECRET)).toBe(false);
   });
 
-  it('returns false for a null header', () => {
-    const body = '{"object":"whatsapp_business_account"}';
+  it('returns false for a tampered signature', () => {
+    const sig = makeSignature(body, APP_SECRET);
+    const tampered = sig.slice(0, -2) + 'ff';
+    expect(verifyMetaSignature(body, tampered, APP_SECRET)).toBe(false);
+  });
 
+  it('returns false for wrong secret', () => {
+    const sig = makeSignature(body, 'wrong-secret');
+    expect(verifyMetaSignature(body, sig, APP_SECRET)).toBe(false);
+  });
+
+  it('returns false for null header', () => {
     expect(verifyMetaSignature(body, null, APP_SECRET)).toBe(false);
   });
 
-  it('returns false for an empty header', () => {
-    const body = '{"object":"whatsapp_business_account"}';
-
+  it('returns false for empty header', () => {
     expect(verifyMetaSignature(body, '', APP_SECRET)).toBe(false);
   });
 
-  it('returns false for a malformed header without sha256= prefix', () => {
-    const body = '{"object":"whatsapp_business_account"}';
-    const hmac = crypto.createHmac('sha256', APP_SECRET).update(body).digest('hex');
-
-    expect(verifyMetaSignature(body, hmac, APP_SECRET)).toBe(false);
-    expect(verifyMetaSignature(body, `md5=${hmac}`, APP_SECRET)).toBe(false);
+  it('returns false for header without sha256= prefix', () => {
+    const hex = createHmac('sha256', APP_SECRET).update(body, 'utf8').digest('hex');
+    expect(verifyMetaSignature(body, hex, APP_SECRET)).toBe(false);
   });
 
-  it('returns false when the secret is wrong', () => {
-    const body = '{"object":"whatsapp_business_account"}';
-    const header = sign(body, 'wrong-secret');
+  it('returns false for invalid hex in header', () => {
+    expect(verifyMetaSignature(body, 'sha256=zzzz', APP_SECRET)).toBe(false);
+  });
 
-    expect(verifyMetaSignature(body, header, APP_SECRET)).toBe(false);
+  it('handles empty body', () => {
+    const sig = makeSignature('', APP_SECRET);
+    expect(verifyMetaSignature('', sig, APP_SECRET)).toBe(true);
   });
 });

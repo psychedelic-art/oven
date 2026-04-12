@@ -8,8 +8,9 @@ import { ingestInboundMessage } from '../services/conversation-pipeline';
 /**
  * GET /api/notifications/whatsapp/webhook
  *
- * Meta webhook verification. Returns hub.challenge when the verify
- * token matches the channel's webhookVerifyToken.
+ * Meta subscription verification. Checks hub.mode=subscribe and
+ * verifies hub.verify_token against the channel's webhookVerifyToken.
+ * Returns hub.challenge on success, 403 otherwise.
  */
 export async function GET(request: NextRequest) {
   const url = request.nextUrl;
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
   const challenge = url.searchParams.get('hub.challenge');
 
   if (mode !== 'subscribe' || !token || !challenge) {
-    return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid verification request' }, { status: 403 });
   }
 
   const db = getDb();
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
     .limit(1);
 
   if (channels.length === 0) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return NextResponse.json({ error: 'Invalid verify token' }, { status: 403 });
   }
 
   return new NextResponse(challenge, {
@@ -47,31 +48,45 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/notifications/whatsapp/webhook
  *
- * Meta webhook for inbound WhatsApp messages. Reads the raw body
- * BEFORE JSON parsing to verify the HMAC signature.
+ * Inbound WhatsApp message handler. Reads raw body FIRST for signature
+ * verification (before any JSON parsing), then delegates to the
+ * conversation pipeline.
  */
 export async function POST(request: NextRequest) {
-  // 1. Read raw body before any JSON parsing
+  // Read raw body BEFORE any JSON parsing (critical for HMAC verification)
   const rawBody = await request.text();
   const signatureHeader = request.headers.get('x-hub-signature-256');
 
-  // 2. Parse the payload to identify the phone number ID
-  let payload: Record<string, unknown>;
+  let payload: unknown;
   try {
     payload = JSON.parse(rawBody);
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  // 3. Extract phoneNumberId from the webhook payload
-  const phoneNumberId = extractPhoneNumberId(payload);
-  if (!phoneNumberId) {
-    return NextResponse.json({ error: 'Missing phone number ID' }, { status: 400 });
+  // Extract phone number ID from the webhook payload to identify the channel
+  const obj = payload as Record<string, unknown>;
+  const entry = obj?.entry as Array<Record<string, unknown>> | undefined;
+  if (!entry || entry.length === 0) {
+    return NextResponse.json({ error: 'Missing entry' }, { status: 400 });
   }
 
-  // 4. Look up the channel by phoneNumberId
+  const changes = entry[0]?.changes as Array<Record<string, unknown>> | undefined;
+  if (!changes || changes.length === 0) {
+    return NextResponse.json({ error: 'Missing changes' }, { status: 400 });
+  }
+
+  const value = changes[0]?.value as Record<string, unknown>;
+  const metadata = value?.metadata as Record<string, unknown> | undefined;
+  const phoneNumberId = metadata?.phone_number_id as string | undefined;
+
+  if (!phoneNumberId) {
+    return NextResponse.json({ error: 'Missing phone_number_id' }, { status: 400 });
+  }
+
+  // Look up the channel by phoneNumberId in config JSONB
   const db = getDb();
-  const channels = await db
+  const allChannels = await db
     .select()
     .from(notificationChannels)
     .where(
@@ -81,33 +96,23 @@ export async function POST(request: NextRequest) {
       ),
     );
 
-  const channel = channels.find((ch) => {
+  const channel = allChannels.find((ch) => {
     const config = ch.config as Record<string, unknown>;
     return config?.phoneNumberId === phoneNumberId;
   });
 
   if (!channel) {
-    return NextResponse.json({ error: 'Channel not found' }, { status: 404 });
+    return NextResponse.json({ error: 'Unknown phone number' }, { status: 404 });
   }
 
-  // 5. Resolve the adapter
+  // Verify signature
   const adapter = getAdapter('meta-whatsapp');
   if (!adapter) {
-    return NextResponse.json(
-      { error: 'Adapter not registered' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'Adapter not registered' }, { status: 500 });
   }
 
-  // 6. Verify webhook signature
-  const channelConfig = channel.config as Record<string, unknown>;
-  const appSecret = channelConfig.appSecret as string;
-  if (!appSecret) {
-    return NextResponse.json(
-      { error: 'Channel missing appSecret' },
-      { status: 500 },
-    );
-  }
+  const config = channel.config as Record<string, unknown>;
+  const appSecret = config.appSecret as string;
 
   const signatureValid = await adapter.verifyWebhookSignature({
     rawBody,
@@ -119,37 +124,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   }
 
-  // 7. Parse the inbound message
-  const message = await adapter.parseInboundWebhook(payload);
+  // Check for messages (some webhooks are status updates, not messages)
+  const messages = value?.messages as Array<unknown> | undefined;
+  if (!messages || messages.length === 0) {
+    // Status update or non-message event — acknowledge
+    return NextResponse.json({ status: 'ok' });
+  }
 
-  // 8. Ingest into the conversation pipeline
-  const result = await ingestInboundMessage({
+  // Parse and ingest the inbound message
+  const inbound = await adapter.parseInboundWebhook(payload);
+
+  await ingestInboundMessage({
     tenantId: channel.tenantId,
     channelId: channel.id,
-    channelType: channel.channelType,
-    message,
+    channelType: 'whatsapp',
+    message: inbound,
   });
 
-  return NextResponse.json({
-    conversationId: result.conversationId,
-    messageId: result.messageId,
-    isNewConversation: result.isNewConversation,
-  });
-}
-
-/**
- * Extract the phone number ID from a Meta webhook payload.
- */
-function extractPhoneNumberId(
-  payload: Record<string, unknown>,
-): string | null {
-  try {
-    const entry = (payload.entry as Array<Record<string, unknown>>)?.[0];
-    const changes = (entry?.changes as Array<Record<string, unknown>>)?.[0];
-    const value = changes?.value as Record<string, unknown>;
-    const metadata = value?.metadata as Record<string, unknown>;
-    return (metadata?.phone_number_id as string) ?? null;
-  } catch {
-    return null;
-  }
+  return NextResponse.json({ status: 'ok' });
 }

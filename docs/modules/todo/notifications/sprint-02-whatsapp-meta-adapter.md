@@ -75,19 +75,19 @@ conversation pipeline with HMAC signature verification.
 
 ## Acceptance Criteria
 
-- [ ] `pnpm --filter @oven/notifications-meta test` green
-- [ ] `pnpm --filter @oven/module-notifications test` green
-- [ ] Webhook POST with a tampered signature returns 401 and emits no events
-- [ ] Webhook POST with a valid signature creates the conversation, inserts
+- [x] `pnpm --filter @oven/notifications-meta test` green (21/21)
+- [x] `pnpm --filter @oven/module-notifications test` green (48/48)
+- [x] Webhook POST with a tampered signature returns 401 and emits no events
+- [x] Webhook POST with a valid signature creates the conversation, inserts
   one message row, increments usage, and emits
   `notifications.message.received` + `notifications.conversation.created`
   (first message only)
-- [ ] `request.text()` is called before any `JSON.parse` / `request.json()`
+- [x] `request.text()` is called before any `JSON.parse` / `request.json()`
   in the POST handler (verified by the test reading the handler source)
-- [ ] `notifications-meta` package does **not** import from
+- [x] `notifications-meta` package does **not** import from
   `@oven/module-notifications/engine` or `/api` — only the
   `/adapters` type surface
-- [ ] Dashboard wiring imports in `lib/modules.ts` compile
+- [x] Dashboard wiring imports in `lib/modules.ts` compile
 
 ## Dependencies
 
@@ -119,9 +119,9 @@ conversation pipeline with HMAC signature verification.
 
 ## Rule Compliance Checklist
 
-- [ ] Rule 3.3 — adapter in a separate package
-- [ ] Rule 5.2 — handlers filter by tenant
-- [ ] Rule 5.6 — events include tenantId
-- [ ] Rule 10.1 — `parseListParams` + `listResponse` used
-- [ ] Rule 10.4 — `withHandler` or equivalent error matcher used
-- [ ] Rule 10.5 — public endpoints already marked by sprint-01 seed
+- [x] Rule 3.3 — adapter in a separate package (`packages/notifications-meta/`)
+- [x] Rule 5.2 — handlers filter by tenant (channels.handler GET filters by tenantId)
+- [x] Rule 5.6 — events include tenantId (all emitted events carry tenantId)
+- [x] Rule 10.1 — `parseListParams` + `listResponse` used (channels + conversations)
+- [ ] Rule 10.4 — `withHandler` or equivalent error matcher used (deferred; pattern not yet established in this codebase)
+- [x] Rule 10.5 — public endpoints already marked by sprint-01 seed

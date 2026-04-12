@@ -32,6 +32,8 @@ export interface UploadResult {
   mimeType: string;
   width?: number;
   height?: number;
+  /** Raw buffer exposed for handler-level magic-byte verification. */
+  buffer?: Buffer;
 }
 
 // ─── File Record (DB row) ───────────────────────────────────

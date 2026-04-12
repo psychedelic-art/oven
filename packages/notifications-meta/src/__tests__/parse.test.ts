@@ -1,85 +1,120 @@
-import { describe, expect, it } from 'vitest';
-
+import { describe, it, expect } from 'vitest';
 import { parseInboundMetaWebhook } from '../parse';
 
-function makePayload(overrides?: {
-  messages?: unknown[];
-  object?: string;
-  metadata?: Record<string, unknown>;
-}) {
-  return {
-    object: overrides?.object ?? 'whatsapp_business_account',
-    entry: [
-      {
-        changes: [
-          {
-            value: {
-              messages: overrides?.messages ?? [
-                {
-                  from: '5511999999999',
-                  id: 'wamid.abc123',
-                  timestamp: '1700000000',
-                  type: 'text',
-                  text: { body: 'Hello there' },
-                },
-              ],
-              metadata: overrides?.metadata ?? {
-                phone_number_id: 'phone-123',
+const CANONICAL_TEXT_PAYLOAD = {
+  entry: [
+    {
+      changes: [
+        {
+          value: {
+            messages: [
+              {
+                from: '15551234567',
+                id: 'wamid.HBgMNTU1MTIzNDU2Nzg',
+                timestamp: '1700000000',
+                type: 'text',
+                text: { body: 'Hello from WhatsApp' },
               },
-            },
+            ],
           },
-        ],
-      },
-    ],
-  };
-}
+        },
+      ],
+    },
+  ],
+};
+
+const IMAGE_PAYLOAD = {
+  entry: [
+    {
+      changes: [
+        {
+          value: {
+            messages: [
+              {
+                from: '15559876543',
+                id: 'wamid.IMG123',
+                timestamp: '1700000001',
+                type: 'image',
+                image: {
+                  id: 'media-id-123',
+                  mime_type: 'image/jpeg',
+                  caption: 'My photo',
+                },
+              },
+            ],
+          },
+        },
+      ],
+    },
+  ],
+};
 
 describe('parseInboundMetaWebhook', () => {
-  it('parses a canonical text message payload correctly', () => {
-    const payload = makePayload();
-    const result = parseInboundMetaWebhook(payload);
-
-    expect(result.from).toBe('5511999999999');
-    expect(result.externalMessageId).toBe('wamid.abc123');
+  it('parses a canonical text message', () => {
+    const result = parseInboundMetaWebhook(CANONICAL_TEXT_PAYLOAD);
+    expect(result.from).toBe('15551234567');
+    expect(result.externalMessageId).toBe('wamid.HBgMNTU1MTIzNDU2Nzg');
     expect(result.content.type).toBe('text');
-    expect(result.content.text).toBe('Hello there');
+    expect(result.content.text).toBe('Hello from WhatsApp');
     expect(result.timestamp).toEqual(new Date(1700000000 * 1000));
-    expect(result.metadata).toEqual({ phoneNumberId: 'phone-123' });
   });
 
-  it('throws when the payload is not an object', () => {
-    expect(() => parseInboundMetaWebhook('not-an-object')).toThrow(
-      'expected an object',
-    );
-    expect(() => parseInboundMetaWebhook(null)).toThrow('expected an object');
+  it('parses an image message with caption', () => {
+    const result = parseInboundMetaWebhook(IMAGE_PAYLOAD);
+    expect(result.from).toBe('15559876543');
+    expect(result.content.type).toBe('image');
+    expect(result.content.mediaUrl).toBe('media-id-123');
+    expect(result.content.text).toBe('My photo');
   });
 
-  it('throws when the object type is wrong', () => {
-    expect(() => parseInboundMetaWebhook({ object: 'instagram' })).toThrow(
-      'unexpected object type',
-    );
+  it('handles unsupported message types gracefully', () => {
+    const payload = {
+      entry: [
+        {
+          changes: [
+            {
+              value: {
+                messages: [
+                  {
+                    from: '15551111111',
+                    id: 'wamid.UNK',
+                    timestamp: '1700000002',
+                    type: 'sticker',
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const result = parseInboundMetaWebhook(payload);
+    expect(result.content.type).toBe('text');
+    expect(result.content.text).toContain('unsupported');
   });
 
-  it('throws when entry array is missing', () => {
-    expect(() =>
-      parseInboundMetaWebhook({ object: 'whatsapp_business_account' }),
-    ).toThrow('missing entry array');
+  it('throws on missing entry', () => {
+    expect(() => parseInboundMetaWebhook({})).toThrow('missing entry');
   });
 
-  it('throws when messages array is missing', () => {
-    const payload = makePayload({ messages: [] });
-    // Empty messages array should throw
-    expect(() => parseInboundMetaWebhook(payload)).toThrow(
-      'missing messages array',
-    );
+  it('throws on empty entry array', () => {
+    expect(() => parseInboundMetaWebhook({ entry: [] })).toThrow('missing entry');
   });
 
-  it('throws when changes array is missing', () => {
+  it('throws on missing changes', () => {
+    expect(() => parseInboundMetaWebhook({ entry: [{}] })).toThrow('missing changes');
+  });
+
+  it('throws on missing messages', () => {
     expect(() =>
       parseInboundMetaWebhook({
-        object: 'whatsapp_business_account',
-        entry: [{ changes: [] }],
+        entry: [{ changes: [{ value: {} }] }],
       }),
-    ).toThrow('missing changes array');
+    ).toThrow('missing messages');
+  });
+
+  it('includes metadata with rawType', () => {
+    const result = parseInboundMetaWebhook(CANONICAL_TEXT_PAYLOAD);
+    expect(result.metadata?.rawType).toBe('text');
   });
 });

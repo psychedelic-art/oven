@@ -4,29 +4,71 @@ import type {
   SendResult,
 } from '@oven/module-notifications/adapters';
 
-// ---------------------------------------------------------------------------
-// Meta Graph API response types
-// ---------------------------------------------------------------------------
+/**
+ * Send a WhatsApp message via the Meta Graph API.
+ *
+ * POST /{apiVersion}/{phoneNumberId}/messages
+ *
+ * The channel config must contain:
+ * - phoneNumberId: string
+ * - accessToken: string (already decrypted)
+ * - apiVersion?: string (defaults to 'v21.0')
+ */
+export async function sendMetaMessage(
+  channel: ChannelConfig,
+  to: string,
+  content: MessageContent,
+): Promise<SendResult> {
+  const phoneNumberId = channel.phoneNumberId as string;
+  const accessToken = channel.accessToken as string;
+  const apiVersion = (channel.apiVersion as string) || 'v21.0';
 
-interface MetaApiSuccess {
-  messages: Array<{ id: string }>;
+  const body = buildMessagePayload(to, content);
+
+  const url = `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    return {
+      externalMessageId: '',
+      status: 'failed',
+      error: `Meta API ${response.status}: ${errorText}`,
+    };
+  }
+
+  const result = (await response.json()) as Record<string, unknown>;
+  const messages = result.messages as Array<Record<string, unknown>> | undefined;
+  const messageId = messages?.[0]?.id as string || '';
+
+  return {
+    externalMessageId: messageId,
+    status: 'sent',
+  };
 }
 
-interface MetaApiError {
-  error?: { message?: string; code?: number };
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function buildRequestBody(to: string, content: MessageContent): Record<string, unknown> {
+function buildMessagePayload(
+  to: string,
+  content: MessageContent,
+): Record<string, unknown> {
   const base = {
     messaging_product: 'whatsapp',
+    recipient_type: 'individual',
     to,
   };
 
   switch (content.type) {
+    case 'text':
+      return { ...base, type: 'text', text: { body: content.text } };
+
     case 'template':
       return {
         ...base,
@@ -34,19 +76,16 @@ function buildRequestBody(to: string, content: MessageContent): Record<string, u
         template: {
           name: content.templateName,
           language: { code: 'en' },
-          ...(content.templateParams
-            ? {
-                components: [
-                  {
-                    type: 'body',
-                    parameters: Object.values(content.templateParams).map((val) => ({
-                      type: 'text',
-                      text: val,
-                    })),
-                  },
-                ],
-              }
-            : {}),
+          components: content.templateParams
+            ? [
+                {
+                  type: 'body',
+                  parameters: Object.values(content.templateParams).map(
+                    (value) => ({ type: 'text', text: value }),
+                  ),
+                },
+              ]
+            : [],
         },
       };
 
@@ -54,83 +93,17 @@ function buildRequestBody(to: string, content: MessageContent): Record<string, u
       return {
         ...base,
         type: 'image',
-        image: { link: content.mediaUrl },
+        image: { link: content.mediaUrl, caption: content.text },
       };
 
     case 'document':
       return {
         ...base,
         type: 'document',
-        document: { link: content.mediaUrl },
+        document: { link: content.mediaUrl, caption: content.text },
       };
 
-    case 'audio':
-      return {
-        ...base,
-        type: 'audio',
-        audio: { link: content.mediaUrl },
-      };
-
-    // text (default)
     default:
-      return {
-        ...base,
-        type: 'text',
-        text: { body: content.text ?? '' },
-      };
+      return { ...base, type: 'text', text: { body: content.text || '' } };
   }
-}
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
-/**
- * Send a message via the Meta WhatsApp Business Graph API.
- *
- * Required `channel` config fields:
- * - `accessToken`    – Meta access token
- * - `phoneNumberId`  – WhatsApp Business phone number ID
- * - `apiVersion`     – Graph API version (defaults to `'v21.0'`)
- */
-export async function sendMetaMessage(
-  channel: ChannelConfig,
-  to: string,
-  content: MessageContent,
-): Promise<SendResult> {
-  const accessToken = channel.accessToken as string;
-  const phoneNumberId = channel.phoneNumberId as string;
-  const apiVersion = (channel.apiVersion as string | undefined) ?? 'v21.0';
-
-  const url = `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`;
-
-  const body = buildRequestBody(to, content);
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const errorData = (await response.json().catch(() => ({}))) as MetaApiError;
-    const errorMessage =
-      errorData.error?.message ?? `Meta API responded with status ${response.status}`;
-
-    return {
-      externalMessageId: '',
-      status: 'failed',
-      error: errorMessage,
-    };
-  }
-
-  const data = (await response.json()) as MetaApiSuccess;
-
-  return {
-    externalMessageId: data.messages?.[0]?.id ?? '',
-    status: 'sent',
-  };
 }

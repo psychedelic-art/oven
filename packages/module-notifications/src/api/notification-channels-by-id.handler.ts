@@ -2,71 +2,58 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
 import { notFound } from '@oven/module-registry/api-utils';
-import { eventBus } from '@oven/module-registry';
 import { notificationChannels } from '../schema';
 
-// GET /api/notification-channels/[id]
 export async function GET(
   _request: NextRequest,
   { params }: { params: { id: string } },
 ) {
   const db = getDb();
-  const id = parseInt(params.id, 10);
-  const rows = await db
+  const [channel] = await db
     .select()
     .from(notificationChannels)
-    .where(eq(notificationChannels.id, id))
+    .where(eq(notificationChannels.id, Number(params.id)))
     .limit(1);
 
-  if (rows.length === 0) return notFound('Channel not found');
-  return NextResponse.json(rows[0]);
+  if (!channel) return notFound('Channel not found');
+  return NextResponse.json(channel);
 }
 
-// PUT /api/notification-channels/[id]
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  const db = getDb();
-  const id = parseInt(params.id, 10);
   const body = await request.json();
+  const db = getDb();
 
-  const updated = await db
+  const [updated] = await db
     .update(notificationChannels)
-    .set({ ...body, updatedAt: new Date() })
-    .where(eq(notificationChannels.id, id))
+    .set({
+      ...(body.name !== undefined && { name: body.name }),
+      ...(body.config !== undefined && { config: body.config }),
+      ...(body.webhookVerifyToken !== undefined && {
+        webhookVerifyToken: body.webhookVerifyToken,
+      }),
+      ...(body.enabled !== undefined && { enabled: body.enabled }),
+      updatedAt: new Date(),
+    })
+    .where(eq(notificationChannels.id, Number(params.id)))
     .returning();
 
-  if (updated.length === 0) return notFound('Channel not found');
-
-  await eventBus.emit('notifications.channel.updated', {
-    id: updated[0].id,
-    tenantId: updated[0].tenantId,
-    channelType: updated[0].channelType,
-  });
-
-  return NextResponse.json(updated[0]);
+  if (!updated) return notFound('Channel not found');
+  return NextResponse.json(updated);
 }
 
-// DELETE /api/notification-channels/[id]
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: { id: string } },
 ) {
   const db = getDb();
-  const id = parseInt(params.id, 10);
-  const deleted = await db
+  const [deleted] = await db
     .delete(notificationChannels)
-    .where(eq(notificationChannels.id, id))
-    .returning();
+    .where(eq(notificationChannels.id, Number(params.id)))
+    .returning({ id: notificationChannels.id });
 
-  if (deleted.length === 0) return notFound('Channel not found');
-
-  await eventBus.emit('notifications.channel.deleted', {
-    id: deleted[0].id,
-    tenantId: deleted[0].tenantId,
-    channelType: deleted[0].channelType,
-  });
-
-  return NextResponse.json(deleted[0]);
+  if (!deleted) return notFound('Channel not found');
+  return NextResponse.json(deleted);
 }

@@ -1,37 +1,35 @@
-import crypto from 'node:crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 /**
- * Verify a Meta webhook HMAC-SHA256 signature using constant-time comparison.
+ * Verify the HMAC-SHA256 signature of a Meta webhook payload.
  *
- * Meta sends the header as `sha256=<hex>`. This function recomputes the
- * expected HMAC from the raw body + app secret and compares it in constant
- * time to prevent timing attacks.
+ * Meta sends the signature in the `X-Hub-Signature-256` header as
+ * `sha256=<hex>`. This function computes the expected HMAC over the raw
+ * body and compares using `crypto.timingSafeEqual` for constant-time
+ * comparison to prevent timing attacks.
+ *
+ * @returns true if the signature is valid, false otherwise.
  */
 export function verifyMetaSignature(
   rawBody: string,
-  header: string | null,
+  signatureHeader: string | null,
   appSecret: string,
 ): boolean {
-  if (!header || !header.startsWith('sha256=')) {
-    return false;
-  }
+  if (!signatureHeader) return false;
 
-  const receivedHex = header.slice('sha256='.length);
+  const prefix = 'sha256=';
+  if (!signatureHeader.startsWith(prefix)) return false;
 
-  const expectedHex = crypto
-    .createHmac('sha256', appSecret)
-    .update(rawBody)
+  const receivedHex = signatureHeader.slice(prefix.length);
+  const expectedHex = createHmac('sha256', appSecret)
+    .update(rawBody, 'utf8')
     .digest('hex');
 
-  // Both values are hex strings of the same hash algorithm, so they must
-  // be the same length for a valid signature. Guard against length mismatches
-  // before calling timingSafeEqual (which throws on length mismatch).
-  if (receivedHex.length !== expectedHex.length) {
-    return false;
-  }
+  // timingSafeEqual requires equal-length buffers
+  const receivedBuf = Buffer.from(receivedHex, 'hex');
+  const expectedBuf = Buffer.from(expectedHex, 'hex');
 
-  return crypto.timingSafeEqual(
-    Buffer.from(receivedHex, 'utf-8'),
-    Buffer.from(expectedHex, 'utf-8'),
-  );
+  if (receivedBuf.length !== expectedBuf.length) return false;
+
+  return timingSafeEqual(receivedBuf, expectedBuf);
 }

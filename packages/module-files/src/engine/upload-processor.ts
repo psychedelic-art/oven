@@ -1,5 +1,5 @@
 import { randomBytes } from 'crypto';
-import type { UploadInput, UploadResult } from '../types';
+import type { FileStorageAdapter, UploadInput, UploadResult } from '../types';
 import { getStorageAdapter } from './storage-adapter';
 
 // ─── Helpers ────────────────────────────────────────────────
@@ -58,7 +58,10 @@ async function extractImageMeta(
 
 // ─── Main Processor ─────────────────────────────────────────
 
-export async function processUpload(input: UploadInput): Promise<UploadResult> {
+export async function processUpload(
+  input: UploadInput,
+  injectedAdapter?: FileStorageAdapter,
+): Promise<UploadResult> {
   const buffer = await resolveBuffer(input);
   const key = generateKey(input);
 
@@ -71,7 +74,7 @@ export async function processUpload(input: UploadInput): Promise<UploadResult> {
     height = meta.height;
   }
 
-  const adapter = await getStorageAdapter();
+  const adapter = injectedAdapter ?? (await getStorageAdapter());
   const result = await adapter.upload(buffer, key, input.mimeType);
 
   return {
@@ -82,5 +85,6 @@ export async function processUpload(input: UploadInput): Promise<UploadResult> {
     mimeType: input.mimeType,
     width,
     height,
+    buffer,
   };
 }

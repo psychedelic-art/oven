@@ -1,118 +1,89 @@
 import type { InboundMessage, MessageContent } from '@oven/module-notifications/adapters';
 
-// ---------------------------------------------------------------------------
-// Meta WhatsApp webhook payload types (subset we care about)
-// ---------------------------------------------------------------------------
-
-interface MetaTextBody {
-  body: string;
-}
-
-interface MetaMessage {
-  from: string;
-  id: string;
-  timestamp: string;
-  type: string;
-  text?: MetaTextBody;
-}
-
-interface MetaValue {
-  messages?: MetaMessage[];
-  metadata?: { phone_number_id?: string };
-}
-
-interface MetaChange {
-  value?: MetaValue;
-}
-
-interface MetaEntry {
-  changes?: MetaChange[];
-}
-
-interface MetaWebhookPayload {
-  object?: string;
-  entry?: MetaEntry[];
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function assertMetaPayload(payload: unknown): asserts payload is MetaWebhookPayload {
-  if (!isObject(payload)) {
-    throw new Error('Invalid Meta webhook payload: expected an object');
-  }
-
-  const p = payload as MetaWebhookPayload;
-
-  if (p.object !== 'whatsapp_business_account') {
-    throw new Error(
-      `Invalid Meta webhook payload: unexpected object type "${String(p.object)}"`,
-    );
-  }
-
-  if (!Array.isArray(p.entry) || p.entry.length === 0) {
-    throw new Error('Invalid Meta webhook payload: missing entry array');
-  }
-
-  const changes = p.entry[0]?.changes;
-  if (!Array.isArray(changes) || changes.length === 0) {
-    throw new Error('Invalid Meta webhook payload: missing changes array');
-  }
-
-  const value = changes[0]?.value;
-  if (!isObject(value)) {
-    throw new Error('Invalid Meta webhook payload: missing value object');
-  }
-
-  if (!Array.isArray(value.messages) || value.messages.length === 0) {
-    throw new Error('Invalid Meta webhook payload: missing messages array');
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
 /**
- * Parse a Meta WhatsApp Business webhook payload into an InboundMessage.
+ * Parse an inbound Meta WhatsApp webhook payload into an InboundMessage.
  *
- * The function validates the structure and throws with a descriptive message
- * when the shape doesn't match the expected format.
+ * Meta's webhook payload shape (simplified):
+ * {
+ *   entry: [{
+ *     changes: [{
+ *       value: {
+ *         messages: [{
+ *           from: "15551234567",
+ *           id: "wamid.xxx",
+ *           timestamp: "1234567890",
+ *           type: "text",
+ *           text?: { body: "hello" },
+ *           image?: { id: "...", mime_type: "...", caption?: "..." },
+ *           audio?: { id: "...", mime_type: "..." },
+ *           document?: { id: "...", mime_type: "...", filename: "..." }
+ *         }]
+ *       }
+ *     }]
+ *   }]
+ * }
  */
 export function parseInboundMetaWebhook(payload: unknown): InboundMessage {
-  assertMetaPayload(payload);
+  const obj = payload as Record<string, unknown>;
+  const entry = obj?.entry as Array<Record<string, unknown>> | undefined;
+  if (!entry || entry.length === 0) {
+    throw new Error('Meta webhook payload missing entry array');
+  }
 
-  const value = payload.entry![0]!.changes![0]!.value!;
-  const msg = value.messages![0]!;
+  const changes = entry[0].changes as Array<Record<string, unknown>> | undefined;
+  if (!changes || changes.length === 0) {
+    throw new Error('Meta webhook payload missing changes array');
+  }
 
-  const content: MessageContent = buildContent(msg);
+  const value = changes[0].value as Record<string, unknown>;
+  const messages = value?.messages as Array<Record<string, unknown>> | undefined;
+  if (!messages || messages.length === 0) {
+    throw new Error('Meta webhook payload missing messages array');
+  }
+
+  const msg = messages[0];
+  const from = msg.from as string;
+  const externalMessageId = msg.id as string;
+  const timestamp = new Date(Number(msg.timestamp as string) * 1000);
+  const type = msg.type as string;
+
+  const content = resolveContent(type, msg);
 
   return {
-    from: msg.from,
-    externalMessageId: msg.id,
-    timestamp: new Date(Number(msg.timestamp) * 1000),
+    from,
+    externalMessageId,
+    timestamp,
     content,
-    metadata: value.metadata ? { phoneNumberId: value.metadata.phone_number_id } : undefined,
+    metadata: { rawType: type },
   };
 }
 
-function buildContent(msg: MetaMessage): MessageContent {
-  switch (msg.type) {
-    case 'text':
-      return { type: 'text', text: msg.text?.body ?? '' };
-    case 'image':
-      return { type: 'image' };
-    case 'audio':
-      return { type: 'audio' };
-    case 'document':
-      return { type: 'document' };
+function resolveContent(
+  type: string,
+  msg: Record<string, unknown>,
+): MessageContent {
+  switch (type) {
+    case 'text': {
+      const text = msg.text as Record<string, unknown> | undefined;
+      return { type: 'text', text: text?.body as string };
+    }
+    case 'image': {
+      const image = msg.image as Record<string, unknown> | undefined;
+      return {
+        type: 'image',
+        mediaUrl: image?.id as string,
+        text: image?.caption as string | undefined,
+      };
+    }
+    case 'audio': {
+      const audio = msg.audio as Record<string, unknown> | undefined;
+      return { type: 'audio', mediaUrl: audio?.id as string };
+    }
+    case 'document': {
+      const doc = msg.document as Record<string, unknown> | undefined;
+      return { type: 'document', mediaUrl: doc?.id as string };
+    }
     default:
-      // Fallback: treat unknown types as text with empty body
-      return { type: 'text', text: '' };
+      return { type: 'text', text: `[unsupported message type: ${type}]` };
   }
 }

@@ -18,15 +18,16 @@ import { filesModule } from '@oven/module-files';
 import { knowledgeBaseModule } from '@oven/module-knowledge-base';
 import { agentCoreModule } from '@oven/module-agent-core';
 import { chatModule } from '@oven/module-chat';
-import { workflowAgentsModule } from '@oven/module-workflow-agents';
 import {
   notificationsModule,
   registerNotificationAdapter,
 } from '@oven/module-notifications';
 import { metaAdapter } from '@oven/notifications-meta';
+import { workflowAgentsModule } from '@oven/module-workflow-agents';
 
-// Register auth adapter before module registration
+// Register adapters before module registration
 registerAuthAdapter(authJsAdapter);
+registerNotificationAdapter(metaAdapter);
 
 // Register modules in dependency order
 registry.register(mapsModule);                    // No deps
@@ -42,9 +43,9 @@ registry.register(subscriptionsModule);          // Depends on: config, tenants
 registry.register(aiModule);                     // Depends on: subscriptions
 registry.register(knowledgeBaseModule);          // Depends on: ai
 registry.register(agentCoreModule);             // Depends on: ai
+registry.register(notificationsModule);          // Depends on: config, tenants, agent-core
 registry.register(chatModule);                  // Depends on: agent-core, ai
 registry.register(workflowAgentsModule);        // Depends on: workflows, agent-core, ai
-registry.register(notificationsModule);          // Depends on: config, tenants, agent-core
 registry.register(authModule);                   // Depends on: roles
 registry.register(formsModule);                  // Depends on: roles
 registry.register(flowsModule);                  // Depends on: roles

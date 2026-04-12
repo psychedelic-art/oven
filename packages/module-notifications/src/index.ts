@@ -50,27 +50,29 @@ export const notificationsModule: ModuleDefinition = {
   schema: notificationsSchema,
   seed: seedNotifications,
   apiHandlers: {
-    'notification-channels': { GET: channelsHandler.GET, POST: channelsHandler.POST },
+    'notification-channels': {
+      GET: channelsHandler.GET,
+      POST: channelsHandler.POST,
+    },
     'notification-channels/[id]': {
       GET: channelsByIdHandler.GET,
       PUT: channelsByIdHandler.PUT,
       DELETE: channelsByIdHandler.DELETE,
     },
-    'notification-conversations': { GET: conversationsHandler.GET },
-    'notification-conversations/[id]': { GET: conversationsByIdHandler.GET },
+    'notification-conversations': {
+      GET: conversationsHandler.GET,
+    },
+    'notification-conversations/[id]': {
+      GET: conversationsByIdHandler.GET,
+    },
     'notifications/whatsapp/webhook': {
       GET: whatsappWebhookHandler.GET,
       POST: whatsappWebhookHandler.POST,
     },
   },
-  resources: [
-    { name: 'notification-channels', options: { label: 'Channels' } },
-    { name: 'notification-conversations', options: { label: 'Conversations' } },
-  ],
-  menuItems: [
-    { label: 'Channels', to: '/notification-channels' },
-    { label: 'Conversations', to: '/notification-conversations' },
-  ],
+  // Dashboard resources + menu items ship in sprint-04; keep empty.
+  resources: [],
+  menuItems: [],
   customRoutes: [],
   // configSchema — see docs/modules/notifications/module-design.md#configschema.
   // DEFAULT_*_LIMIT keys close the Rule 13 drift described in
