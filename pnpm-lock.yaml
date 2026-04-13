@@ -780,6 +780,9 @@ importers:
 
   packages/module-subscriptions:
     dependencies:
+      '@mui/material':
+        specifier: '>=6.0.0'
+        version: 7.3.7(@emotion/react@11.14.0(@types/react@19.2.13)(react@19.2.4))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.13)(react@19.2.4))(@types/react@19.2.13)(react@19.2.4))(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@neondatabase/serverless':
         specifier: ^0.10.0
         version: 0.10.4
@@ -804,6 +807,9 @@ importers:
       react:
         specifier: '>=19.0.0'
         version: 19.2.4
+      react-admin:
+        specifier: '>=5.0.0'
+        version: 5.14.1(@mui/system@7.3.7(@emotion/react@11.14.0(@types/react@19.2.13)(react@19.2.4))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.13)(react@19.2.4))(@types/react@19.2.13)(react@19.2.4))(@types/react@19.2.13)(react@19.2.4))(@mui/utils@7.3.7(@types/react@19.2.13)(react@19.2.4))(@types/react@19.2.13)(csstype@3.2.3)(react-dom@19.2.4(react@19.2.4))(react-is@19.2.4)(react@19.2.4)
     devDependencies:
       vitest:
         specifier: ^3.0.0
