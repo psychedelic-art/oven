@@ -208,6 +208,55 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
+  apps/portal:
+    dependencies:
+      '@oven/module-files':
+        specifier: workspace:*
+        version: link:../../packages/module-files
+      '@oven/module-ui-flows':
+        specifier: workspace:*
+        version: link:../../packages/module-ui-flows
+      '@oven/oven-ui':
+        specifier: workspace:*
+        version: link:../../packages/oven-ui
+      next:
+        specifier: ^15.3.0
+        version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.4
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.4(react@19.2.4)
+    devDependencies:
+      '@tailwindcss/postcss':
+        specifier: ^4.0.0
+        version: 4.2.1
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.10
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.13
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.13)
+      eslint:
+        specifier: ^9.0.0
+        version: 9.39.2(jiti@2.6.1)
+      eslint-config-next:
+        specifier: ^15.3.0
+        version: 15.5.12(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
+      tailwindcss:
+        specifier: ^4.0.0
+        version: 4.2.1
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.19.10)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.31.1)(tsx@4.21.0)
+
   packages/agent-ui:
     dependencies:
       '@oven/oven-ui':
