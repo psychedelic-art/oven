@@ -14,7 +14,28 @@ export type {
   DataProvider,
 } from './tenant';
 
-// Placeholder barrels — stable import paths for future sprints
-export { FilterToolbar } from './filters';
+// Filter toolbar system (sprint-04)
+export {
+  FilterToolbar,
+  ComboBoxFilter,
+  DateRangeFilter,
+  StatusFilter,
+  QuickSearchFilter,
+  serializeFilters,
+  parseUrlFilters,
+  getActiveFilterLabels,
+} from './filters';
+export type {
+  FilterToolbarProps,
+  ComboBoxFilterProps,
+  DateRangeFilterProps,
+  StatusFilterProps,
+  QuickSearchFilterProps,
+  FilterKind,
+  FilterDefinition,
+  FilterValue,
+  StatusChoice,
+  ActiveFilter,
+} from './filters';
 export { PageHeader, EmptyState, LoadingSkeleton, ErrorBoundary, MenuSectionLabel } from './chrome';
 export { DashboardPlaygroundShell } from './playground';
