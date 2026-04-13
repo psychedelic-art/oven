@@ -3,18 +3,26 @@
 | Field | Value |
 |---|---|
 | Program type | cross-cutting UX program (not a module) |
-| Current sprint | `sprint-01-foundation.md` |
-| Sprint state | **done** (cycle-29) |
+| Current sprint | `sprint-02-ux-audit.md` |
+| Sprint state | **done** (cycle-31) |
 | Package | `packages/dashboard-ui/` (`@oven/dashboard-ui`) -- LIVE |
-| Active branch | `claude/stoic-hamilton-47JqR` |
-| Backup branch | `bk/claude-stoic-hamilton-47JqR-20260413` |
-| Open PR | pending cycle-29 |
+| Active branch | `claude/stoic-hamilton-tOJfY` |
+| Backup branch | `bk/claude-stoic-hamilton-tOJfY-20260413` |
+| Open PR | pending cycle-31 |
 | Test framework | `vitest` 3.2.4 |
-| QA verdict | **pass** -- 26/26 tests green |
+| QA verdict | **pass** -- docs only, no tests needed |
 | Blockers | none |
 
 ## Last updates
 
+- 2026-04-13 -- Sprint-02 UX audit executed on `claude/stoic-hamilton-tOJfY`:
+  - Full audit of 62 List, 45 Create, 41 Edit, 34 Show, 4 Playground, and 3 chrome files.
+  - 5 audit documents produced: lists.md, create-forms.md, playgrounds.md, chrome.md, summary.md.
+  - Key findings: 0/18 lists use useTenantContext, 0/16 create forms auto-assign tenant,
+    3/4 playgrounds bypass UnifiedAIPlayground, 18 menu sections hand-rolled.
+  - 16 style={} violations found across 8 files (tiles, tilesets, flows, flow-items).
+  - Priority backlog: sprint-03 (tenant migration, 34 files), sprint-04 (filter toolbar),
+    sprint-05 (playground unification, 2,796 lines), sprint-06 (chrome + consistency).
 - 2026-04-13 -- Sprint-01 foundation executed on `claude/stoic-hamilton-47JqR`:
   - `packages/dashboard-ui/` scaffolded with tenant context primitive.
   - `createTenantStore` factory (zustand/vanilla, parameterized, no singleton).

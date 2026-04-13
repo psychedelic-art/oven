@@ -68,17 +68,17 @@ audit sprint that feeds the next four sprints with concrete work items.
 
 ## Acceptance criteria
 
-- [ ] Every `*List.tsx` under `apps/dashboard/src/components/` appears in
+- [x] Every `*List.tsx` under `apps/dashboard/src/components/` appears in
   `audit/lists.md` with every column populated.
-- [ ] Every `*Create.tsx` under `apps/dashboard/src/components/` appears
+- [x] Every `*Create.tsx` under `apps/dashboard/src/components/` appears
   in `audit/create-forms.md`.
-- [ ] All four playgrounds from DRIFT-3 appear in `audit/playgrounds.md`
+- [x] All four playgrounds from DRIFT-3 appear in `audit/playgrounds.md`
   with a concrete dead-code estimate.
-- [ ] `audit/summary.md` contains a priority-ordered backlog with
+- [x] `audit/summary.md` contains a priority-ordered backlog with
   every finding tagged with the sprint that will consume it.
-- [ ] No file outside `docs/modules/todo/dashboard-ux-system/audit/**` is
-  created or modified.
-- [ ] `STATUS.md` updated with commit hash and the sprint state moved to
+- [x] No file outside `docs/modules/todo/dashboard-ux-system/audit/**` is
+  created or modified (except STATUS.md and this sprint file).
+- [x] `STATUS.md` updated with commit hash and the sprint state moved to
   `done`.
 
 ## Dependencies
@@ -100,9 +100,9 @@ audit sprint that feeds the next four sprints with concrete work items.
 
 ## Rule compliance checklist
 
-- [ ] Rule 6.1 — CRUD inventory covers every resource
-- [ ] Rule 6.2 — menu section audit captures the `CustomMenu.tsx` gaps
-- [ ] Rule 6.3 — every tenant-scoped list is flagged as compliant or drift
-- [ ] Rule 6.4 — every create form is flagged as compliant or drift
-- [ ] Root `CLAUDE.md` `no-inline-styles` — the audit scans for
-  `style={` and records any hits as sprint-05 / sprint-06 clean-up work
+- [x] Rule 6.1 — CRUD inventory covers every resource (62 lists audited)
+- [x] Rule 6.2 — menu section audit captures the `CustomMenu.tsx` gaps (18 sections)
+- [x] Rule 6.3 — every tenant-scoped list is flagged as drift (0/18 compliant)
+- [x] Rule 6.4 — every create form is flagged as drift (0/16 compliant)
+- [x] Root `CLAUDE.md` `no-inline-styles` — the audit scans for
+  `style={` and records 16 hits in 8 files as sprint-05 clean-up work
