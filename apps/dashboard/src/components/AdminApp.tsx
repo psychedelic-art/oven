@@ -1,7 +1,11 @@
 'use client';
 
-import { Admin, Resource, CustomRoutes, Layout } from 'react-admin';
+import { useMemo } from 'react';
+import { Admin, Resource, CustomRoutes, Layout, useDataProvider, AppBar } from 'react-admin';
 import { Route } from 'react-router-dom';
+import { Box, Toolbar } from '@mui/material';
+import { TenantContextProvider, TenantSelector } from '@oven/dashboard-ui';
+import type { DataProvider as TenantDataProvider, Permissions } from '@oven/dashboard-ui';
 import { dataProvider } from '@/providers/dataProvider';
 import ModuleManager from './ModuleManager';
 import MapEditorPage from './maps/MapEditorPage';
@@ -343,11 +347,53 @@ import HistoryIcon from '@mui/icons-material/History';
 import QuestionAnswerIcon from '@mui/icons-material/QuestionAnswer';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 
-const CustomLayout = (props: any) => <Layout {...props} menu={CustomMenu} />;
+function CustomAppBar() {
+  return (
+    <AppBar>
+      <Toolbar sx={{ flex: 1, display: 'flex', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, ml: 'auto' }}>
+          <TenantSelector />
+        </Box>
+      </Toolbar>
+    </AppBar>
+  );
+}
+
+function TenantAwareLayout(props: any) {
+  const dp = useDataProvider();
+
+  const tenantDataProvider: TenantDataProvider = useMemo(
+    () => ({
+      getList: (resource: string, params: { pagination: { page: number; perPage: number } }) =>
+        dp.getList(resource, {
+          ...params,
+          sort: { field: 'name', order: 'ASC' as const },
+          filter: {},
+        }),
+    }),
+    [dp],
+  );
+
+  const tenantPermissions: Permissions = useMemo(
+    () => ({
+      has: () => true,
+    }),
+    [],
+  );
+
+  return (
+    <TenantContextProvider
+      dataProvider={tenantDataProvider}
+      permissions={tenantPermissions}
+    >
+      <Layout {...props} menu={CustomMenu} appBar={CustomAppBar} />
+    </TenantContextProvider>
+  );
+}
 
 export default function AdminApp() {
   return (
-    <Admin dataProvider={dataProvider} layout={CustomLayout} loginPage={LoginPage}>
+    <Admin dataProvider={dataProvider} layout={TenantAwareLayout} loginPage={LoginPage}>
       {/* Maps Module Resources */}
       <Resource
         name="tiles"
