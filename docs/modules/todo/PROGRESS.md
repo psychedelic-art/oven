@@ -58,13 +58,13 @@ inspiring-clarke-* branches fully merged.
 | `module-knowledge-base` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-knowledge-base`, 21 tests | **sprint-02 done (cycle-16)** | sprint-03-search (BLOCKED: pgvector). |
 | `ui-flows` | 5 (sprint-00..03, 99) | 11/11 | LIVE 89+39+26 tests | **sprint-03 done (cycle-30)** | sprint-99-acceptance (automated pass, manual portal pending). |
 | `agent-ui` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/agent-ui`, 71 tests | **sprint-01 done (cycle-21)** | sprint-02 (BLOCKED: needs module-chat). |
-| `dashboard-ux-system` | 8 (sprint-00..07) | N/A (program) | LIVE `@oven/dashboard-ui`, 29 tests | **sprint-03 done (cycle-32)** | sprint-04-filter-system. |
+| `dashboard-ux-system` | 8 (sprint-00..07) | N/A (program) | LIVE `@oven/dashboard-ui` 92 tests + `@oven/agent-ui` 81 tests | **sprint-07 acceptance done** | GRADUATED. Deferred: PlaygroundConfigPage, remaining filter migrations, AgentPlaygroundPanel rewrite. |
 | `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | 310+ tests | all unblocked sprints CLOSED | sprint-02/04 BLOCKED (module-chat/agent-core). |
 | `psychedelic-claude-code-migration` | 12 | N/A | N/A | -- | Owned elsewhere. |
 
 ## Priority order (post cycle-32)
 
-P0: dashboard-ux-system sprint-04 (filter system)
+P0: dashboard-ux-system GRADUATED (sprint-07 acceptance done)
 P1: ui-flows sprint-99 (acceptance — automated pass, manual portal pending)
 P2: subscriptions sprint-05 (acceptance — automated pass, manual UI pending)
 SKIP: config sprint-03 (BLOCKED: Neon preview)
