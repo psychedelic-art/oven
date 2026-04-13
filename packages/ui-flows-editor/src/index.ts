@@ -11,7 +11,14 @@ export { ThemePanel } from './panels/ThemePanel';
 export { NavigationPanel } from './panels/NavigationPanel';
 export { PreviewPanel } from './panels/PreviewPanel';
 export { VersionHistoryPanel } from './panels/VersionHistoryPanel';
+export { VersionDiffPanel, computeDefinitionDiff } from './panels/VersionDiffPanel';
 export { PublishDialog } from './components/PublishDialog';
+export { PublishButton } from './toolbar/PublishButton';
+
+// Utility exports
+export { validateDefinition } from './utils/validation';
+export type { ValidationError, ValidationResult } from './utils/validation';
+export { definitionToNodes, nodesToDefinition } from './utils/definition-converter';
 
 // Store exports
 export type {
@@ -26,8 +33,6 @@ export type {
 } from './store';
 export {
   createUiFlowEditorStore,
-  definitionToNodes,
-  nodesToDefinition,
 } from './store';
 export {
   UiFlowEditorProvider,
