@@ -1,6 +1,6 @@
 'use client';
 import { Show, SimpleShowLayout, TextField, NumberField, DateField, FunctionField } from 'react-admin';
-import { Chip } from '@mui/material';
+import { Box, Chip, Typography } from '@mui/material';
 
 export default function ApiKeyShow() {
   return (
@@ -14,9 +14,11 @@ export default function ApiKeyShow() {
         <FunctionField
           label="Permissions"
           render={(record: { permissions?: unknown }) => (
-            <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
-              {JSON.stringify(record.permissions, null, 2)}
-            </pre>
+            <Box component="pre" sx={{ m: 0, whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>
+              <Typography variant="body2" component="span">
+                {JSON.stringify(record.permissions, null, 2)}
+              </Typography>
+            </Box>
           )}
         />
         <FunctionField
