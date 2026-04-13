@@ -47,16 +47,16 @@ author, preview, publish, diff, and restore UI flow portals.
 
 ## Acceptance criteria
 
-- [ ] `validation.ts` rejects every negative case in
+- [x] `validation.ts` rejects every negative case in
       `validation.test.ts` with a descriptive error.
-- [ ] `definition-converter.ts` round-trips every seed fixture from
+- [x] `definition-converter.ts` round-trips every seed fixture from
       `packages/module-ui-flows/src/seed.ts` losslessly.
-- [ ] `PublishButton` blocks publish if validation errors exist and
+- [x] `PublishButton` blocks publish if validation errors exist and
       shows them in a dialog.
-- [ ] Zustand store is parameterized per editor instance (no
+- [x] Zustand store is parameterized per editor instance (no
       singleton) and reads adapter by closure — verified by rendering
       two editors on the same page with different tenants.
-- [ ] Every component uses MUI `sx`; no `style={{ }}`; no
+- [x] Every component uses MUI `sx`; no `style={{ }}`; no
       `styled(Component)`.
 
 ## Dependencies
@@ -88,9 +88,9 @@ author, preview, publish, diff, and restore UI flow portals.
 
 ## Rule compliance checklist
 
-- [ ] Root `CLAUDE.md` — MUI `sx`, zustand factory + context,
+- [x] Root `CLAUDE.md` — MUI `sx`, zustand factory + context,
       `import type`.
-- [ ] `docs/modules/19-ui-flows.md` §7 — editor package structure
+- [x] `docs/modules/19-ui-flows.md` §7 — editor package structure
       preserved.
-- [ ] `docs/modules/20-module-config.md` — `MAX_PAGES_PER_FLOW` and
+- [x] `docs/modules/20-module-config.md` — `MAX_PAGES_PER_FLOW` and
       `ENABLE_CUSTOM_CSS` respected in the editor UI.
