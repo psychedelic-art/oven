@@ -44,6 +44,7 @@ export default function CustomMenu() {
       <Menu.Item to="/ai/usage-dashboard" primaryText="Usage Dashboard" leftIcon={<BarChartIcon />} />
       <Menu.Item to="/ai/tool-catalog" primaryText="Tool Catalog" leftIcon={<BuildIcon />} />
       <Menu.Item to="/ai/extensions" primaryText="Extensions" leftIcon={<ExtensionIcon />} />
+      <Menu.Item to="/ai/playground-config" primaryText="Playground Config" leftIcon={<SettingsIcon />} />
       <Menu.ResourceItem name="ai-playground-executions" />
 
       <MenuSectionLabel label="Knowledge Base" />

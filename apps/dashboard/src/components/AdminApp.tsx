@@ -235,6 +235,7 @@ import {
   AIExtensions,
   PlaygroundExecutionList,
   PlaygroundExecutionShow,
+  PlaygroundConfigPage,
 } from './ai';
 
 // Knowledge Base
@@ -940,6 +941,7 @@ export default function AdminApp() {
         <Route path="/profile/sessions" element={<ProfilePage />} />
         <Route path="/notifications/usage" element={<UsageDashboardPage />} />
         <Route path="/ai/playground" element={<AIPlayground />} />
+        <Route path="/ai/playground-config" element={<PlaygroundConfigPage />} />
         <Route path="/ai/usage-dashboard" element={<AIUsageDashboard />} />
         <Route path="/ai/tool-catalog" element={<AIToolCatalog />} />
         <Route path="/ai/extensions" element={<AIExtensions />} />

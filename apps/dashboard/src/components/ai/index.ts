@@ -37,3 +37,4 @@ export { default as AIPlayground } from './AIPlayground';
 export { default as AIUsageDashboard } from './AIUsageDashboard';
 export { default as AIToolCatalog } from './AIToolCatalog';
 export { default as AIExtensions } from './AIExtensions';
+export { PlaygroundConfigPage } from './PlaygroundConfigPage';
