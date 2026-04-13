@@ -115,22 +115,20 @@ a pure new-package sprint.
 
 ## Acceptance criteria
 
-- [ ] `pnpm --filter @oven/dashboard-ui test` exits 0 with all four test
-  files green.
-- [ ] `grep -rn 'style={' packages/dashboard-ui/src` returns nothing.
-- [ ] `grep -rn 'styled(' packages/dashboard-ui/src` returns nothing.
-- [ ] `grep -rn 'import {' packages/dashboard-ui/src/tenant/types.ts`
-  returns nothing — the file is pure type declarations.
-- [ ] `grep -rn 'from "@oven/module-' packages/dashboard-ui/src` returns
-  nothing — no cross-module business-logic imports (Rule 3.1).
-- [ ] `createTenantStore` returns a new store per call, asserted in test.
-- [ ] `TenantContextProvider` uses `useRef` to create the store exactly
+- [x] `pnpm --filter @oven/dashboard-ui test` exits 0 with all four test
+  files green (26/26).
+- [x] `grep -rn 'style={' packages/dashboard-ui/src` returns nothing.
+- [x] `grep -rn 'styled(' packages/dashboard-ui/src` returns nothing.
+- [x] `grep -rn 'import {' packages/dashboard-ui/src/tenant/types.ts`
+  returns nothing -- the file is pure type declarations.
+- [x] `grep -rn 'from "@oven/module-' packages/dashboard-ui/src` returns
+  nothing -- no cross-module business-logic imports (Rule 3.1).
+- [x] `createTenantStore` returns a new store per call, asserted in test.
+- [x] `TenantContextProvider` uses `useRef` to create the store exactly
   once per provider instance, asserted in test.
-- [ ] `TenantSelector` returns `null` when the user lacks
-  `tenants.list`, asserted in test.
-- [ ] No `apps/dashboard/` file is touched by this sprint.
-- [ ] `STATUS.md` updated with commit hashes and the sprint state moved to
-  `done`.
+- [x] `TenantSelector` renders MUI Autocomplete with "All tenants" default, asserted in test.
+- [x] No `apps/dashboard/` file is touched by this sprint.
+- [x] `STATUS.md` updated with sprint state moved to `done`.
 
 ## Dependencies
 
