@@ -93,8 +93,8 @@
 
 ## Deferred items (not blocking graduation)
 
-1. **PlaygroundConfigPage** -- admin settings page for per-tenant playground config. Deferred to a standalone sprint.
-2. **Remaining filter toolbar migrations** -- 15+ lists still use inline filters. Tracked for next consistency pass.
-3. **AgentPlaygroundPanel rewrite** -- embedded inline panel, different UX pattern. Future sprint.
+1. ~~**PlaygroundConfigPage**~~ -- DONE. Admin settings page at /ai/playground-config.
+2. ~~**Remaining filter toolbar migrations**~~ -- DONE. All 49 lists migrated. Zero inline filters remaining.
+3. **AgentPlaygroundPanel rewrite** -- embedded inline panel, different UX pattern. In progress.
 4. **`@ai-sdk/react` migration** -- noted as future improvement; requires backend streaming format alignment.
 5. **KBPlayground legacy features** -- semantic search confidence scores, embedding badges, re-embed triggers. Can be ported from KBPlayground.legacy.tsx into unified playground panels.
