@@ -5,8 +5,8 @@ import {
   SimpleForm,
   TextInput,
   SelectInput,
-  NumberInput,
 } from 'react-admin';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 function validateJsonValue(value: unknown) {
   if (value === undefined || value === null || value === '') return undefined;
@@ -21,15 +21,11 @@ function validateJsonValue(value: unknown) {
 }
 
 export default function ConfigCreate() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+
   return (
-    <Create>
+    <Create transform={(data: Record<string, unknown>) => ({ ...data, tenantId: data.tenantId ?? activeTenantId })}>
       <SimpleForm>
-        <NumberInput
-          source="tenantId"
-          label="Tenant ID"
-          helperText="Leave empty for platform-level config"
-          fullWidth
-        />
         <TextInput source="moduleName" label="Module Name" isRequired fullWidth />
         <SelectInput
           source="scope"

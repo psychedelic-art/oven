@@ -8,6 +8,7 @@ import {
   NumberInput,
   BooleanInput,
 } from 'react-admin';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 const ruleTypeChoices = [
   { id: 'keyword', name: 'Keyword' },
@@ -28,8 +29,10 @@ const actionChoices = [
 ];
 
 export default function GuardrailCreate() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+
   return (
-    <Create>
+    <Create transform={(data: Record<string, unknown>) => ({ ...data, tenantId: data.tenantId ?? activeTenantId })}>
       <SimpleForm>
         <TextInput source="name" label="Name" isRequired fullWidth />
         <SelectInput
@@ -74,11 +77,6 @@ export default function GuardrailCreate() {
           label="Priority"
           defaultValue={0}
           helperText="Lower numbers are evaluated first."
-        />
-        <NumberInput
-          source="tenantId"
-          label="Tenant ID (optional)"
-          helperText="Leave empty for global guardrails."
         />
         <BooleanInput source="enabled" label="Enabled" defaultValue={true} />
       </SimpleForm>

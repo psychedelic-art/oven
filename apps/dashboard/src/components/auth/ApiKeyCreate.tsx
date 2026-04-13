@@ -1,12 +1,14 @@
 'use client';
 import { Create, SimpleForm, TextInput, NumberInput, DateTimeInput } from 'react-admin';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 export default function ApiKeyCreate() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+
   return (
-    <Create>
+    <Create transform={(data: Record<string, unknown>) => ({ ...data, tenantId: data.tenantId ?? activeTenantId })}>
       <SimpleForm>
         <TextInput source="name" label="Name" isRequired fullWidth />
-        <NumberInput source="tenantId" label="Tenant ID" fullWidth />
         <NumberInput source="userId" label="User ID" fullWidth />
         <TextInput
           source="permissions"

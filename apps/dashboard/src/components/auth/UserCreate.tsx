@@ -1,9 +1,12 @@
 'use client';
 import { Create, SimpleForm, TextInput, NumberInput, SelectInput } from 'react-admin';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 export default function UserCreate() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+
   return (
-    <Create>
+    <Create transform={(data: Record<string, unknown>) => ({ ...data, tenantId: data.tenantId ?? activeTenantId })}>
       <SimpleForm>
         <TextInput source="email" label="Email" isRequired fullWidth />
         <TextInput source="name" label="Name" isRequired fullWidth />

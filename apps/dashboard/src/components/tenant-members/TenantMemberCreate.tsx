@@ -5,16 +5,15 @@ import {
   SimpleForm,
   NumberInput,
   SelectInput,
-  ReferenceInput,
 } from 'react-admin';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 export default function TenantMemberCreate() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+
   return (
-    <Create>
+    <Create transform={(data: Record<string, unknown>) => ({ ...data, tenantId: data.tenantId ?? activeTenantId })}>
       <SimpleForm>
-        <ReferenceInput source="tenantId" reference="tenants" label="Tenant">
-          <SelectInput optionText="name" isRequired fullWidth />
-        </ReferenceInput>
         <NumberInput source="userId" label="User ID" isRequired fullWidth />
         <SelectInput
           source="role"

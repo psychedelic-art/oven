@@ -8,6 +8,7 @@ import {
   NumberInput,
   BooleanInput,
 } from 'react-admin';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 const adapterChoices = [
   { id: 'pgvector', name: 'pgvector' },
@@ -21,12 +22,13 @@ const distanceMetricChoices = [
 ];
 
 export default function VectorStoreCreate() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+
   return (
-    <Create>
+    <Create transform={(data: Record<string, unknown>) => ({ ...data, tenantId: data.tenantId ?? activeTenantId })}>
       <SimpleForm>
         <TextInput source="name" label="Name" isRequired fullWidth />
         <TextInput source="slug" label="Slug" isRequired fullWidth />
-        <NumberInput source="tenantId" label="Tenant ID" fullWidth />
         <SelectInput
           source="adapter"
           label="Adapter"
