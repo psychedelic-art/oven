@@ -8,6 +8,7 @@ import * as authMeHandler from './api/auth-me.handler';
 import * as authRefreshHandler from './api/auth-refresh.handler';
 import * as authForgotPasswordHandler from './api/auth-forgot-password.handler';
 import * as authResetPasswordHandler from './api/auth-reset-password.handler';
+import * as authChangePasswordHandler from './api/auth-change-password.handler';
 import * as apiKeysHandler from './api/api-keys.handler';
 import * as apiKeysByIdHandler from './api/api-keys-by-id.handler';
 import * as sessionsHandler from './api/sessions.handler';
@@ -104,6 +105,7 @@ export const authModule: ModuleDefinition = {
     'auth/refresh': { POST: authRefreshHandler.POST },
     'auth/forgot-password': { POST: authForgotPasswordHandler.POST },
     'auth/reset-password': { POST: authResetPasswordHandler.POST },
+    'auth/change-password': { POST: authChangePasswordHandler.POST },
     'api-keys': { GET: apiKeysHandler.GET, POST: apiKeysHandler.POST },
     'api-keys/[id]': { DELETE: apiKeysByIdHandler.DELETE },
     'auth-sessions': { GET: sessionsHandler.GET },

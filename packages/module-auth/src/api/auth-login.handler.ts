@@ -3,6 +3,7 @@ import { createHash } from 'crypto';
 import { eq } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
 import { eventBus } from '@oven/module-registry';
+import { checkRateLimit } from '@oven/module-registry/rate-limit';
 import { users, authSessions } from '../schema';
 import { verifyPassword, createSession } from '../auth-utils';
 
@@ -11,6 +12,7 @@ function hashToken(token: string): string {
 }
 
 // POST /api/auth/login — Authenticate with email + password
+// Rate limit: 5 req / 60s per ip+email
 export async function POST(request: NextRequest) {
   const db = getDb();
   const body = await request.json();
@@ -20,6 +22,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: 'Email and password are required' },
       { status: 400 }
+    );
+  }
+
+  // Rate limit: 5 requests per 60 seconds, keyed by IP + email
+  const ip = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? 'unknown';
+  const rl = checkRateLimit(`login:${ip}:${email}`, { maxRequests: 5, windowSeconds: 60 });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: { code: 'AUTH_RATE_LIMITED', message: 'Too many login attempts. Try again later.' } },
+      { status: 429 }
     );
   }
 

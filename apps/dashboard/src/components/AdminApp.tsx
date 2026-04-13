@@ -157,6 +157,9 @@ import ApiKeyList from './auth/ApiKeyList';
 import ApiKeyCreate from './auth/ApiKeyCreate';
 import ApiKeyShow from './auth/ApiKeyShow';
 import LoginPage from './auth/LoginPage';
+import RegisterPage from './auth/RegisterPage';
+import ForgotPasswordPage from './auth/ForgotPasswordPage';
+import ResetPasswordPage from './auth/ResetPasswordPage';
 import ProfilePage from './auth/ProfilePage';
 
 // Forms
@@ -332,7 +335,7 @@ const CustomLayout = (props: any) => <Layout {...props} menu={CustomMenu} />;
 
 export default function AdminApp() {
   return (
-    <Admin dataProvider={dataProvider} layout={CustomLayout}>
+    <Admin dataProvider={dataProvider} layout={CustomLayout} loginPage={LoginPage}>
       {/* Maps Module Resources */}
       <Resource
         name="tiles"
@@ -853,6 +856,7 @@ export default function AdminApp() {
         <Route path="/forms/:id/editor" element={<FormEditorPage />} />
         <Route path="/api-permissions" element={<ApiPermissionList />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile/sessions" element={<ProfilePage />} />
         <Route path="/ai/playground" element={<AIPlayground />} />
         <Route path="/ai/usage-dashboard" element={<AIUsageDashboard />} />
         <Route path="/ai/tool-catalog" element={<AIToolCatalog />} />
@@ -861,6 +865,11 @@ export default function AdminApp() {
         <Route path="/file-manager" element={<FileManager />} />
         <Route path="/agent-workflows/:id/editor" element={<AgentWorkflowEditorPage />} />
         <Route path="/ai-playground" element={<AIPlaygroundPage />} />
+      </CustomRoutes>
+      <CustomRoutes noLayout>
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
       </CustomRoutes>
     </Admin>
   );

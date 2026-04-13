@@ -3,6 +3,7 @@ import { createHash, randomBytes } from 'crypto';
 import { eq } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
 import { eventBus } from '@oven/module-registry';
+import { checkRateLimit } from '@oven/module-registry/rate-limit';
 import { users, passwordResetTokens } from '../schema';
 
 function hashToken(token: string): string {
@@ -10,6 +11,7 @@ function hashToken(token: string): string {
 }
 
 // POST /api/auth/forgot-password — Request a password reset token
+// Rate limit: 3 req / 600s per email
 export async function POST(request: NextRequest) {
   const db = getDb();
   const body = await request.json();
@@ -19,6 +21,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: 'Email is required' },
       { status: 400 }
+    );
+  }
+
+  // Rate limit: 3 requests per 600 seconds, keyed by email
+  const rl = checkRateLimit(`forgot:${email}`, { maxRequests: 3, windowSeconds: 600 });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: { code: 'AUTH_RATE_LIMITED', message: 'Too many reset requests. Try again later.' } },
+      { status: 429 }
     );
   }
 

@@ -11,7 +11,8 @@
     "./event-bus": "./src/event-bus.ts",
     "./schema": "./src/schema.ts",
     "./wiring-runtime": "./src/wiring-runtime.ts",
-    "./api-errors": "./src/api-errors.ts"
+    "./api-errors": "./src/api-errors.ts",
+    "./rate-limit": "./src/rate-limit.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.38.0"

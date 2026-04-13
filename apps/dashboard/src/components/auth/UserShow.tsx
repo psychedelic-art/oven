@@ -1,6 +1,6 @@
 'use client';
 import { Show, SimpleShowLayout, TextField, NumberField, DateField, FunctionField } from 'react-admin';
-import { Chip } from '@mui/material';
+import { Avatar, Chip } from '@mui/material';
 
 export default function UserShow() {
   return (
@@ -13,13 +13,15 @@ export default function UserShow() {
           label="Avatar"
           render={(record: { avatar?: string; name?: string }) =>
             record.avatar ? (
-              <img
+              <Avatar
                 src={record.avatar}
                 alt={record.name || 'avatar'}
-                style={{ width: 48, height: 48, borderRadius: '50%' }}
+                sx={{ width: 48, height: 48 }}
               />
             ) : (
-              <span>No avatar</span>
+              <Avatar sx={{ width: 48, height: 48 }}>
+                {record.name?.[0] ?? '?'}
+              </Avatar>
             )
           }
         />

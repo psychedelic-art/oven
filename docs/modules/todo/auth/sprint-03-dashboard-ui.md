@@ -59,18 +59,19 @@ that the UI consumes.
 
 ## Acceptance criteria
 
-- [ ] All 9 UI files contain **zero** `style={{` literals.
-- [ ] All 9 UI files use MUI `sx` for every styling concern.
-- [ ] All type-only imports use `import type`.
-- [ ] Every handler uses `parseListParams` + `listResponse` where it
+- [x] All 9 UI files contain **zero** `style={{` literals.
+- [x] All 9 UI files use MUI `sx` for every styling concern.
+- [x] All type-only imports use `import type`.
+- [x] Every handler uses `parseListParams` + `listResponse` where it
       is a list handler (R5.5).
-- [ ] Rate limits from `secure.md` Rate Limits table are enforced in
+- [x] Rate limits from `secure.md` Rate Limits table are enforced in
       tests.
 - [ ] Manual golden path verified in the dev server:
       register → login → create API key → revoke key → logout →
       forgot-password → reset → login again.
-- [ ] Typecheck delta: 0 new errors.
-- [ ] Lint delta: 0 new warnings.
+      (UI cannot be tested in this session — no browser available.)
+- [x] Typecheck delta: 0 new errors.
+- [x] Lint delta: 0 new warnings.
 
 ## Touched packages
 

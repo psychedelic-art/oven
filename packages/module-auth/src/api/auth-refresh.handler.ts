@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { eq } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
+import { checkRateLimit } from '@oven/module-registry/rate-limit';
 import { authSessions, users } from '../schema';
 import { createSession } from '../auth-utils';
 
@@ -10,6 +11,7 @@ function hashToken(token: string): string {
 }
 
 // POST /api/auth/refresh — Refresh an expired access token
+// Rate limit: 60 req / 60s per user_id (applied after session lookup)
 export async function POST(request: NextRequest) {
   const db = getDb();
   const body = await request.json();
@@ -35,6 +37,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: 'Invalid refresh token' },
       { status: 401 }
+    );
+  }
+
+  // Rate limit: 60 requests per 60 seconds, keyed by user_id
+  const rl = checkRateLimit(`refresh:${session.userId}`, { maxRequests: 60, windowSeconds: 60 });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: { code: 'AUTH_RATE_LIMITED', message: 'Too many refresh requests. Try again later.' } },
+      { status: 429 }
     );
   }
 
