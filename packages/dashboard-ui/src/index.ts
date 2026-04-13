@@ -39,3 +39,4 @@ export type {
 } from './filters';
 export { PageHeader, EmptyState, LoadingSkeleton, ErrorBoundary, MenuSectionLabel } from './chrome';
 export { DashboardPlaygroundShell } from './playground';
+export type { DashboardPlaygroundShellProps } from './playground';
