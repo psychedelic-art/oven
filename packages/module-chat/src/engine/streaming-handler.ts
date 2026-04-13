@@ -16,6 +16,39 @@ export async function* createSSEStream(
   }
 }
 
+// ─── Bridge AI SDK text stream to OVEN StreamEvent format ───
+// Converts the raw text stream from aiStreamText() into our
+// StreamEvent format (token/done/error). The onDone callback
+// records the assistant message and returns the DB message ID.
+
+export async function* bridgeAIStreamToEvents(
+  textStream: ReadableStream<string>,
+  onDone: (fullText: string) => Promise<number>,
+): AsyncIterable<StreamEvent> {
+  let accumulated = '';
+
+  try {
+    const reader = textStream.getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      accumulated += value;
+      yield { type: 'token', text: value };
+    }
+    reader.releaseLock();
+
+    // Record the full assistant message and yield done event
+    const messageId = await onDone(accumulated);
+    yield { type: 'done', messageId };
+  } catch (error) {
+    yield {
+      type: 'error',
+      code: 'STREAM_ERROR',
+      message: error instanceof Error ? error.message : 'Unknown streaming error',
+    };
+  }
+}
+
 // ─── Create SSE Response from event stream ──────────────────
 
 export function createSSEResponse(

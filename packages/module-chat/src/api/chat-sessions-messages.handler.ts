@@ -3,7 +3,8 @@ import { NextResponse } from 'next/server';
 import { parseListParams, listResponse, badRequest, notFound } from '@oven/module-registry/api-utils';
 import { getDb } from '@oven/module-registry/db';
 import { chatSessions, chatMessages } from '../schema';
-import { recordUserMessage, recordAssistantMessage } from '../engine/message-processor';
+import { recordUserMessage, processMessageStreaming } from '../engine/message-processor';
+import { createSSEResponse } from '../engine/streaming-handler';
 import { eq, and, desc, sql } from 'drizzle-orm';
 
 export async function GET(_req: NextRequest, ctx?: { params: Promise<{ id: string }> }) {
@@ -43,14 +44,25 @@ export async function POST(req: NextRequest, ctx?: { params: Promise<{ id: strin
     ? [{ type: 'text' as const, text: body.content }]
     : body.content;
 
-  // Record user message
+  // Check if the client wants streaming (Accept header or query param)
+  const acceptsStream = req.headers.get('accept')?.includes('text/event-stream')
+    || new URL(req.url).searchParams.get('stream') === 'true';
+
+  if (acceptsStream) {
+    // Streaming mode — invoke agent and stream response as SSE
+    const events = processMessageStreaming({
+      sessionId: Number(id),
+      tenantId: sessions[0].tenantId as number | undefined,
+      text: typeof body.content === 'string' ? body.content : body.content[0]?.text ?? '',
+    });
+    return createSSEResponse(events);
+  }
+
+  // Non-streaming mode — record user message and return
   const messageId = await recordUserMessage({
     sessionId: Number(id),
     content,
     metadata: body.metadata,
   });
-
-  // TODO: Sprint 4A.4 — invoke agent via message-processor pipeline
-  // For now, just return the recorded message ID
   return NextResponse.json({ id: messageId, sessionId: Number(id), role: 'user' }, { status: 201 });
 }
