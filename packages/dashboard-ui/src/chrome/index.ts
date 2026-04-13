@@ -1,23 +1,9 @@
-/**
- * Chrome placeholders — not yet implemented.
- * Import paths are stable; implementations ship in sprint-06.
- */
-export function PageHeader(): never {
-  throw new Error('PageHeader not yet implemented — see sprint-06');
-}
-
-export function EmptyState(): never {
-  throw new Error('EmptyState not yet implemented — see sprint-06');
-}
-
-export function LoadingSkeleton(): never {
-  throw new Error('LoadingSkeleton not yet implemented — see sprint-06');
-}
-
-export function ErrorBoundary(): never {
-  throw new Error('ErrorBoundary not yet implemented — see sprint-06');
-}
-
-export function MenuSectionLabel(): never {
-  throw new Error('MenuSectionLabel not yet implemented — see sprint-06');
-}
+export { MenuSectionLabel } from './MenuSectionLabel';
+export type { MenuSectionLabelProps } from './MenuSectionLabel';
+export { PageHeader } from './PageHeader';
+export type { PageHeaderProps } from './PageHeader';
+export { EmptyState } from './EmptyState';
+export type { EmptyStateProps } from './EmptyState';
+export { LoadingSkeleton } from './LoadingSkeleton';
+export type { LoadingSkeletonProps } from './LoadingSkeleton';
+export { ErrorBoundary } from './ErrorBoundary';
