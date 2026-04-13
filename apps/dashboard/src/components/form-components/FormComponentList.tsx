@@ -8,15 +8,27 @@ import {
   DateField,
   FunctionField,
   ReferenceField,
-  TextInput,
+  useListContext,
 } from 'react-admin';
 import { Chip } from '@mui/material';
-import { useTenantContext } from '@oven/dashboard-ui';
+import { FilterToolbar, useTenantContext } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
-  <TextInput key="category" source="category" label="Category" />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
+  { source: 'category', label: 'Category', kind: 'combo', choices: [] },
 ];
+
+function FormComponentListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function FormComponentList() {
   const activeTenantId = useTenantContext((s) => s.activeTenantId);
@@ -24,7 +36,7 @@ export default function FormComponentList() {
 
   return (
     <List
-      filters={filters}
+      actions={<FormComponentListToolbar />}
       filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
       sort={{ field: 'id', order: 'DESC' }}
     >

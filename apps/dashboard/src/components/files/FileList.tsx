@@ -7,13 +7,13 @@ import {
   DateField,
   FunctionField,
   ReferenceField,
-  TextInput,
-  SelectInput,
   DeleteButton,
   useRefresh,
+  useListContext,
 } from 'react-admin';
 import { Chip, Box, Typography, Paper } from '@mui/material';
-import { useTenantContext } from '@oven/dashboard-ui';
+import { FilterToolbar, useTenantContext } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import FileUploader from './FileUploader';
@@ -25,20 +25,28 @@ function formatBytes(bytes: number | null | undefined): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const filters = [
-  <TextInput key="folder" source="folder" label="Folder" alwaysOn />,
-  <TextInput key="mimeType" source="mimeType" label="MIME Type" />,
-  <SelectInput
-    key="sourceModule"
-    source="sourceModule"
-    label="Source Module"
-    choices={[
-      { id: 'ai', name: 'AI' },
-      { id: 'kb', name: 'Knowledge Base' },
-      { id: 'chat', name: 'Chat' },
-    ]}
-  />,
+const sourceModuleChoices = [
+  { id: 'ai', name: 'AI' },
+  { id: 'kb', name: 'Knowledge Base' },
+  { id: 'chat', name: 'Chat' },
 ];
+
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'folder', label: 'Folder', kind: 'quick-search', alwaysOn: true },
+  { source: 'mimeType', label: 'MIME Type', kind: 'combo', choices: [] },
+  { source: 'sourceModule', label: 'Source Module', kind: 'combo', choices: sourceModuleChoices },
+];
+
+function FileListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 function EmptyFileList() {
   const refresh = useRefresh();
@@ -65,7 +73,7 @@ export default function FileList() {
 
   return (
     <List
-      filters={filters}
+      actions={<FileListToolbar />}
       filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
       sort={{ field: 'createdAt', order: 'DESC' }}
       hasCreate={false}

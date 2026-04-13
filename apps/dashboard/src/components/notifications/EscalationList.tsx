@@ -8,10 +8,11 @@ import {
   DateField,
   FunctionField,
   ReferenceField,
-  SelectInput,
+  useListContext,
 } from 'react-admin';
 import { Chip, Typography } from '@mui/material';
-import { useTenantContext } from '@oven/dashboard-ui';
+import { FilterToolbar, useTenantContext } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
 const reasonColors: Record<string, 'warning' | 'error' | 'info' | 'default'> = {
   'out-of-scope': 'warning',
@@ -25,28 +26,33 @@ const statusColors: Record<string, 'warning' | 'success' | 'default'> = {
   resolved: 'success',
 };
 
-const filters = [
-  <SelectInput
-    key="status"
-    source="status"
-    label="Status"
-    choices={[
-      { id: 'pending', name: 'Pending' },
-      { id: 'resolved', name: 'Resolved' },
-    ]}
-  />,
-  <SelectInput
-    key="reason"
-    source="reason"
-    label="Reason"
-    choices={[
-      { id: 'out-of-scope', name: 'Out of Scope' },
-      { id: 'clinical', name: 'Clinical' },
-      { id: 'user-requested', name: 'User Requested' },
-      { id: 'limit-exceeded', name: 'Limit Exceeded' },
-    ]}
-  />,
+const statusChoices = [
+  { id: 'pending', name: 'Pending' },
+  { id: 'resolved', name: 'Resolved' },
 ];
+
+const reasonChoices = [
+  { id: 'out-of-scope', name: 'Out of Scope' },
+  { id: 'clinical', name: 'Clinical' },
+  { id: 'user-requested', name: 'User Requested' },
+  { id: 'limit-exceeded', name: 'Limit Exceeded' },
+];
+
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'status', label: 'Status', kind: 'status', choices: statusChoices },
+  { source: 'reason', label: 'Reason', kind: 'status', choices: reasonChoices },
+];
+
+function EscalationListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function EscalationList() {
   const activeTenantId = useTenantContext((s) => s.activeTenantId);
@@ -54,7 +60,7 @@ export default function EscalationList() {
 
   return (
     <List
-      filters={filters}
+      actions={<EscalationListToolbar />}
       filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
       sort={{ field: 'id', order: 'DESC' }}
     >

@@ -7,11 +7,12 @@ import {
   NumberField,
   DateField,
   FunctionField,
-  TextInput,
-  SelectInput,
   ReferenceField,
+  useListContext,
 } from 'react-admin';
 import { Chip, Button, Box } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 import EditIcon from '@mui/icons-material/Edit';
 import { useNavigate } from 'react-router-dom';
 
@@ -21,25 +22,34 @@ const STATUS_COLORS: Record<string, 'success' | 'warning' | 'default'> = {
   disabled: 'default',
 };
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
-  <SelectInput
-    key="status"
-    source="status"
-    choices={[
-      { id: 'draft', name: 'Draft' },
-      { id: 'applied', name: 'Applied' },
-      { id: 'disabled', name: 'Disabled' },
-    ]}
-  />,
-  <TextInput key="targetTable" source="targetTable" label="Target Table" />,
+const statusChoices = [
+  { id: 'draft', name: 'Draft' },
+  { id: 'applied', name: 'Applied' },
+  { id: 'disabled', name: 'Disabled' },
 ];
+
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
+  { source: 'status', label: 'Status', kind: 'status', choices: statusChoices },
+  { source: 'targetTable', label: 'Target Table', kind: 'combo', choices: [] },
+];
+
+function RlsPolicyListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function RlsPolicyList() {
   const navigate = useNavigate();
 
   return (
-    <List filters={filters} sort={{ field: 'id', order: 'ASC' }}>
+    <List actions={<RlsPolicyListToolbar />} sort={{ field: 'id', order: 'ASC' }}>
       <Datagrid bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
         <TextField source="name" />

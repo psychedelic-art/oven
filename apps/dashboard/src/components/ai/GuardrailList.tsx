@@ -7,13 +7,13 @@ import {
   NumberField,
   BooleanField,
   DateField,
-  TextInput,
-  SelectInput,
-  BooleanInput,
   EditButton,
   DeleteButton,
+  useListContext,
 } from 'react-admin';
 import { Chip, Typography } from '@mui/material';
+import { FilterToolbar, useTenantContext } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 import {
   type GuardrailRecord,
   resolveGuardrailActionColor,
@@ -33,16 +33,28 @@ const scopeChoices = [
   { id: 'both', name: 'Both' },
 ];
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
-  <SelectInput key="ruleType" source="ruleType" label="Rule Type" choices={ruleTypeChoices} />,
-  <SelectInput key="scope" source="scope" label="Scope" choices={scopeChoices} />,
-  <BooleanInput key="enabled" source="enabled" label="Enabled" />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
+  { source: 'ruleType', label: 'Rule Type', kind: 'status', choices: ruleTypeChoices },
+  { source: 'scope', label: 'Scope', kind: 'status', choices: scopeChoices },
+  { source: 'enabled', label: 'Enabled', kind: 'boolean' },
 ];
 
-export default function GuardrailList() {
+function GuardrailListToolbar() {
+  const { filterValues, setFilters } = useListContext();
   return (
-    <List filters={filters} sort={{ field: 'priority', order: 'ASC' }}>
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
+
+export default function GuardrailList() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+  return (
+    <List actions={<GuardrailListToolbar />} filter={activeTenantId ? { tenantId: activeTenantId } : undefined} sort={{ field: 'priority', order: 'ASC' }}>
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <TextField source="name" label="Name" />
         <TypedFunctionField<GuardrailRecord>

@@ -2,9 +2,11 @@
 
 import {
   List, Datagrid, TextField, NumberField, DateField,
-  FunctionField, NumberInput, SelectInput,
+  FunctionField, useListContext,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
 const statusColors: Record<string, 'success' | 'warning' | 'error' | 'default'> = {
   completed: 'success',
@@ -12,18 +14,31 @@ const statusColors: Record<string, 'success' | 'warning' | 'error' | 'default'> 
   failed: 'error',
 };
 
-const filters = [
-  <NumberInput key="agentId" source="agentId" label="Agent ID" />,
-  <SelectInput key="status" source="status" label="Status" choices={[
-    { id: 'running', name: 'Running' },
-    { id: 'completed', name: 'Completed' },
-    { id: 'failed', name: 'Failed' },
-  ]} />,
+const statusFilterChoices = [
+  { id: 'running', name: 'Running' },
+  { id: 'completed', name: 'Completed' },
+  { id: 'failed', name: 'Failed' },
 ];
+
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'agentId', label: 'Agent ID', kind: 'combo', choices: [] },
+  { source: 'status', label: 'Status', kind: 'status', choices: statusFilterChoices },
+];
+
+function ExecutionListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function ExecutionList() {
   return (
-    <List filters={filters} sort={{ field: 'startedAt', order: 'DESC' }}>
+    <List actions={<ExecutionListToolbar />} sort={{ field: 'startedAt', order: 'DESC' }}>
       <Datagrid rowClick="show" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
         <NumberField source="agentId" label="Agent" />

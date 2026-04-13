@@ -8,26 +8,36 @@ import {
   DateField,
   BooleanField,
   FunctionField,
-  TextInput,
-  SelectInput,
+  useListContext,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
-  <SelectInput
-    key="enabled"
-    source="enabled"
-    choices={[
-      { id: true, name: 'Enabled' },
-      { id: false, name: 'Disabled' },
-    ]}
-  />,
+const enabledChoices = [
+  { id: true, name: 'Enabled' },
+  { id: false, name: 'Disabled' },
 ];
+
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
+  { source: 'enabled', label: 'Enabled', kind: 'combo', choices: enabledChoices },
+];
+
+function RoleListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function RoleList() {
   return (
-    <List filters={filters} sort={{ field: 'id', order: 'ASC' }}>
+    <List actions={<RoleListToolbar />} sort={{ field: 'id', order: 'ASC' }}>
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
         <TextField source="name" />

@@ -8,10 +8,11 @@ import {
   DateField,
   FunctionField,
   ReferenceField,
-  SelectInput,
+  useListContext,
 } from 'react-admin';
 import { Chip } from '@mui/material';
-import { useTenantContext } from '@oven/dashboard-ui';
+import { FilterToolbar, useTenantContext } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
 const statusColors: Record<string, 'success' | 'warning' | 'error' | 'info' | 'default'> = {
   active: 'success',
@@ -21,20 +22,28 @@ const statusColors: Record<string, 'success' | 'warning' | 'error' | 'info' | 'd
   expired: 'default',
 };
 
-const filters = [
-  <SelectInput
-    key="status"
-    source="status"
-    label="Status"
-    choices={[
-      { id: 'active', name: 'Active' },
-      { id: 'trial', name: 'Trial' },
-      { id: 'past_due', name: 'Past Due' },
-      { id: 'cancelled', name: 'Cancelled' },
-      { id: 'expired', name: 'Expired' },
-    ]}
-  />,
+const statusChoices = [
+  { id: 'active', name: 'Active' },
+  { id: 'trial', name: 'Trial' },
+  { id: 'past_due', name: 'Past Due' },
+  { id: 'cancelled', name: 'Cancelled' },
+  { id: 'expired', name: 'Expired' },
 ];
+
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'status', label: 'Status', kind: 'status', choices: statusChoices },
+];
+
+function TenantSubscriptionListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function TenantSubscriptionList() {
   const activeTenantId = useTenantContext((s) => s.activeTenantId);
@@ -42,7 +51,7 @@ export default function TenantSubscriptionList() {
 
   return (
     <List
-      filters={filters}
+      actions={<TenantSubscriptionListToolbar />}
       filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
       sort={{ field: 'id', order: 'DESC' }}
     >

@@ -9,10 +9,13 @@ import {
   ReferenceField,
   ReferenceInput,
   SelectInput,
+  useListContext,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
-const filters = [
+const referenceFilters = [
   <ReferenceInput key="providerId" source="providerId" reference="providers" label="Provider" alwaysOn>
     <SelectInput optionText="name" />
   </ReferenceInput>,
@@ -21,9 +24,22 @@ const filters = [
   </ReferenceInput>,
 ];
 
+const filterDefinitions: FilterDefinition[] = [];
+
+function ProviderServiceListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
+
 export default function ProviderServiceList() {
   return (
-    <List filters={filters} sort={{ field: 'id', order: 'DESC' }}>
+    <List filters={referenceFilters} actions={<ProviderServiceListToolbar />} sort={{ field: 'id', order: 'DESC' }}>
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
         <ReferenceField source="providerId" reference="providers" label="Provider">

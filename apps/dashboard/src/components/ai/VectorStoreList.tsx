@@ -8,13 +8,12 @@ import {
   BooleanField,
   DateField,
   ReferenceField,
-  TextInput,
-  SelectInput,
-  BooleanInput,
   EditButton,
+  useListContext,
 } from 'react-admin';
 import { Chip } from '@mui/material';
-import { useTenantContext } from '@oven/dashboard-ui';
+import { FilterToolbar, useTenantContext } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 import {
   resolveAdapterColor,
   type VectorStoreRecord,
@@ -26,11 +25,22 @@ const adapterChoices = [
   { id: 'pinecone', name: 'Pinecone' },
 ];
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
-  <SelectInput key="adapter" source="adapter" label="Adapter" choices={adapterChoices} />,
-  <BooleanInput key="enabled" source="enabled" label="Enabled" />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
+  { source: 'adapter', label: 'Adapter', kind: 'combo', choices: adapterChoices },
+  { source: 'enabled', label: 'Enabled', kind: 'boolean' },
 ];
+
+function VectorStoreListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function VectorStoreList() {
   const activeTenantId = useTenantContext((s) => s.activeTenantId);
@@ -38,7 +48,7 @@ export default function VectorStoreList() {
 
   return (
     <List
-      filters={filters}
+      actions={<VectorStoreListToolbar />}
       filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
       sort={{ field: 'id', order: 'DESC' }}
     >

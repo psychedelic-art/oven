@@ -4,10 +4,12 @@ import {
   TextField,
   DateField,
   EditButton,
-  SelectInput,
   FunctionField,
+  useListContext,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
 const statusColors: Record<string, 'success' | 'error' | 'warning' | 'default'> = {
   connected: 'success',
@@ -21,13 +23,24 @@ const transportChoices = [
   { id: 'http', name: 'HTTP' },
 ];
 
-const filters = [
-  <SelectInput key="transport" source="transport" choices={transportChoices} alwaysOn />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'transport', label: 'Transport', kind: 'status', choices: transportChoices, alwaysOn: true },
 ];
+
+function ChatMCPConnectionListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export function ChatMCPConnectionList() {
   return (
-    <List filters={filters} sort={{ field: 'updatedAt', order: 'DESC' }}>
+    <List actions={<ChatMCPConnectionListToolbar />} sort={{ field: 'updatedAt', order: 'DESC' }}>
       <Datagrid rowClick="edit">
         <TextField source="name" />
         <TextField source="url" />

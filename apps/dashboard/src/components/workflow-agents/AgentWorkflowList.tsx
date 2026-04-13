@@ -8,10 +8,11 @@ import {
   DateField,
   FunctionField,
   EditButton,
-  TextInput,
-  SelectInput,
+  useListContext,
 } from 'react-admin';
 import { Chip, Box } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
 const statusChoices = [
   { id: 'draft', name: 'Draft' },
@@ -25,14 +26,25 @@ const statusColors: Record<string, 'default' | 'success' | 'warning'> = {
   archived: 'warning',
 };
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
-  <SelectInput key="status" source="status" choices={statusChoices} />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
+  { source: 'status', label: 'Status', kind: 'status', choices: statusChoices },
 ];
+
+function AgentWorkflowListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export function AgentWorkflowList() {
   return (
-    <List filters={filters} sort={{ field: 'updatedAt', order: 'DESC' }}>
+    <List actions={<AgentWorkflowListToolbar />} sort={{ field: 'updatedAt', order: 'DESC' }}>
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
         <TextField source="name" />

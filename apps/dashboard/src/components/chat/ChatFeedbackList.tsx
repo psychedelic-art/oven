@@ -5,22 +5,35 @@ import {
   NumberField,
   DateField,
   FunctionField,
-  SelectInput,
+  useListContext,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
 const ratingChoices = [
   { id: 'positive', name: 'Positive' },
   { id: 'negative', name: 'Negative' },
 ];
 
-const filters = [
-  <SelectInput key="rating" source="rating" choices={ratingChoices} alwaysOn />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'rating', label: 'Rating', kind: 'status', choices: ratingChoices, alwaysOn: true },
 ];
+
+function ChatFeedbackListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export function ChatFeedbackList() {
   return (
-    <List filters={filters} sort={{ field: 'createdAt', order: 'DESC' }}>
+    <List actions={<ChatFeedbackListToolbar />} sort={{ field: 'createdAt', order: 'DESC' }}>
       <Datagrid>
         <NumberField source="id" />
         <NumberField source="sessionId" label="Session" />

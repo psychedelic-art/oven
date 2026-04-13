@@ -2,9 +2,11 @@
 
 import {
   List, Datagrid, TextField, BooleanField, DateField,
-  TextInput, SelectInput, EditButton,
+  EditButton, useListContext,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
 const categoryColors: Record<string, 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'default'> = {
   llm: 'primary',
@@ -15,21 +17,34 @@ const categoryColors: Record<string, 'primary' | 'secondary' | 'success' | 'warn
   memory: 'success',
 };
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
-  <SelectInput key="category" source="category" label="Category" choices={[
-    { id: 'llm', name: 'LLM' },
-    { id: 'tool', name: 'Tool' },
-    { id: 'condition', name: 'Condition' },
-    { id: 'transform', name: 'Transform' },
-    { id: 'human-in-the-loop', name: 'Human Review' },
-    { id: 'memory', name: 'Memory' },
-  ]} />,
+const categoryChoices = [
+  { id: 'llm', name: 'LLM' },
+  { id: 'tool', name: 'Tool' },
+  { id: 'condition', name: 'Condition' },
+  { id: 'transform', name: 'Transform' },
+  { id: 'human-in-the-loop', name: 'Human Review' },
+  { id: 'memory', name: 'Memory' },
 ];
+
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
+  { source: 'category', label: 'Category', kind: 'status', choices: categoryChoices },
+];
+
+function NodeListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function NodeList() {
   return (
-    <List filters={filters}>
+    <List actions={<NodeListToolbar />}>
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <TextField source="name" label="Name" />
         <TextField source="slug" label="Slug" />

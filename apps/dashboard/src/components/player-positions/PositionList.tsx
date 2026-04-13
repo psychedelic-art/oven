@@ -6,20 +6,33 @@ import {
   NumberField,
   DateField,
   FunctionField,
-  TextInput,
+  useListContext,
 } from 'react-admin';
 import { Box } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
-const filters = [
-  <TextInput key="playerId" source="playerId" label="Player ID" alwaysOn />,
-  <TextInput key="sessionId" source="sessionId" label="Session ID" />,
-  <TextInput key="mapId" source="mapId" label="Map ID" />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'playerId', label: 'Player ID', kind: 'quick-search', alwaysOn: true },
+  { source: 'sessionId', label: 'Session ID', kind: 'combo', choices: [] },
+  { source: 'mapId', label: 'Map ID', kind: 'combo', choices: [] },
 ];
+
+function PositionListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function PositionList() {
   return (
     <List
-      filters={filters}
+      actions={<PositionListToolbar />}
       sort={{ field: 'id', order: 'DESC' }}
     >
       <Datagrid rowClick="show" bulkActionButtons={false}>

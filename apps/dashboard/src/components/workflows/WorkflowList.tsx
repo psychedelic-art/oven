@@ -8,20 +8,32 @@ import {
   BooleanField,
   DateField,
   FunctionField,
-  TextInput,
-  BooleanInput,
+  useListContext,
 } from 'react-admin';
 import { Chip, Box } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
-  <BooleanInput key="enabled" source="enabled" label="Enabled" />,
-  <TextInput key="triggerEvent" source="triggerEvent" label="Trigger Event" />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
+  { source: 'enabled', label: 'Enabled', kind: 'boolean' },
+  { source: 'triggerEvent', label: 'Trigger Event', kind: 'combo', choices: [] },
 ];
+
+function WorkflowListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function WorkflowList() {
   return (
-    <List filters={filters} sort={{ field: 'id', order: 'DESC' }}>
+    <List actions={<WorkflowListToolbar />} sort={{ field: 'id', order: 'DESC' }}>
       <Datagrid rowClick="show" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
         <TextField source="name" label="Name" />

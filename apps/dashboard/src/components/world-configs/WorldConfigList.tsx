@@ -8,17 +8,30 @@ import {
   BooleanField,
   DateField,
   FunctionField,
-  TextInput,
+  useListContext,
 } from 'react-admin';
 import { Chip, Box } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
 ];
+
+function WorldConfigListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function WorldConfigList() {
   return (
-    <List filters={filters} sort={{ field: 'id', order: 'ASC' }}>
+    <List actions={<WorldConfigListToolbar />} sort={{ field: 'id', order: 'ASC' }}>
       <Datagrid rowClick="show" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
         <TextField source="name" />

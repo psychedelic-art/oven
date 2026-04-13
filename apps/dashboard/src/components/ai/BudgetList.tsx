@@ -8,11 +8,12 @@ import {
   BooleanField,
   DateField,
   FunctionField,
-  SelectInput,
-  BooleanInput,
   EditButton,
+  useListContext,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
 const scopeChoices = [
   { id: 'global', name: 'Global' },
@@ -28,14 +29,25 @@ const scopeColors: Record<string, 'secondary' | 'primary' | 'success' | 'warning
   provider: 'warning',
 };
 
-const filters = [
-  <SelectInput key="scope" source="scope" label="Scope" choices={scopeChoices} alwaysOn />,
-  <BooleanInput key="enabled" source="enabled" label="Enabled" />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'scope', label: 'Scope', kind: 'status', choices: scopeChoices, alwaysOn: true },
+  { source: 'enabled', label: 'Enabled', kind: 'boolean' },
 ];
+
+function BudgetListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function BudgetList() {
   return (
-    <List filters={filters} sort={{ field: 'id', order: 'DESC' }}>
+    <List actions={<BudgetListToolbar />} sort={{ field: 'id', order: 'DESC' }}>
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <FunctionField
           label="Scope"
