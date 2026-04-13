@@ -1,24 +1,21 @@
+import { cn } from '@oven/oven-ui';
+
 interface ChatRendererProps {
   title: string;
   welcomeMessage?: string;
   chatProvider?: string;
 }
 
-/**
- * Renders a chat page.
- * Currently shows a placeholder — integrations like agent-ui, intercom,
- * or custom widgets can be wired up via the chatProvider field.
- */
-export default function ChatRenderer({
+export function ChatRenderer({
   title,
   welcomeMessage,
   chatProvider,
 }: ChatRendererProps) {
   return (
-    <div className="portal-chat">
-      <h2 className="portal-page-title">{title}</h2>
-      {welcomeMessage && <p className="chat-welcome">{welcomeMessage}</p>}
-      <div className="chat-placeholder">
+    <div className={cn('portal-chat')}>
+      <h2 className={cn('portal-page-title')}>{title}</h2>
+      {welcomeMessage && <p className={cn('chat-welcome')}>{welcomeMessage}</p>}
+      <div className={cn('chat-placeholder')}>
         {chatProvider ? (
           <p>
             Chat provider: <strong>{chatProvider}</strong>
