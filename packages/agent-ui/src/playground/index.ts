@@ -8,3 +8,4 @@ export { RuntimeConfigPanel } from './panels/RuntimeConfigPanel';
 export { ExecutionInspector } from './panels/ExecutionInspector';
 export { EvalReportPanel } from './panels/EvalReportPanel';
 export { TracePanel } from './panels/TracePanel';
+export type { SessionConfig } from './UnifiedAIPlayground';

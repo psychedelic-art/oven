@@ -18,3 +18,9 @@ export type {
   UsePlaygroundCommandsReturn,
   PlaygroundRuntimeConfig,
 } from './usePlaygroundCommands';
+export { useSessionManager } from './useSessionManager';
+export type {
+  UseSessionManagerOpts,
+  UseSessionManagerReturn,
+  SessionSummary,
+} from './useSessionManager';
