@@ -8,10 +8,10 @@ import {
   BooleanField,
   DateField,
   ReferenceField,
-  TextInput,
-  SelectInput,
+  useListContext,
 } from 'react-admin';
-import { useTenantContext } from '@oven/dashboard-ui';
+import { FilterToolbar, useTenantContext } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
 const channelTypeChoices = [
   { id: 'whatsapp', name: 'WhatsApp' },
@@ -19,24 +19,27 @@ const channelTypeChoices = [
   { id: 'email', name: 'Email' },
 ];
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
-  <SelectInput
-    key="channelType"
-    source="channelType"
-    label="Channel Type"
-    choices={channelTypeChoices}
-  />,
-  <SelectInput
-    key="enabled"
-    source="enabled"
-    label="Enabled"
-    choices={[
-      { id: 'true', name: 'Yes' },
-      { id: 'false', name: 'No' },
-    ]}
-  />,
+const enabledChoices = [
+  { id: 'true', name: 'Yes' },
+  { id: 'false', name: 'No' },
 ];
+
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
+  { source: 'channelType', label: 'Channel Type', kind: 'status', choices: channelTypeChoices },
+  { source: 'enabled', label: 'Enabled', kind: 'combo', choices: enabledChoices },
+];
+
+function ChannelListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function ChannelList() {
   const activeTenantId = useTenantContext((s) => s.activeTenantId);
@@ -44,7 +47,7 @@ export default function ChannelList() {
 
   return (
     <List
-      filters={filters}
+      actions={<ChannelListToolbar />}
       filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
       sort={{ field: 'id', order: 'DESC' }}
     >

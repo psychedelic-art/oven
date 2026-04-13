@@ -7,19 +7,32 @@ import {
   NumberField,
   DateField,
   FunctionField,
-  TextInput,
   DeleteButton,
+  useListContext,
 } from 'react-admin';
 import { Chip, Box } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
-const filters = [
-  <TextInput key="q" source="q" label="Search content" alwaysOn />,
-  <TextInput key="key" source="key" label="Memory Key" />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search content', kind: 'quick-search', alwaysOn: true },
+  { source: 'key', label: 'Memory Key', kind: 'combo', choices: [] },
 ];
+
+function AgentMemoryListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export function AgentMemoryList() {
   return (
-    <List filters={filters} sort={{ field: 'updatedAt', order: 'DESC' }} emptyWhileLoading>
+    <List actions={<AgentMemoryListToolbar />} sort={{ field: 'updatedAt', order: 'DESC' }} emptyWhileLoading>
       <Datagrid bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
         <FunctionField

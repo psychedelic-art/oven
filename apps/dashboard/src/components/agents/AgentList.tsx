@@ -2,9 +2,11 @@
 
 import {
   List, Datagrid, TextField, NumberField, BooleanField, DateField,
-  FunctionField, TextInput, BooleanInput, EditButton, useRecordContext,
+  FunctionField, EditButton, useRecordContext, useListContext,
 } from 'react-admin';
 import { Chip, Button, Box } from '@mui/material';
+import { FilterToolbar, useTenantContext } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { useNavigate } from 'react-router-dom';
 
@@ -28,14 +30,26 @@ function TestButton() {
   );
 }
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
-  <BooleanInput key="enabled" source="enabled" label="Enabled" />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
+  { source: 'enabled', label: 'Enabled', kind: 'boolean' },
 ];
 
-export default function AgentList() {
+function AgentListToolbar() {
+  const { filterValues, setFilters } = useListContext();
   return (
-    <List filters={filters} sort={{ field: 'updatedAt', order: 'DESC' }}>
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
+
+export default function AgentList() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+  return (
+    <List actions={<AgentListToolbar />} filter={activeTenantId ? { tenantId: activeTenantId } : undefined} sort={{ field: 'updatedAt', order: 'DESC' }}>
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
         <TextField source="name" label="Name" />

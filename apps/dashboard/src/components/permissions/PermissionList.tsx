@@ -6,9 +6,10 @@ import {
   TextField,
   NumberField,
   DateField,
-  TextInput,
-  SelectInput,
+  useListContext,
 } from 'react-admin';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
 const RESOURCE_CHOICES = [
   { id: 'players', name: 'Players' },
@@ -22,14 +23,25 @@ const RESOURCE_CHOICES = [
   { id: 'rls-policies', name: 'RLS Policies' },
 ];
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
-  <SelectInput key="resource" source="resource" choices={RESOURCE_CHOICES} />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
+  { source: 'resource', label: 'Resource', kind: 'status', choices: RESOURCE_CHOICES },
 ];
+
+function PermissionListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function PermissionList() {
   return (
-    <List filters={filters} sort={{ field: 'id', order: 'ASC' }}>
+    <List actions={<PermissionListToolbar />} sort={{ field: 'id', order: 'ASC' }}>
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
         <TextField source="slug" />

@@ -1,15 +1,28 @@
 'use client';
-import { List, Datagrid, NumberField, TextField, DateField, FunctionField, TextInput } from 'react-admin';
+import { List, Datagrid, NumberField, TextField, DateField, FunctionField, useListContext } from 'react-admin';
 import { Chip } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
-  <TextInput key="status" source="status" label="Status" />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
+  { source: 'status', label: 'Status', kind: 'combo', choices: [] },
 ];
+
+function UserListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function UserList() {
   return (
-    <List filters={filters} sort={{ field: 'id', order: 'DESC' }}>
+    <List actions={<UserListToolbar />} sort={{ field: 'id', order: 'DESC' }}>
       <Datagrid rowClick="show" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
         <TextField source="name" label="Name" />

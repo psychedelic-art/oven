@@ -11,10 +11,18 @@ export { useCommandPalette } from './useCommandPalette';
 export type { UseCommandPaletteReturn } from './useCommandPalette';
 export { useDualStateMessages } from './useDualStateMessages';
 export type { UseDualStateMessagesReturn } from './useDualStateMessages';
-export { useChat } from './useChat';
+export { useChat, useChatAI, useChatLegacy, OvenChatTransport } from './useChat';
+export type { UseChatOpts } from './useChat';
+export type { UseChatAIOpts } from './useChatAI';
 export { usePlaygroundCommands, WORKFLOW_BLOCKED_COMMANDS } from './usePlaygroundCommands';
 export type {
   UsePlaygroundCommandsOptions,
   UsePlaygroundCommandsReturn,
   PlaygroundRuntimeConfig,
 } from './usePlaygroundCommands';
+export { useSessionManager } from './useSessionManager';
+export type {
+  UseSessionManagerOpts,
+  UseSessionManagerReturn,
+  SessionSummary,
+} from './useSessionManager';

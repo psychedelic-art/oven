@@ -8,10 +8,11 @@ import {
   BooleanField,
   DateField,
   FunctionField,
-  TextInput,
-  SelectInput,
+  useListContext,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
 const typeColors: Record<string, 'warning' | 'error'> = {
   warning: 'warning',
@@ -23,15 +24,26 @@ const typeChoices = [
   { id: 'exceeded', name: 'Exceeded' },
 ];
 
-const filters = [
-  <TextInput key="budgetId" source="budgetId" label="Budget ID" alwaysOn />,
-  <SelectInput key="type" source="type" label="Type" choices={typeChoices} />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'budgetId', label: 'Budget ID', kind: 'quick-search', alwaysOn: true },
+  { source: 'type', label: 'Type', kind: 'status', choices: typeChoices },
 ];
+
+function BudgetAlertListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function BudgetAlertList() {
   return (
     <List
-      filters={filters}
+      actions={<BudgetAlertListToolbar />}
       sort={{ field: 'createdAt', order: 'DESC' }}
       hasCreate={false}
     >

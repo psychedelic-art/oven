@@ -1,10 +1,13 @@
 import { getDb } from '@oven/module-registry/db';
 import { eventBus } from '@oven/module-registry';
-import { chatMessages } from '../schema';
-import type { MessageContentPart, CommandResult } from '../types';
+import { chatMessages, chatSessions } from '../schema';
+import type { MessageContentPart, CommandResult, StreamEvent } from '../types';
 import { resolveCommand, executeCommand } from './command-registry';
 import { loadHooks, executeHooks } from './hook-manager';
 import type { HookContext } from './hook-manager';
+import { buildSystemPrompt } from './prompt-builder';
+import { bridgeAIStreamToEvents } from './streaming-handler';
+import { eq } from 'drizzle-orm';
 
 // ─── Record User Message ────────────────────────────────────
 
@@ -127,13 +130,91 @@ export async function processMessage(input: {
   const content: MessageContentPart[] = [{ type: 'text', text: input.text }];
   const messageId = await recordUserMessage({ sessionId: input.sessionId, content });
 
-  // TODO: Sprint 4A.4 - invoke agent via prompt-builder + agent-core
-
   // 4. Post-message hooks
   const postHooks = await loadHooks('post-message', input.tenantId);
   await executeHooks(postHooks, { ...hookCtx, messageId });
 
   return { type: 'message', messageId };
+}
+
+// ─── Streaming Message Processing (Sprint 4A.4) ────────────
+// Processes a message and returns an async iterable of StreamEvent
+// for SSE streaming. Invokes the backing agent via aiStreamText and
+// bridges the raw text stream into our event format.
+
+export async function* processMessageStreaming(input: {
+  sessionId: number;
+  tenantId?: number;
+  text: string;
+}): AsyncGenerator<StreamEvent> {
+  const db = getDb();
+
+  // 1. Record user message
+  const content: MessageContentPart[] = [{ type: 'text', text: input.text }];
+  await recordUserMessage({ sessionId: input.sessionId, content });
+
+  // 2. Resolve the backing agent for this session
+  const sessions = await db.select().from(chatSessions)
+    .where(eq(chatSessions.id, input.sessionId));
+  const session = sessions[0];
+  if (!session) {
+    yield { type: 'error', code: 'SESSION_NOT_FOUND', message: 'Session not found' };
+    return;
+  }
+
+  // 3. Build system prompt
+  const systemPrompt = await buildSystemPrompt({
+    tenantId: input.tenantId ?? (session.tenantId as number | undefined),
+    includeCommands: true,
+    includeSkills: true,
+  });
+
+  // 4. Invoke LLM via module-ai streaming (lazy import to avoid
+  //    hard coupling — module-ai may not be registered in all setups)
+  let aiStreamText: (params: {
+    prompt: string;
+    system?: string;
+    model?: string;
+    tenantId?: number;
+    toolName?: string;
+  }) => Promise<ReadableStream<string>>;
+  try {
+    const moduleAi = await import('@oven/module-ai');
+    aiStreamText = moduleAi.aiStreamText;
+  } catch {
+    yield { type: 'error', code: 'MODULE_NOT_FOUND', message: 'module-ai not available' };
+    return;
+  }
+
+  try {
+    const textStream = await aiStreamText({
+      prompt: input.text,
+      system: systemPrompt,
+      model: 'fast',
+      tenantId: input.tenantId ?? (session.tenantId as number | undefined),
+      toolName: `chat.session.${input.sessionId}`,
+    });
+
+    // 5. Bridge the text stream to our StreamEvent format
+    const events = bridgeAIStreamToEvents(textStream, async (fullText: string) => {
+      const assistantId = await recordAssistantMessage({
+        sessionId: input.sessionId,
+        content: [{ type: 'text', text: fullText }],
+        metadata: { source: 'chat-streaming' },
+      });
+      return assistantId;
+    });
+
+    for await (const event of events) {
+      yield event;
+    }
+  } catch (error) {
+    yield {
+      type: 'error',
+      code: 'INVOKE_ERROR',
+      message: error instanceof Error ? error.message : 'Agent invocation failed',
+    };
+  }
 }
 
 // ─── Check if message is a command ──────────────────────────

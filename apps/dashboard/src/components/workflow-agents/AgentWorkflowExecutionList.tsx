@@ -7,9 +7,11 @@ import {
   NumberField,
   DateField,
   FunctionField,
-  SelectInput,
+  useListContext,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
 const statusChoices = [
   { id: 'pending', name: 'Pending' },
@@ -29,13 +31,24 @@ const statusColors: Record<string, 'default' | 'info' | 'success' | 'error' | 'w
   cancelled: 'default',
 };
 
-const filters = [
-  <SelectInput key="status" source="status" choices={statusChoices} alwaysOn />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'status', label: 'Status', kind: 'status', choices: statusChoices, alwaysOn: true },
 ];
+
+function AgentWorkflowExecutionListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export function AgentWorkflowExecutionList() {
   return (
-    <List filters={filters} sort={{ field: 'startedAt', order: 'DESC' }}>
+    <List actions={<AgentWorkflowExecutionListToolbar />} sort={{ field: 'startedAt', order: 'DESC' }}>
       <Datagrid rowClick="show" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
         <NumberField source="workflowId" label="Workflow" />

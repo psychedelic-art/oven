@@ -8,14 +8,14 @@ import {
   DateField,
   FunctionField,
   ReferenceField,
-  TextInput,
-  SelectInput,
   useRecordContext,
+  useListContext,
 } from 'react-admin';
 import { Chip, Button } from '@mui/material';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import { useNavigate } from 'react-router-dom';
-import { useTenantContext } from '@oven/dashboard-ui';
+import { FilterToolbar, useTenantContext } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
 const statusChoices = [
   { id: 'draft', name: 'Draft' },
@@ -23,9 +23,9 @@ const statusChoices = [
   { id: 'archived', name: 'Archived' },
 ];
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
-  <SelectInput key="status" source="status" label="Status" choices={statusChoices} />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
+  { source: 'status', label: 'Status', kind: 'status', choices: statusChoices },
 ];
 
 function OpenEditorButton() {
@@ -48,13 +48,24 @@ function OpenEditorButton() {
   );
 }
 
+function FormListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
+
 export default function FormList() {
   const activeTenantId = useTenantContext((s) => s.activeTenantId);
   const isAdminMode = useTenantContext((s) => s.isAdminMode);
 
   return (
     <List
-      filters={filters}
+      actions={<FormListToolbar />}
       filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
       sort={{ field: 'id', order: 'DESC' }}
     >

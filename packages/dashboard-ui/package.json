@@ -13,6 +13,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@oven/agent-ui": "workspace:*",
     "zustand": "^5.0.0"
   },
   "peerDependencies": {

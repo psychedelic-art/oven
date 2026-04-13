@@ -7,20 +7,32 @@ import {
   TextField,
   DateField,
   FunctionField,
-  TextInput,
-  BooleanInput,
+  useListContext,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
-  <BooleanInput key="enabled" source="enabled" label="Enabled" />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
+  { source: 'enabled', label: 'Enabled', kind: 'boolean' },
 ];
+
+function TenantListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function TenantList() {
   return (
     <List
-      filters={filters}
+      actions={<TenantListToolbar />}
       sort={{ field: 'id', order: 'DESC' }}
     >
       <Datagrid rowClick="show" bulkActionButtons={false}>

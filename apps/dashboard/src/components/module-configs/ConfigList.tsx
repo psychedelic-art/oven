@@ -8,25 +8,33 @@ import {
   DateField,
   FunctionField,
   ReferenceField,
-  TextInput,
-  SelectInput,
+  useListContext,
 } from 'react-admin';
 import { Chip, Box } from '@mui/material';
-import { useTenantContext } from '@oven/dashboard-ui';
+import { FilterToolbar, useTenantContext } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
-const filters = [
-  <TextInput key="moduleName" source="moduleName" label="Module" alwaysOn />,
-  <SelectInput
-    key="scope"
-    source="scope"
-    label="Scope"
-    choices={[
-      { id: 'module', name: 'Module Default' },
-      { id: 'instance', name: 'Instance Override' },
-    ]}
-  />,
-  <TextInput key="key" source="key" label="Config Key" />,
+const scopeChoices = [
+  { id: 'module', name: 'Module Default' },
+  { id: 'instance', name: 'Instance Override' },
 ];
+
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'moduleName', label: 'Module', kind: 'quick-search', alwaysOn: true },
+  { source: 'scope', label: 'Scope', kind: 'status', choices: scopeChoices },
+  { source: 'key', label: 'Config Key', kind: 'combo', choices: [] },
+];
+
+function ConfigListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function ConfigList() {
   const activeTenantId = useTenantContext((s) => s.activeTenantId);
@@ -34,7 +42,7 @@ export default function ConfigList() {
 
   return (
     <List
-      filters={filters}
+      actions={<ConfigListToolbar />}
       filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
       sort={{ field: 'id', order: 'DESC' }}
     >

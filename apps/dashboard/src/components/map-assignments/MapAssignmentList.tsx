@@ -6,18 +6,31 @@ import {
   NumberField,
   DateField,
   FunctionField,
-  TextInput,
+  useListContext,
 } from 'react-admin';
 import { Chip, Box } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
-const filters = [
-  <TextInput key="playerId" source="playerId" label="Player ID" alwaysOn />,
-  <TextInput key="mapId" source="mapId" label="Map ID" />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'playerId', label: 'Player ID', kind: 'quick-search', alwaysOn: true },
+  { source: 'mapId', label: 'Map ID', kind: 'combo', choices: [] },
 ];
+
+function MapAssignmentListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function MapAssignmentList() {
   return (
-    <List filters={filters} sort={{ field: 'id', order: 'DESC' }}>
+    <List actions={<MapAssignmentListToolbar />} sort={{ field: 'id', order: 'DESC' }}>
       <Datagrid rowClick="show" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
         <NumberField source="playerId" label="Player" />

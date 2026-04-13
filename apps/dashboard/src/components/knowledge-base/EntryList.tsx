@@ -9,38 +9,57 @@ import {
   DateField,
   FunctionField,
   ReferenceField,
-  TextInput,
-  BooleanInput,
   ReferenceInput,
   AutocompleteInput,
-  SelectInput,
   EditButton,
   ShowButton,
+  useListContext,
 } from 'react-admin';
 import { Box, Chip } from '@mui/material';
-import { useTenantContext } from '@oven/dashboard-ui';
+import { FilterToolbar, useTenantContext } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 import EmbeddingStatusBadge from './EmbeddingStatusBadge';
 
-const filters = [
-  <TextInput key="q" source="q" label="Search question" alwaysOn />,
+const languageChoices = [
+  { id: 'es', name: 'Spanish' },
+  { id: 'en', name: 'English' },
+  { id: 'pt', name: 'Portuguese' },
+];
+
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search question', kind: 'quick-search', alwaysOn: true },
+  { source: 'language', label: 'Language', kind: 'combo', choices: languageChoices },
+  { source: 'enabled', label: 'Enabled', kind: 'boolean' },
+];
+
+/**
+ * Reference-backed filters (knowledgeBaseId, categoryId) cannot be expressed
+ * as FilterDefinition choices because they need live data from the API.
+ * We render them as always-on React Admin ReferenceInput fields alongside
+ * the FilterToolbar until sprint-06 adds reference-backed ComboBoxFilter
+ * support.
+ */
+const referenceFilters = [
   <ReferenceInput key="knowledgeBaseId" source="knowledgeBaseId" reference="kb-knowledge-bases" alwaysOn>
     <AutocompleteInput optionText="name" label="Knowledge Base" />
   </ReferenceInput>,
   <ReferenceInput key="categoryId" source="categoryId" reference="kb-categories">
     <AutocompleteInput optionText="name" label="Category" />
   </ReferenceInput>,
-  <SelectInput
-    key="language"
-    source="language"
-    label="Language"
-    choices={[
-      { id: 'es', name: 'Spanish' },
-      { id: 'en', name: 'English' },
-      { id: 'pt', name: 'Portuguese' },
-    ]}
-  />,
-  <BooleanInput key="enabled" source="enabled" label="Enabled" />,
 ];
+
+function EntryListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <FilterToolbar
+        filters={filterDefinitions}
+        filterValues={filterValues}
+        setFilters={(f) => setFilters(f, undefined, false)}
+      />
+    </Box>
+  );
+}
 
 export default function EntryList() {
   const activeTenantId = useTenantContext((s) => s.activeTenantId);
@@ -48,7 +67,8 @@ export default function EntryList() {
 
   return (
     <List
-      filters={filters}
+      actions={<EntryListToolbar />}
+      filters={referenceFilters}
       filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
       sort={{ field: 'priority', order: 'DESC' }}
     >

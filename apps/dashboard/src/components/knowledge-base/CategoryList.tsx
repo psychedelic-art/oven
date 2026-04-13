@@ -8,24 +8,38 @@ import {
   BooleanField,
   DateField,
   FunctionField,
-  TextInput,
-  BooleanInput,
   ReferenceInput,
   ReferenceField,
   AutocompleteInput,
   EditButton,
   DeleteButton,
+  useListContext,
 } from 'react-admin';
 import { Chip } from '@mui/material';
-import { useTenantContext } from '@oven/dashboard-ui';
+import { FilterToolbar, useTenantContext } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
+const referenceFilters = [
   <ReferenceInput key="knowledgeBaseId" source="knowledgeBaseId" reference="kb-knowledge-bases" alwaysOn>
     <AutocompleteInput optionText="name" label="Knowledge Base" />
   </ReferenceInput>,
-  <BooleanInput key="enabled" source="enabled" label="Enabled" />,
 ];
+
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
+  { source: 'enabled', label: 'Enabled', kind: 'boolean' },
+];
+
+function CategoryListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function CategoryList() {
   const activeTenantId = useTenantContext((s) => s.activeTenantId);
@@ -33,7 +47,8 @@ export default function CategoryList() {
 
   return (
     <List
-      filters={filters}
+      filters={referenceFilters}
+      actions={<CategoryListToolbar />}
       filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
       sort={{ field: 'order', order: 'ASC' }}
     >

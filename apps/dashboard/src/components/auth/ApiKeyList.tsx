@@ -1,18 +1,30 @@
 'use client';
-import { List, Datagrid, NumberField, TextField, DateField, FunctionField, ReferenceField, TextInput } from 'react-admin';
+import { List, Datagrid, NumberField, TextField, DateField, FunctionField, ReferenceField, useListContext } from 'react-admin';
 import { Chip } from '@mui/material';
-import { useTenantContext } from '@oven/dashboard-ui';
+import { FilterToolbar, useTenantContext } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
 ];
+
+function ApiKeyListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function ApiKeyList() {
   const activeTenantId = useTenantContext((s) => s.activeTenantId);
   const isAdminMode = useTenantContext((s) => s.isAdminMode);
 
   return (
-    <List filters={filters} filter={activeTenantId ? { tenantId: activeTenantId } : undefined} sort={{ field: 'id', order: 'DESC' }}>
+    <List actions={<ApiKeyListToolbar />} filter={activeTenantId ? { tenantId: activeTenantId } : undefined} sort={{ field: 'id', order: 'DESC' }}>
       <Datagrid rowClick="show" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
         <TextField source="name" label="Name" />

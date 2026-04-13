@@ -1,15 +1,17 @@
 # Todo Queue Progress
 
-Regenerated fresh on 2026-04-13 after **cycle-32** merge of
-dashboard-ux-system sprint-03 tenant context onto `origin/dev` as merge
-commit `136a1e5`.
-Session branch: `claude/stoic-hamilton-tOJfY`.
+Regenerated fresh on 2026-04-13 after **cycle-33** merge of
+dashboard-ux-system graduation + post-graduation work + @ai-sdk/react
+migration + module-chat Sprint 4A.4 closure onto `origin/dev` as merge
+commit `<TO_FILL_AFTER_MERGE>`.
+Session branch: `claude/dashboard-ux-system-nESUZ`.
 
-## Phase 0 -- Branch discovery (cycle-32)
+## Phase 0 -- Branch discovery (cycle-33)
 
-No feature branches with unmerged work exist. 6 stale tracking branches
-remain (superseded PROGRESS.md / build artifact updates). All
-inspiring-clarke-* branches fully merged.
+No feature branches with unmerged work exist after this landing.
+All prior `claude/stoic-hamilton-*` and `inspiring-clarke-*` branches
+fully merged. The session branch adds 19 commits spanning sprints 04-07
+plus post-graduation work.
 
 ## Cycle merge history (complete)
 
@@ -44,8 +46,23 @@ inspiring-clarke-* branches fully merged.
 | 30 | ui-flows | sprint-03 editor hardening | `fb8b520` | +39 |
 | 31 | dashboard-ux-system | sprint-02 UX audit | `02fc5f9` | -- |
 | 32 | dashboard-ux-system | sprint-03 tenant context | `136a1e5` | +3 |
+| **33** | **dashboard-ux-system + module-chat + agent-ui** | **graduation + post-grad + AI SDK migration + Sprint 4A.4** | **TBD** | **+82** |
 
-## Active queue (post cycle-32)
+### Cycle-33 contents (19 commits)
+
+- Sprint 04: FilterToolbar + 4 filter primitives + 3 reference list migrations (+34 tests)
+- Sprint 05a: useSessionManager + SessionSidebar + stop button + loading indicators (+10 tests)
+- Sprint 05b: theme toggle (10 presets) + connection status + layout modes + multi-run execution history
+- Sprint 05c: DashboardPlaygroundShell + AIPlaygroundPage rewrite (+9 tests)
+- Sprint 06: 5 chrome primitives (PageHeader, EmptyState, LoadingSkeleton, ErrorBoundary, MenuSectionLabel) + 20 tests; CustomMenu migration; KBPlayground rewrite (legacy preserved)
+- Sprint 07: acceptance + graduation
+- Post-grad: PlaygroundConfigPage admin settings page at /ai/playground-config
+- Post-grad: all 49 remaining filter lists migrated (zero inline `const filters = [` remaining)
+- Post-grad: AgentPlaygroundPanel rewritten (146 -> 72 lines; legacy preserved)
+- Post-grad: @ai-sdk/react migration -- useChatAI + OvenChatTransport + feature-flagged useChat (legacy fallback preserved)
+- Post-grad: module-chat Sprint 4A.4 -- processMessageStreaming + bridgeAIStreamToEvents + SSE POST handler
+
+## Active queue (post cycle-33)
 
 | Module / Program | Sprint files | Canonical doc set | Package / tests | Current sprint | Next action |
 |---|---|---|---|---|---|
@@ -54,42 +71,45 @@ inspiring-clarke-* branches fully merged.
 | `subscriptions` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-subscriptions`, 88 tests | **sprint-04 done (cycle-25)** | sprint-05-acceptance (automated pass, manual UI pending). |
 | `tenants` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-tenants`, 78 tests | sprint-03 done (cycle-8) | sprint-04-acceptance (BLOCKED on DB-mock). |
 | `config` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-config`, 24 tests | **sprint-02 done (cycle-15)** | sprint-03-rls (BLOCKED: Neon preview). |
-| `notifications` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-notifications` 87+21 tests; REGISTERED | **sprint-04 done (cycle-27)** | sprint-05-acceptance (depends on KB + agent-core). |
+| `notifications` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-notifications` 87+21 tests; REGISTERED | **sprint-04 done (cycle-27)** | **sprint-05-acceptance UNBLOCKED** (module-chat streaming now live via cycle-33). |
 | `module-knowledge-base` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-knowledge-base`, 21 tests | **sprint-02 done (cycle-16)** | sprint-03-search (BLOCKED: pgvector). |
 | `ui-flows` | 5 (sprint-00..03, 99) | 11/11 | LIVE 89+39+26 tests | **sprint-03 done (cycle-30)** | sprint-99-acceptance (automated pass, manual portal pending). |
-| `agent-ui` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/agent-ui`, 71 tests | **sprint-01 done (cycle-21)** | sprint-02 (BLOCKED: needs module-chat). |
-| `dashboard-ux-system` | 8 (sprint-00..07) | N/A (program) | LIVE `@oven/dashboard-ui`, 29 tests | **sprint-03 done (cycle-32)** | sprint-04-filter-system. |
-| `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | 310+ tests | all unblocked sprints CLOSED | sprint-02/04 BLOCKED (module-chat/agent-core). |
+| `agent-ui` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/agent-ui`, 81 tests (+10 from cycle-33) | **sprint-01 done (cycle-21)** | **sprint-02 UNBLOCKED** (module-chat streaming + @ai-sdk/react both live via cycle-33). |
+| `dashboard-ux-system` | 8 (sprint-00..07) + post-grad | N/A (program) | LIVE `@oven/dashboard-ui` 92 tests + `@oven/agent-ui` 81 tests | **GRADUATED (cycle-33)** | All sprints closed. All deferred items closed. |
+| `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | 310+ tests | all unblocked sprints CLOSED | **sprint-02/04 UNBLOCKED** (module-chat streaming + agent-core ready via cycle-33). |
 | `psychedelic-claude-code-migration` | 12 | N/A | N/A | -- | Owned elsewhere. |
 
-## Priority order (post cycle-32)
+## Priority order (post cycle-33)
 
-P0: dashboard-ux-system sprint-04 (filter system)
-P1: ui-flows sprint-99 (acceptance — automated pass, manual portal pending)
-P2: subscriptions sprint-05 (acceptance — automated pass, manual UI pending)
-SKIP: config sprint-03 (BLOCKED: Neon preview)
-SKIP: knowledge-base sprint-03 (BLOCKED: pgvector)
-SKIP: auth sprint-04 (BLOCKED: Neon)
-SKIP: files sprint-04 (BLOCKED: auth/ssr)
-SKIP: tenants sprint-04 (BLOCKED: DB-mock)
-SKIP: agent-ui sprint-02 (BLOCKED: module-chat)
-SKIP: oven-bug-sprint sprint-02/04 (BLOCKED: module-chat/agent-core)
-SKIP: psychedelic-claude-code-migration (external)
+P0: `ui-flows` sprint-99-acceptance (fully automated pass, manual portal pending)
+P1: `subscriptions` sprint-05-acceptance (automated pass, manual UI pending)
+P2: `agent-ui` sprint-02 (NEWLY UNBLOCKED -- chat integration via @ai-sdk/react + backend streaming)
+P3: `notifications` sprint-05-acceptance (NEWLY UNBLOCKED -- streaming dependencies resolved)
+P4: `oven-bug-sprint` sprint-02 / sprint-04 (NEWLY UNBLOCKED -- module-chat streaming live)
+SKIP: `config` sprint-03 (BLOCKED: Neon preview)
+SKIP: `knowledge-base` sprint-03 (BLOCKED: pgvector)
+SKIP: `auth` sprint-04 (BLOCKED: Neon)
+SKIP: `files` sprint-04 (BLOCKED: auth/ssr)
+SKIP: `tenants` sprint-04 (BLOCKED: DB-mock)
+SKIP: `psychedelic-claude-code-migration` (external)
 
 ## Known issues
 
 1. **Pre-existing typecheck baseline (465+ errors).** Unchanged across cycles.
-2. **`useTenantContext` now wired.** DRIFT-1 CLOSED in cycle-32. 19 lists + 16 creates migrated. rule-6-enforcement.test.ts guards against regression.
-3. **Permissions default to admin mode.** No authProvider is configured. When one is added, update TenantAwareLayout in AdminApp.tsx.
-4. **`ui-flows` sprint-99-acceptance naming.** Minor inconsistency, not fixing.
-5-11. (unchanged from prior cycles)
+2. ~~**`useTenantContext` now wired.**~~ CLOSED in cycle-32.
+3. ~~**Module-chat Sprint 4A.4 (agent invocation pipeline).**~~ CLOSED in cycle-33.
+4. **Permissions default to admin mode.** No authProvider is configured. When one is added, update TenantAwareLayout in AdminApp.tsx.
+5. **`ui-flows` sprint-99-acceptance naming.** Minor inconsistency, not fixing.
+6. **KBPlayground legacy features** -- confidence scores, embedding badges, re-embed triggers preserved in KBPlayground.legacy.tsx for future port if needed.
+7. **AgentPlaygroundPanel legacy** -- original hand-rolled inline chat preserved in AgentPlaygroundPanel.legacy.tsx for reference.
+8. **useChatLegacy** -- hand-rolled SSE parser preserved as fallback; can be removed after @ai-sdk/react verified in production.
 
 ## Backup inventory (current)
 
 - `bk/claude-stoic-hamilton-tOJfY-20260413` (cycle-29)
-- (20 additional backup branches from prior cycles)
+- `bk/claude-dashboard-ux-system-nESUZ-20260413` (cycle-33, this landing)
+- (prior backup branches from cycles 4-28)
 
-## Merge path to `dev` (post cycle-32)
+## Merge path to `dev` (post cycle-33)
 
-`origin/dev` HEAD is now `136a1e5 merge(cycle-32): land dashboard-ux-system
-sprint-03 tenant context`.
+`origin/dev` HEAD will be `<merge-commit> merge(cycle-33): land dashboard-ux-system graduation + @ai-sdk/react migration + module-chat Sprint 4A.4`.

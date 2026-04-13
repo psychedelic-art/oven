@@ -8,10 +8,11 @@ import {
   DateField,
   FunctionField,
   ReferenceField,
-  SelectInput,
+  useListContext,
 } from 'react-admin';
 import { Chip } from '@mui/material';
-import { useTenantContext } from '@oven/dashboard-ui';
+import { FilterToolbar, useTenantContext } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
 const statusColors: Record<string, 'success' | 'warning' | 'error' | 'default'> = {
   active: 'success',
@@ -19,28 +20,33 @@ const statusColors: Record<string, 'success' | 'warning' | 'error' | 'default'> 
   closed: 'default',
 };
 
-const filters = [
-  <SelectInput
-    key="status"
-    source="status"
-    label="Status"
-    choices={[
-      { id: 'active', name: 'Active' },
-      { id: 'escalated', name: 'Escalated' },
-      { id: 'closed', name: 'Closed' },
-    ]}
-  />,
-  <SelectInput
-    key="channelType"
-    source="channelType"
-    label="Channel Type"
-    choices={[
-      { id: 'whatsapp', name: 'WhatsApp' },
-      { id: 'sms', name: 'SMS' },
-      { id: 'email', name: 'Email' },
-    ]}
-  />,
+const statusChoices = [
+  { id: 'active', name: 'Active' },
+  { id: 'escalated', name: 'Escalated' },
+  { id: 'closed', name: 'Closed' },
 ];
+
+const channelTypeChoices = [
+  { id: 'whatsapp', name: 'WhatsApp' },
+  { id: 'sms', name: 'SMS' },
+  { id: 'email', name: 'Email' },
+];
+
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'status', label: 'Status', kind: 'status', choices: statusChoices },
+  { source: 'channelType', label: 'Channel Type', kind: 'status', choices: channelTypeChoices },
+];
+
+function ConversationListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function ConversationList() {
   const activeTenantId = useTenantContext((s) => s.activeTenantId);
@@ -48,7 +54,7 @@ export default function ConversationList() {
 
   return (
     <List
-      filters={filters}
+      actions={<ConversationListToolbar />}
       filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
       sort={{ field: 'createdAt', order: 'DESC' }}
     >

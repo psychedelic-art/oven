@@ -6,12 +6,12 @@ import {
   BooleanField,
   DateField,
   EditButton,
-  TextInput,
-  SelectInput,
-  BooleanInput,
   FunctionField,
+  useListContext,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
 const eventChoices = [
   { id: 'pre-message', name: 'Pre-Message' },
@@ -24,15 +24,26 @@ const eventChoices = [
   { id: 'session-end', name: 'Session-End' },
 ];
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
-  <SelectInput key="event" source="event" choices={eventChoices} />,
-  <BooleanInput key="enabled" source="enabled" label="Enabled only" />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
+  { source: 'event', label: 'Event', kind: 'status', choices: eventChoices },
+  { source: 'enabled', label: 'Enabled only', kind: 'boolean' },
 ];
+
+function ChatHookListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export function ChatHookList() {
   return (
-    <List filters={filters} sort={{ field: 'priority', order: 'ASC' }}>
+    <List actions={<ChatHookListToolbar />} sort={{ field: 'priority', order: 'ASC' }}>
       <Datagrid rowClick="edit">
         <TextField source="name" />
         <FunctionField

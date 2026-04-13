@@ -6,13 +6,25 @@ import {
   NumberField,
   DateField,
   ReferenceField,
-  NumberInput,
+  useListContext,
 } from 'react-admin';
-import { useTenantContext } from '@oven/dashboard-ui';
+import { FilterToolbar, useTenantContext } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
-const filters = [
-  <NumberInput key="formId" source="formId" label="Form ID" />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'formId', label: 'Form ID', kind: 'combo', choices: [] },
 ];
+
+function FormSubmissionListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function FormSubmissionList() {
   const activeTenantId = useTenantContext((s) => s.activeTenantId);
@@ -20,7 +32,7 @@ export default function FormSubmissionList() {
 
   return (
     <List
-      filters={filters}
+      actions={<FormSubmissionListToolbar />}
       filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
       sort={{ field: 'id', order: 'DESC' }}
     >

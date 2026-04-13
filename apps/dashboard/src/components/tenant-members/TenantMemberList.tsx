@@ -7,23 +7,32 @@ import {
   DateField,
   FunctionField,
   ReferenceField,
-  SelectInput,
+  useListContext,
 } from 'react-admin';
 import { Chip } from '@mui/material';
-import { useTenantContext } from '@oven/dashboard-ui';
+import { FilterToolbar, useTenantContext } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
-const filters = [
-  <SelectInput
-    key="role"
-    source="role"
-    label="Role"
-    choices={[
-      { id: 'owner', name: 'Owner' },
-      { id: 'admin', name: 'Admin' },
-      { id: 'member', name: 'Member' },
-    ]}
-  />,
+const roleChoices = [
+  { id: 'owner', name: 'Owner' },
+  { id: 'admin', name: 'Admin' },
+  { id: 'member', name: 'Member' },
 ];
+
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'role', label: 'Role', kind: 'status', choices: roleChoices },
+];
+
+function TenantMemberListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function TenantMemberList() {
   const activeTenantId = useTenantContext((s) => s.activeTenantId);
@@ -31,7 +40,7 @@ export default function TenantMemberList() {
 
   return (
     <List
-      filters={filters}
+      actions={<TenantMemberListToolbar />}
       filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
       sort={{ field: 'id', order: 'DESC' }}
     >

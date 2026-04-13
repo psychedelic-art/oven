@@ -7,10 +7,11 @@ import {
   TextField,
   DateField,
   FunctionField,
-  TextInput,
-  SelectInput,
+  useListContext,
 } from 'react-admin';
 import { Chip, Box } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
 const statusColors: Record<string, any> = {
   completed: 'success',
@@ -20,20 +21,17 @@ const statusColors: Record<string, any> = {
   pending: 'info',
 };
 
-const filters = [
-  <TextInput key="workflowId" source="workflowId" label="Workflow ID" alwaysOn />,
-  <SelectInput
-    key="status"
-    source="status"
-    label="Status"
-    choices={[
-      { id: 'pending', name: 'Pending' },
-      { id: 'running', name: 'Running' },
-      { id: 'completed', name: 'Completed' },
-      { id: 'failed', name: 'Failed' },
-      { id: 'cancelled', name: 'Cancelled' },
-    ]}
-  />,
+const executionStatusChoices = [
+  { id: 'pending', name: 'Pending' },
+  { id: 'running', name: 'Running' },
+  { id: 'completed', name: 'Completed' },
+  { id: 'failed', name: 'Failed' },
+  { id: 'cancelled', name: 'Cancelled' },
+];
+
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'workflowId', label: 'Workflow ID', kind: 'quick-search', alwaysOn: true },
+  { source: 'status', label: 'Status', kind: 'status', choices: executionStatusChoices },
 ];
 
 function formatDuration(start: string, end: string | null): string {
@@ -47,10 +45,21 @@ function formatDuration(start: string, end: string | null): string {
   return `${s}s`;
 }
 
+function ExecutionListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
+
 export default function ExecutionList() {
   return (
     <List
-      filters={filters}
+      actions={<ExecutionListToolbar />}
       sort={{ field: 'id', order: 'DESC' }}
     >
       <Datagrid rowClick="show" bulkActionButtons={false}>

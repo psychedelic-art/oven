@@ -8,13 +8,13 @@ import {
   BooleanField,
   DateField,
   FunctionField,
-  TextInput,
-  BooleanInput,
-  SelectInput,
   EditButton,
   DeleteButton,
+  useListContext,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
 const providerTypeChoices = [
   { id: 'openai', name: 'OpenAI' },
@@ -30,15 +30,26 @@ const typeColors: Record<string, 'primary' | 'secondary' | 'success' | 'default'
   custom: 'default',
 };
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
-  <SelectInput key="type" source="type" label="Type" choices={providerTypeChoices} />,
-  <BooleanInput key="enabled" source="enabled" label="Enabled" />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
+  { source: 'type', label: 'Type', kind: 'status', choices: providerTypeChoices },
+  { source: 'enabled', label: 'Enabled', kind: 'boolean' },
 ];
+
+function ProviderListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export default function ProviderList() {
   return (
-    <List filters={filters} sort={{ field: 'id', order: 'DESC' }}>
+    <List actions={<ProviderListToolbar />} sort={{ field: 'id', order: 'DESC' }}>
       <Datagrid rowClick="show" bulkActionButtons={false}>
         <TextField source="name" label="Name" />
         <TextField source="slug" label="Slug" />

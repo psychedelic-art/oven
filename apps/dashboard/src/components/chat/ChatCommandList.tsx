@@ -5,10 +5,10 @@ import {
   BooleanField,
   DateField,
   EditButton,
-  TextInput,
-  SelectInput,
-  BooleanInput,
+  useListContext,
 } from 'react-admin';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
 const categoryChoices = [
   { id: 'general', name: 'General' },
@@ -18,15 +18,26 @@ const categoryChoices = [
   { id: 'integrations', name: 'Integrations' },
 ];
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
-  <SelectInput key="category" source="category" choices={categoryChoices} />,
-  <BooleanInput key="isBuiltIn" source="isBuiltIn" label="Built-in only" />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
+  { source: 'category', label: 'Category', kind: 'status', choices: categoryChoices },
+  { source: 'isBuiltIn', label: 'Built-in only', kind: 'boolean' },
 ];
+
+function ChatCommandListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 export function ChatCommandList() {
   return (
-    <List filters={filters} sort={{ field: 'slug', order: 'ASC' }}>
+    <List actions={<ChatCommandListToolbar />} sort={{ field: 'slug', order: 'ASC' }}>
       <Datagrid rowClick="edit">
         <TextField source="slug" label="Command" />
         <TextField source="name" />

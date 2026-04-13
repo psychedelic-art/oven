@@ -7,10 +7,11 @@ import {
   NumberField,
   DateField,
   FunctionField,
-  TextInput,
-  SelectInput,
+  useListContext,
 } from 'react-admin';
 import { Chip, Box } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
 const STATUS_COLORS: Record<string, 'success' | 'error' | 'default'> = {
   active: 'success',
@@ -18,18 +19,15 @@ const STATUS_COLORS: Record<string, 'success' | 'error' | 'default'> = {
   inactive: 'default',
 };
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
-  <SelectInput
-    key="status"
-    source="status"
-    choices={[
-      { id: 'active', name: 'Active' },
-      { id: 'banned', name: 'Banned' },
-      { id: 'inactive', name: 'Inactive' },
-    ]}
-    alwaysOn
-  />,
+const statusChoices = [
+  { id: 'active', name: 'Active' },
+  { id: 'banned', name: 'Banned' },
+  { id: 'inactive', name: 'Inactive' },
+];
+
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
+  { source: 'status', label: 'Status', kind: 'status', choices: statusChoices, alwaysOn: true },
 ];
 
 function formatPlayTime(seconds: number | null): string {
@@ -40,9 +38,20 @@ function formatPlayTime(seconds: number | null): string {
   return `${m}m`;
 }
 
+function PlayerListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
+
 export default function PlayerList() {
   return (
-    <List filters={filters} sort={{ field: 'id', order: 'ASC' }}>
+    <List actions={<PlayerListToolbar />} sort={{ field: 'id', order: 'ASC' }}>
       <Datagrid rowClick="show" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
         <TextField source="username" />

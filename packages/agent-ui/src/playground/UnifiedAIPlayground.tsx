@@ -4,23 +4,39 @@
 // router-free so it can be embedded in any host (dashboard, docs, embed script).
 // Do NOT import from `@mui/*`, `react-router-dom`, or `apps/dashboard/*`.
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '@oven/oven-ui';
 import { useChat } from '../hooks/useChat';
 import { usePlaygroundCommands, type PlaygroundRuntimeConfig } from '../hooks/usePlaygroundCommands';
+import { useSessionManager } from '../hooks/useSessionManager';
+import type { SessionSummary } from '../hooks/useSessionManager';
 import { MessageList } from '../shared/MessageList';
 import { MessageInput } from '../shared/MessageInput';
 import { ChatHeader } from '../shared/ChatHeader';
+import { SessionSidebar } from '../shared/SessionSidebar';
+import { TypingIndicator } from '../shared/TypingIndicator';
+import { ChatErrorCard } from '../shared/ChatErrorCard';
 import { filterMessagesForDisplay } from '../shared/filterMessagesForDisplay';
 import { TargetSelector } from './TargetSelector';
 import { RuntimeConfigPanel } from './panels/RuntimeConfigPanel';
 import { ExecutionInspector } from './panels/ExecutionInspector';
+import type { WorkflowExecutionDetail } from './panels/ExecutionInspector';
 import { EvalReportPanel } from './panels/EvalReportPanel';
 import { TracePanel } from './panels/TracePanel';
+import { applyTheme, clearTheme } from '../themes/applyTheme';
+import { themePresets } from '../themes/presets';
+import type { ThemePresetName } from '../themes/presets';
 import type { PlaygroundTarget, PlaygroundMode } from './TargetSelector';
 import type { UIMessage } from '../types';
 
 // ─── Props ──────────────────────────────────────────────────
+
+export interface SessionConfig {
+  canCreate?: boolean;
+  canDelete?: boolean;
+  canPin?: boolean;
+  canStop?: boolean;
+}
 
 export interface UnifiedAIPlaygroundProps {
   apiBaseUrl?: string;
@@ -35,6 +51,32 @@ export interface UnifiedAIPlaygroundProps {
   tenantId?: number;
   defaultMode?: PlaygroundMode;
   className?: string;
+
+  // ── Session sidebar (sprint 05a) ──────────────────────────
+  /** Show the session sidebar panel in the left panel tabs. */
+  showSessionSidebar?: boolean;
+  /** Feature flags for session management. All default to true. */
+  sessionConfig?: SessionConfig;
+  /** Called when the user switches to a different session. */
+  onSessionChange?: (sessionId: number) => void;
+
+  // ── Theme (sprint 05b) ────────────────────────────────────
+  /** Show theme preset dropdown in the header. */
+  showThemeToggle?: boolean;
+  /** Initial theme preset. Defaults to 'light'. */
+  initialTheme?: ThemePresetName;
+
+  // ── Layout (sprint 05b) ───────────────────────────────────
+  /** Show inline/fullscreen toggle in the header. */
+  showLayoutToggle?: boolean;
+
+  // ── Connection status (sprint 05b) ────────────────────────
+  /** Show green/red online/offline dot in the header. */
+  showConnectionStatus?: boolean;
+
+  // ── Execution history (sprint 05b) ────────────────────────
+  /** Accumulate workflow execution history across multiple runs. */
+  showExecutionHistory?: boolean;
 }
 
 interface WorkflowExecutionState {
@@ -59,7 +101,54 @@ export function UnifiedAIPlayground({
   tenantId: tenantIdProp,
   defaultMode = 'agent',
   className,
+  showSessionSidebar = false,
+  sessionConfig,
+  onSessionChange,
+  showThemeToggle = false,
+  initialTheme = 'light',
+  showLayoutToggle = false,
+  showConnectionStatus = false,
+  showExecutionHistory = false,
 }: UnifiedAIPlaygroundProps) {
+  const canCreate = sessionConfig?.canCreate ?? true;
+  const canDelete = sessionConfig?.canDelete ?? true;
+  const canPin = sessionConfig?.canPin ?? true;
+  const canStop = sessionConfig?.canStop ?? true;
+
+  // ─── Theme state ──────────────────────────────────────────
+  const [activeTheme, setActiveTheme] = useState<ThemePresetName>(initialTheme);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (showThemeToggle && containerRef.current) {
+      applyTheme(activeTheme, containerRef.current);
+    }
+    return () => {
+      if (containerRef.current) clearTheme(containerRef.current);
+    };
+  }, [activeTheme, showThemeToggle]);
+
+  // ─── Connection status ────────────────────────────────────
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== 'undefined' ? navigator.onLine : true,
+  );
+  useEffect(() => {
+    if (!showConnectionStatus) return;
+    const onOnline = () => setIsOnline(true);
+    const onOffline = () => setIsOnline(false);
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    return () => {
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+    };
+  }, [showConnectionStatus]);
+
+  // ─── Layout mode ──────────────────────────────────────────
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // ─── Execution history ────────────────────────────────────
+  const [executionHistory, setExecutionHistory] = useState<WorkflowExecutionDetail[]>([]);
   const [resolvedTenantId, setResolvedTenantId] = useState<number | null>(tenantIdProp ?? null);
 
   // If the host didn't pass a numeric tenantId, try to resolve one from the
@@ -94,7 +183,7 @@ export function UnifiedAIPlayground({
     return () => { cancelled = true; };
   }, [tenantIdProp, tenantSlug, apiBaseUrl]);
   const [target, setTarget] = useState<PlaygroundTarget | null>(null);
-  const [leftPanel, setLeftPanel] = useState<'selector' | 'config'>('selector');
+  const [leftPanel, setLeftPanel] = useState<'selector' | 'config' | 'sessions'>('selector');
   const [showInspector, setShowInspector] = useState(true);
   const [rightTab, setRightTab] = useState<'inspector' | 'eval' | 'trace'>('inspector');
   const [traceUrl, setTraceUrl] = useState<string | null>(null);
@@ -107,6 +196,15 @@ export function UnifiedAIPlayground({
     enableMemory: false,
   });
   const [workflowExecution, setWorkflowExecution] = useState<WorkflowExecutionState | null>(null);
+  const [isExecutingWorkflow, setIsExecutingWorkflow] = useState(false);
+
+  // ─── Session manager (opt-in via showSessionSidebar) ──────
+  const sessionMgr = useSessionManager({
+    apiBaseUrl,
+    tenantSlug,
+    tenantId: resolvedTenantId ?? undefined,
+    enabled: showSessionSidebar,
+  });
 
   // Chat hook — owns session + messages (streaming and injected).
   const chat = useChat({
@@ -145,6 +243,7 @@ export function UnifiedAIPlayground({
   // ─── Workflow execution ────────────────────────────────────
 
   const executeWorkflow = useCallback(async (targetId: number, text: string) => {
+    setIsExecutingWorkflow(true);
     // Optimistic user echo (agent mode does this via chat.sendMessage; workflow
     // mode bypasses sendMessage so we inject manually).
     chat.appendMessage({
@@ -197,12 +296,21 @@ export function UnifiedAIPlayground({
             stepsExecuted: number;
             nodeExecutions?: WorkflowExecutionState['nodes'];
           };
-          setWorkflowExecution({
+          const execState: WorkflowExecutionState = {
             executionId: execData.id,
             status: execData.status,
             stepsExecuted: execData.stepsExecuted,
             nodes: execData.nodeExecutions ?? [],
-          });
+          };
+          setWorkflowExecution(execState);
+
+          // Push into execution history for multi-run view
+          if (showExecutionHistory) {
+            setExecutionHistory(prev => [{
+              ...execState,
+              timestamp: new Date(),
+            }, ...prev]);
+          }
         }
       } catch {
         // Best-effort; the assistant message below still posts.
@@ -222,10 +330,12 @@ export function UnifiedAIPlayground({
       chat.appendMessage({
         id: `err-${Date.now()}`,
         role: 'system',
-        content: `❌ Workflow error: ${(err as Error).message}`,
+        content: `Workflow error: ${(err as Error).message}`,
         createdAt: new Date(),
         error: (err as Error).message,
       });
+    } finally {
+      setIsExecutingWorkflow(false);
     }
   }, [apiBaseUrl, chat, resolvedTenantId]);
 
@@ -308,34 +418,32 @@ export function UnifiedAIPlayground({
     chat.isStreaming ? 'streaming' : chat.error ? 'error' : 'idle';
 
   return (
-    <div className={cn('flex h-full w-full bg-white text-gray-900', className)}>
-      {/* ─── Left Panel: Selector / Config ─────────────────── */}
+    <div
+      ref={containerRef}
+      className={cn(
+        'flex h-full w-full bg-white text-gray-900',
+        isFullscreen && 'fixed inset-0 z-50',
+        className,
+      )}
+    >
+      {/* ─── Left Panel: Selector / Config / Sessions ────── */}
       <div className={cn('w-64 shrink-0 border-r border-gray-200 flex flex-col bg-gray-50')}>
         <div className={cn('flex border-b border-gray-200 bg-white')}>
-          <button
-            type="button"
-            onClick={() => setLeftPanel('selector')}
-            className={cn(
-              'flex-1 py-2 text-xs font-medium text-center transition-colors',
-              leftPanel === 'selector'
-                ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-500 hover:text-gray-700',
-            )}
-          >
-            Target
-          </button>
-          <button
-            type="button"
-            onClick={() => setLeftPanel('config')}
-            className={cn(
-              'flex-1 py-2 text-xs font-medium text-center transition-colors',
-              leftPanel === 'config'
-                ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-500 hover:text-gray-700',
-            )}
-          >
-            Config
-          </button>
+          {(['selector', 'config', ...(showSessionSidebar ? ['sessions' as const] : [])] as const).map(tab => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setLeftPanel(tab as typeof leftPanel)}
+              className={cn(
+                'flex-1 py-2 text-xs font-medium text-center transition-colors',
+                leftPanel === tab
+                  ? 'border-b-2 border-blue-500 text-blue-600'
+                  : 'text-gray-500 hover:text-gray-700',
+              )}
+            >
+              {tab === 'selector' ? 'Target' : tab === 'config' ? 'Config' : 'Sessions'}
+            </button>
+          ))}
         </div>
 
         <div className={cn('flex-1 overflow-y-auto')}>
@@ -355,6 +463,43 @@ export function UnifiedAIPlayground({
               onChange={c => setRuntimeConfig(prev => ({ ...prev, ...c }))}
             />
           )}
+          {leftPanel === 'sessions' && showSessionSidebar && (
+            <SessionSidebar
+              sessions={sessionMgr.sessions.map(s => ({
+                id: s.id,
+                title: s.title,
+                isPinned: s.isPinned,
+                updatedAt: s.updatedAt,
+                messageCount: s.messageCount,
+              }))}
+              activeSessionId={sessionMgr.activeSessionId ?? undefined}
+              onSelectSession={(id) => {
+                sessionMgr.selectSession(id);
+                onSessionChange?.(id);
+              }}
+              onNewSession={canCreate ? async () => {
+                try {
+                  const newId = await sessionMgr.createSession();
+                  chat.clearMessages();
+                  setWorkflowExecution(null);
+                  onSessionChange?.(newId);
+                } catch {
+                  // createSession sets its own error state
+                }
+              } : () => {}}
+              onPinSession={canPin ? (id) => {
+                const session = sessionMgr.sessions.find(s => s.id === id);
+                if (session) sessionMgr.pinSession(id, !session.isPinned);
+              } : undefined}
+              onDeleteSession={canDelete ? async (id) => {
+                try {
+                  await sessionMgr.deleteSession(id);
+                } catch {
+                  // deleteSession sets its own error state
+                }
+              } : undefined}
+            />
+          )}
         </div>
       </div>
 
@@ -365,8 +510,55 @@ export function UnifiedAIPlayground({
           subtitle={target ? `${target.mode} · ${target.slug}` : 'Select a target to start'}
           status={headerStatus}
           badge={target ? <ModeBadge mode={target.mode} /> : null}
+          themeSlot={showThemeToggle ? (
+            <ThemeDropdown
+              activeTheme={activeTheme}
+              onChange={(t) => setActiveTheme(t)}
+            />
+          ) : undefined}
+          connectionSlot={showConnectionStatus ? (
+            <span
+              className={cn(
+                'w-2 h-2 rounded-full shrink-0',
+                isOnline ? 'bg-green-400' : 'bg-red-400',
+              )}
+              title={isOnline ? 'Online' : 'Offline'}
+              aria-label={isOnline ? 'Connection: online' : 'Connection: offline'}
+            />
+          ) : undefined}
+          layoutSlot={showLayoutToggle ? (
+            <button
+              type="button"
+              onClick={() => setIsFullscreen(f => !f)}
+              className={cn(
+                'text-xs px-2 py-1 rounded border transition-colors',
+                isFullscreen
+                  ? 'bg-gray-700 border-gray-600 text-white'
+                  : 'border-gray-200 text-gray-500 hover:bg-gray-100',
+              )}
+              aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+            >
+              {isFullscreen ? 'Exit FS' : 'Fullscreen'}
+            </button>
+          ) : undefined}
           rightSlot={
             <>
+              {/* Stop button — visible when streaming or executing workflow */}
+              {canStop && (chat.isStreaming || isExecutingWorkflow) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    chat.stop();
+                    setIsExecutingWorkflow(false);
+                  }}
+                  className={cn(
+                    'text-xs px-2 py-1 rounded border border-red-300 bg-red-50 text-red-600',
+                    'hover:bg-red-100 transition-colors',
+                  )}
+                >
+                  Stop
+                </button>
+              )}
               {cmds.commands.length > 0 && (
                 <span className={cn('hidden sm:inline text-[11px] text-gray-400')}>
                   Press{' '}
@@ -424,11 +616,32 @@ export function UnifiedAIPlayground({
           />
         )}
 
+        {/* Loading indicator for workflow execution */}
+        {isExecutingWorkflow && (
+          <div className={cn('flex items-center gap-2 px-4 py-2 bg-gray-50 border-t border-gray-200')}>
+            <TypingIndicator />
+            <span className={cn('text-xs text-gray-500')}>Executing workflow...</span>
+          </div>
+        )}
+
+        {/* Error card */}
+        {chat.error && (
+          <div className={cn('px-4 py-2')}>
+            <ChatErrorCard
+              error={chat.error.message}
+              category="agent"
+              onRetry={() => {
+                // Clear error and allow re-sending
+              }}
+            />
+          </div>
+        )}
+
         {/* Input */}
         <div className={cn('border-t border-gray-200 bg-white p-3')}>
           <MessageInput
             onSend={handleSendMessage}
-            disabled={!target || !chat.isSessionReady || chat.isStreaming}
+            disabled={!target || !chat.isSessionReady || chat.isStreaming || isExecutingWorkflow}
             placeholder={target
               ? `Message ${target.name}... (type / for commands)`
               : 'Select a target first'
@@ -465,6 +678,7 @@ export function UnifiedAIPlayground({
                 mode={target?.mode ?? defaultMode}
                 messages={chat.messages}
                 workflowExecution={workflowExecution}
+                executionHistory={showExecutionHistory ? executionHistory : undefined}
               />
             )}
             {rightTab === 'eval' && (
@@ -486,6 +700,69 @@ export function UnifiedAIPlayground({
 }
 
 // ─── Subcomponents / helpers ────────────────────────────────
+
+const THEME_PRESET_NAMES = Object.keys(themePresets) as ThemePresetName[];
+
+/**
+ * Theme preset dropdown. Cycles through the 10 built-in presets.
+ * Future: adopt AI SDK pattern for persisting user preference.
+ */
+function ThemeDropdown({
+  activeTheme,
+  onChange,
+}: {
+  activeTheme: ThemePresetName;
+  onChange: (theme: ThemePresetName) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className={cn('relative')}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className={cn(
+          'text-xs px-2 py-1 rounded border border-gray-200 bg-white',
+          'hover:bg-gray-50 transition-colors flex items-center gap-1',
+        )}
+        aria-label="Select theme"
+        aria-expanded={open}
+      >
+        <span
+          className={cn('w-3 h-3 rounded-full border border-gray-300')}
+          // Dynamic CSS custom property — only exception allowed per CLAUDE.md
+          style={{ '--theme-dot': themePresets[activeTheme]['--oven-widget-primary'] } as React.CSSProperties}
+        />
+        <span className={cn('capitalize')}>{activeTheme}</span>
+      </button>
+
+      {open && (
+        <div className={cn(
+          'absolute top-full left-0 mt-1 z-50 bg-white border border-gray-200',
+          'rounded-lg shadow-lg py-1 min-w-[140px] max-h-[240px] overflow-y-auto',
+        )}>
+          {THEME_PRESET_NAMES.map(name => (
+            <button
+              key={name}
+              type="button"
+              onClick={() => { onChange(name); setOpen(false); }}
+              className={cn(
+                'w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2',
+                name === activeTheme && 'bg-blue-50 text-blue-700 font-medium',
+              )}
+            >
+              <span
+                className={cn('w-3 h-3 rounded-full border border-gray-300 shrink-0')}
+                style={{ backgroundColor: themePresets[name]['--oven-widget-primary'] } as React.CSSProperties}
+              />
+              <span className={cn('capitalize')}>{name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function ModeBadge({ mode }: { mode: PlaygroundMode }) {
   return (

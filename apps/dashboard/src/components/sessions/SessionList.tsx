@@ -6,14 +6,27 @@ import {
   NumberField,
   DateField,
   FunctionField,
-  TextInput,
+  useListContext,
 } from 'react-admin';
 import { Chip, Box } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
 
-const filters = [
-  <TextInput key="player_id" source="player_id" label="Player ID" alwaysOn />,
-  <TextInput key="map_id" source="map_id" label="Map ID" />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'player_id', label: 'Player ID', kind: 'quick-search', alwaysOn: true },
+  { source: 'map_id', label: 'Map ID', kind: 'combo', choices: [] },
 ];
+
+function SessionListToolbar() {
+  const { filterValues, setFilters } = useListContext();
+  return (
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
 
 function formatDuration(start: string, end: string | null): string {
   if (!end) return 'Active';
@@ -29,7 +42,7 @@ function formatDuration(start: string, end: string | null): string {
 
 export default function SessionList() {
   return (
-    <List filters={filters} sort={{ field: 'id', order: 'DESC' }}>
+    <List actions={<SessionListToolbar />} sort={{ field: 'id', order: 'DESC' }}>
       <Datagrid rowClick="show" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
         <NumberField source="playerId" label="Player" />
