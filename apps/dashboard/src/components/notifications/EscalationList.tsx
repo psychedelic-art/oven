@@ -9,9 +9,9 @@ import {
   FunctionField,
   ReferenceField,
   SelectInput,
-  NumberInput,
 } from 'react-admin';
 import { Chip, Typography } from '@mui/material';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 const reasonColors: Record<string, 'warning' | 'error' | 'info' | 'default'> = {
   'out-of-scope': 'warning',
@@ -26,7 +26,6 @@ const statusColors: Record<string, 'warning' | 'success' | 'default'> = {
 };
 
 const filters = [
-  <NumberInput key="tenantId" source="tenantId" label="Tenant ID" />,
   <SelectInput
     key="status"
     source="status"
@@ -50,13 +49,18 @@ const filters = [
 ];
 
 export default function EscalationList() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+  const isAdminMode = useTenantContext((s) => s.isAdminMode);
+
   return (
-    <List filters={filters} sort={{ field: 'id', order: 'DESC' }}>
+    <List
+      filters={filters}
+      filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
+      sort={{ field: 'id', order: 'DESC' }}
+    >
       <Datagrid rowClick="show" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
-        <ReferenceField source="tenantId" reference="tenants" label="Tenant">
-          <TextField source="name" />
-        </ReferenceField>
+        {isAdminMode && <ReferenceField source="tenantId" reference="tenants" label="Tenant" />}
         <TextField source="channelType" label="Channel" />
         <FunctionField
           label="Reason"

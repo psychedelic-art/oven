@@ -7,21 +7,27 @@ import {
   NumberField,
   DateField,
   FunctionField,
+  ReferenceField,
   TextInput,
   BooleanInput,
-  NumberInput,
 } from 'react-admin';
 import { Chip, Box } from '@mui/material';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 const flowFilters = [
   <TextInput key="q" source="q" label="Search" alwaysOn />,
   <BooleanInput key="enabled" source="enabled" label="Enabled" />,
-  <NumberInput key="tenantId" source="tenantId" label="Tenant ID" />,
 ];
 
 export default function FlowList() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+  const isAdminMode = useTenantContext((s) => s.isAdminMode);
+
   return (
-    <List filters={flowFilters}>
+    <List
+      filters={flowFilters}
+      filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
+    >
       <Datagrid rowClick="show">
         <NumberField source="id" />
         <TextField source="name" />
@@ -38,7 +44,7 @@ export default function FlowList() {
           }
         />
         <NumberField source="version" />
-        <NumberField source="tenantId" label="Tenant ID" />
+        {isAdminMode && <ReferenceField source="tenantId" reference="tenants" label="Tenant" />}
         <DateField source="updatedAt" label="Updated At" showTime />
       </Datagrid>
     </List>

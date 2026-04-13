@@ -9,9 +9,9 @@ import {
   FunctionField,
   ReferenceField,
   SelectInput,
-  NumberInput,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 const statusColors: Record<string, 'success' | 'warning' | 'error' | 'default'> = {
   active: 'success',
@@ -20,7 +20,6 @@ const statusColors: Record<string, 'success' | 'warning' | 'error' | 'default'> 
 };
 
 const filters = [
-  <NumberInput key="tenantId" source="tenantId" label="Tenant ID" />,
   <SelectInput
     key="status"
     source="status"
@@ -44,13 +43,18 @@ const filters = [
 ];
 
 export default function ConversationList() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+  const isAdminMode = useTenantContext((s) => s.isAdminMode);
+
   return (
-    <List filters={filters} sort={{ field: 'createdAt', order: 'DESC' }}>
+    <List
+      filters={filters}
+      filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
+      sort={{ field: 'createdAt', order: 'DESC' }}
+    >
       <Datagrid rowClick="show" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
-        <ReferenceField source="tenantId" reference="tenants" label="Tenant">
-          <TextField source="name" />
-        </ReferenceField>
+        {isAdminMode && <ReferenceField source="tenantId" reference="tenants" label="Tenant" />}
         <TextField source="channelType" label="Channel" />
         <TextField source="externalUserId" label="User" />
         <FunctionField

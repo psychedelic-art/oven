@@ -8,26 +8,30 @@ import {
   BooleanField,
   DateField,
   FunctionField,
+  ReferenceField,
   TextInput,
-  ReferenceInput,
-  AutocompleteInput,
   BooleanInput,
   EditButton,
   DeleteButton,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 const filters = [
   <TextInput key="q" source="q" label="Search" alwaysOn />,
-  <ReferenceInput key="tenantId" source="tenantId" reference="tenants" alwaysOn>
-    <AutocompleteInput optionText="name" label="Tenant" />
-  </ReferenceInput>,
   <BooleanInput key="enabled" source="enabled" label="Enabled" />,
 ];
 
 export default function KnowledgeBaseList() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+  const isAdminMode = useTenantContext((s) => s.isAdminMode);
+
   return (
-    <List filters={filters} sort={{ field: 'name', order: 'ASC' }}>
+    <List
+      filters={filters}
+      filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
+      sort={{ field: 'name', order: 'ASC' }}
+    >
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
         <TextField source="name" label="Name" />
@@ -45,6 +49,7 @@ export default function KnowledgeBaseList() {
           )}
         />
         <BooleanField source="enabled" label="Enabled" />
+        {isAdminMode && <ReferenceField source="tenantId" reference="tenants" label="Tenant" />}
         <DateField source="updatedAt" label="Updated" showTime />
         <EditButton />
         <DeleteButton />

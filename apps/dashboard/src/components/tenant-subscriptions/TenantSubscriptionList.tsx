@@ -8,10 +8,10 @@ import {
   DateField,
   FunctionField,
   ReferenceField,
-  NumberInput,
   SelectInput,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 const statusColors: Record<string, 'success' | 'warning' | 'error' | 'info' | 'default'> = {
   active: 'success',
@@ -22,7 +22,6 @@ const statusColors: Record<string, 'success' | 'warning' | 'error' | 'info' | 'd
 };
 
 const filters = [
-  <NumberInput key="tenantId" source="tenantId" label="Tenant ID" alwaysOn />,
   <SelectInput
     key="status"
     source="status"
@@ -38,11 +37,18 @@ const filters = [
 ];
 
 export default function TenantSubscriptionList() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+  const isAdminMode = useTenantContext((s) => s.isAdminMode);
+
   return (
-    <List filters={filters} sort={{ field: 'id', order: 'DESC' }}>
+    <List
+      filters={filters}
+      filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
+      sort={{ field: 'id', order: 'DESC' }}
+    >
       <Datagrid rowClick="show" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
-        <NumberField source="tenantId" label="Tenant ID" />
+        {isAdminMode && <ReferenceField source="tenantId" reference="tenants" label="Tenant" />}
         <ReferenceField source="planId" reference="billing-plans" label="Plan">
           <TextField source="name" />
         </ReferenceField>

@@ -6,13 +6,13 @@ import {
   NumberField,
   DateField,
   FunctionField,
-  NumberInput,
+  ReferenceField,
   SelectInput,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 const filters = [
-  <NumberInput key="tenantId" source="tenantId" label="Tenant ID" alwaysOn />,
   <SelectInput
     key="role"
     source="role"
@@ -26,14 +26,18 @@ const filters = [
 ];
 
 export default function TenantMemberList() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+  const isAdminMode = useTenantContext((s) => s.isAdminMode);
+
   return (
     <List
       filters={filters}
+      filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
       sort={{ field: 'id', order: 'DESC' }}
     >
       <Datagrid bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
-        <NumberField source="tenantId" label="Tenant ID" />
+        {isAdminMode && <ReferenceField source="tenantId" reference="tenants" label="Tenant" />}
         <NumberField source="userId" label="User ID" />
         <FunctionField
           label="Role"

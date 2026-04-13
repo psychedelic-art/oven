@@ -7,9 +7,11 @@ import {
   TextField,
   DateField,
   FunctionField,
+  ReferenceField,
   TextInput,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 const filters = [
   <TextInput key="q" source="q" label="Search" alwaysOn />,
@@ -17,9 +19,13 @@ const filters = [
 ];
 
 export default function FormComponentList() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+  const isAdminMode = useTenantContext((s) => s.isAdminMode);
+
   return (
     <List
       filters={filters}
+      filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
       sort={{ field: 'id', order: 'DESC' }}
     >
       <Datagrid rowClick="show" bulkActionButtons={false}>
@@ -35,7 +41,7 @@ export default function FormComponentList() {
             />
           )}
         />
-        <NumberField source="tenantId" label="Tenant ID" />
+        {isAdminMode && <ReferenceField source="tenantId" reference="tenants" label="Tenant" />}
         <DateField source="createdAt" label="Created" showTime />
       </Datagrid>
     </List>

@@ -10,9 +10,9 @@ import {
   ReferenceField,
   TextInput,
   SelectInput,
-  NumberInput,
 } from 'react-admin';
 import { Chip, Box } from '@mui/material';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 const filters = [
   <TextInput key="moduleName" source="moduleName" label="Module" alwaysOn />,
@@ -26,27 +26,21 @@ const filters = [
     ]}
   />,
   <TextInput key="key" source="key" label="Config Key" />,
-  <NumberInput key="tenantId" source="tenantId" label="Tenant ID" />,
 ];
 
 export default function ConfigList() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+  const isAdminMode = useTenantContext((s) => s.isAdminMode);
+
   return (
     <List
       filters={filters}
+      filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
       sort={{ field: 'id', order: 'DESC' }}
     >
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
-        <FunctionField
-          label="Tenant"
-          render={(record: any) =>
-            record?.tenantId ? (
-              <Chip label={`Tenant #${record.tenantId}`} size="small" color="info" variant="outlined" />
-            ) : (
-              <Chip label="Platform" size="small" color="default" />
-            )
-          }
-        />
+        {isAdminMode && <ReferenceField source="tenantId" reference="tenants" label="Tenant" />}
         <FunctionField
           label="Module"
           render={(record: any) => (
