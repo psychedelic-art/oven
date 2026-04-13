@@ -6,13 +6,14 @@ import {
   TextField,
   DateField,
   FunctionField,
+  ReferenceField,
   TextInput,
-  NumberInput,
   SelectInput,
   DeleteButton,
   useRefresh,
 } from 'react-admin';
 import { Chip, Box, Typography, Paper } from '@mui/material';
+import { useTenantContext } from '@oven/dashboard-ui';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import FileUploader from './FileUploader';
@@ -37,7 +38,6 @@ const filters = [
       { id: 'chat', name: 'Chat' },
     ]}
   />,
-  <NumberInput key="tenantId" source="tenantId" label="Tenant ID" />,
 ];
 
 function EmptyFileList() {
@@ -60,9 +60,13 @@ function EmptyFileList() {
 
 export default function FileList() {
   const refresh = useRefresh();
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+  const isAdminMode = useTenantContext((s) => s.isAdminMode);
+
   return (
     <List
       filters={filters}
+      filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
       sort={{ field: 'createdAt', order: 'DESC' }}
       hasCreate={false}
       empty={<EmptyFileList />}
@@ -120,6 +124,7 @@ export default function FileList() {
             return <InsertDriveFileIcon fontSize="small" color="action" />;
           }}
         />
+        {isAdminMode && <ReferenceField source="tenantId" reference="tenants" label="Tenant" />}
         <DateField source="createdAt" label="Created" showTime />
         <DeleteButton />
       </Datagrid>

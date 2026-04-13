@@ -8,10 +8,13 @@ import {
   TextInput,
 } from 'react-admin';
 import { Chip, Box } from '@mui/material';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 export default function FlowItemCreate() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+
   return (
-    <Create>
+    <Create transform={(data: Record<string, unknown>) => ({ ...data, tenantId: data.tenantId ?? activeTenantId })}>
       <SimpleForm>
         <NumberInput source="flowId" label="Flow ID" isRequired />
         <SelectInput
@@ -27,7 +30,6 @@ export default function FlowItemCreate() {
           ]}
         />
         <NumberInput source="contentId" label="Content ID" />
-        <NumberInput source="tenantId" label="Tenant ID" isRequired />
         <NumberInput source="assignedTo" label="Assigned To" />
         <TextInput
           source="metadata"

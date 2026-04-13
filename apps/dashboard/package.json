@@ -21,6 +21,7 @@
     "@neondatabase/serverless": "^0.10.0",
     "@oven/agent-ui": "workspace:*",
     "@oven/auth-authjs": "workspace:*",
+    "@oven/dashboard-ui": "workspace:*",
     "@oven/form-editor": "workspace:*",
     "@oven/map-editor": "workspace:*",
     "@oven/module-auth": "workspace:*",

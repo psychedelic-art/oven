@@ -9,14 +9,14 @@ import {
   ReferenceInput,
   AutocompleteInput,
 } from 'react-admin';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 export default function CategoryCreate() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+
   return (
-    <Create>
+    <Create transform={(data: Record<string, unknown>) => ({ ...data, tenantId: data.tenantId ?? activeTenantId })}>
       <SimpleForm>
-        <ReferenceInput source="tenantId" reference="tenants">
-          <AutocompleteInput optionText="name" label="Tenant" isRequired fullWidth />
-        </ReferenceInput>
         <ReferenceInput source="knowledgeBaseId" reference="kb-knowledge-bases">
           <AutocompleteInput optionText="name" label="Knowledge Base" isRequired fullWidth />
         </ReferenceInput>

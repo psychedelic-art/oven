@@ -41,6 +41,9 @@ importers:
       '@oven/auth-authjs':
         specifier: workspace:*
         version: link:../../packages/auth-authjs
+      '@oven/dashboard-ui':
+        specifier: workspace:*
+        version: link:../../packages/dashboard-ui
       '@oven/form-editor':
         specifier: workspace:*
         version: link:../../packages/form-editor

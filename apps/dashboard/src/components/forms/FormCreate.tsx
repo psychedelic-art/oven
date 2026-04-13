@@ -5,8 +5,8 @@ import {
   SimpleForm,
   TextInput,
   SelectInput,
-  NumberInput,
 } from 'react-admin';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 const statusChoices = [
   { id: 'draft', name: 'Draft' },
@@ -15,13 +15,14 @@ const statusChoices = [
 ];
 
 export default function FormCreate() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+
   return (
-    <Create>
+    <Create transform={(data: Record<string, unknown>) => ({ ...data, tenantId: data.tenantId ?? activeTenantId })}>
       <SimpleForm>
         <TextInput source="name" label="Name" isRequired fullWidth />
         <TextInput source="slug" label="Slug" isRequired fullWidth />
         <TextInput source="description" label="Description" fullWidth multiline rows={3} />
-        <NumberInput source="tenantId" label="Tenant ID" isRequired />
         <SelectInput
           source="status"
           label="Status"

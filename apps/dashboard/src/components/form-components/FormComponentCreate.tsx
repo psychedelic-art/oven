@@ -5,8 +5,8 @@ import {
   SimpleForm,
   TextInput,
   SelectInput,
-  NumberInput,
 } from 'react-admin';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 const categoryChoices = [
   { id: 'input', name: 'Input' },
@@ -17,8 +17,10 @@ const categoryChoices = [
 ];
 
 export default function FormComponentCreate() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+
   return (
-    <Create>
+    <Create transform={(data: Record<string, unknown>) => ({ ...data, tenantId: data.tenantId ?? activeTenantId })}>
       <SimpleForm>
         <TextInput source="name" label="Name" isRequired fullWidth />
         <TextInput source="slug" label="Slug" isRequired fullWidth />
@@ -29,7 +31,6 @@ export default function FormComponentCreate() {
           isRequired
         />
         <TextInput source="description" label="Description" fullWidth multiline />
-        <NumberInput source="tenantId" label="Tenant ID" />
         <TextInput
           source="definition"
           label="Definition (JSON)"

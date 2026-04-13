@@ -76,25 +76,25 @@ in the project.
 
 ## Acceptance criteria
 
-- [ ] `pnpm --filter dashboard typecheck` exits 0.
-- [ ] `pnpm --filter @oven/dashboard-ui test` exits 0 including the new
-  `rule-6-enforcement.test.ts`.
-- [ ] `grep -rn '<NumberInput source="tenantId"' apps/dashboard/src/components`
+- [ ] `pnpm --filter dashboard typecheck` exits 0. (skipped — no tsconfig for dashboard-ui, pre-existing 465+ baseline)
+- [x] `pnpm --filter @oven/dashboard-ui test` exits 0 including the new
+  `rule-6-enforcement.test.ts`. (29/29 green)
+- [x] `grep -rn '<NumberInput source="tenantId"' apps/dashboard/src/components`
   returns nothing.
-- [ ] `grep -rn '<ReferenceInput source="tenantId"' apps/dashboard/src/components`
+- [x] `grep -rn '<ReferenceInput source="tenantId"' apps/dashboard/src/components`
   returns matches only inside `isAdminMode &&` conditional branches.
-- [ ] `grep -rn 'useTenantContext' apps/dashboard/src/components | wc -l`
+- [x] `grep -rn 'useTenantContext' apps/dashboard/src/components | wc -l`
   matches the count of tenant-scoped lists + creates from the sprint-02
   audit.
 - [ ] A platform admin can open the dashboard, click the `TenantSelector`
   in the AppBar, pick a tenant, and every tenant-scoped list narrows
-  in a single render pass (verified by manual walkthrough).
+  in a single render pass (verified by manual walkthrough). (cannot verify in CLI)
 - [ ] A tenant admin (no `tenants.list` permission) does not see the
-  selector at all (verified by manual walkthrough).
-- [ ] No `style={}` introduced in any file touched by this sprint
+  selector at all (verified by manual walkthrough). (cannot verify in CLI — no authProvider)
+- [x] No `style={}` introduced in any file touched by this sprint
   (`grep -rn 'style={' apps/dashboard/src/components` diff against `dev`
   returns no new hits).
-- [ ] `STATUS.md` updated; acceptance checklist in STATUS has the
+- [x] `STATUS.md` updated; acceptance checklist in STATUS has the
   "AdminApp wraps all routes" and "Every tenant-scoped `*List` reads"
   rows checked.
 

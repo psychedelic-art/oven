@@ -7,10 +7,12 @@ import {
   NumberField,
   DateField,
   FunctionField,
+  ReferenceField,
   TextInput,
   DateInput,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 const statusColors: Record<string, 'success' | 'error' | 'warning' | 'default'> = {
   success: 'success',
@@ -19,7 +21,6 @@ const statusColors: Record<string, 'success' | 'error' | 'warning' | 'default'> 
 };
 
 const filters = [
-  <TextInput key="tenantId" source="tenantId" label="Tenant ID" alwaysOn />,
   <TextInput key="providerId" source="providerId" label="Provider ID" />,
   <TextInput key="modelId" source="modelId" label="Model ID" />,
   <DateInput key="startDate" source="startDate" label="Start Date" />,
@@ -27,14 +28,18 @@ const filters = [
 ];
 
 export default function UsageLogList() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+  const isAdminMode = useTenantContext((s) => s.isAdminMode);
+
   return (
     <List
       filters={filters}
+      filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
       sort={{ field: 'createdAt', order: 'DESC' }}
       hasCreate={false}
     >
       <Datagrid bulkActionButtons={false}>
-        <NumberField source="tenantId" label="Tenant" />
+        {isAdminMode && <ReferenceField source="tenantId" reference="tenants" label="Tenant" />}
         <NumberField source="providerId" label="Provider" />
         <TextField source="modelId" label="Model" />
         <TextField source="toolName" label="Tool" />

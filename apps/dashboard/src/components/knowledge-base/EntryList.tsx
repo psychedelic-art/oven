@@ -18,15 +18,13 @@ import {
   ShowButton,
 } from 'react-admin';
 import { Box, Chip } from '@mui/material';
+import { useTenantContext } from '@oven/dashboard-ui';
 import EmbeddingStatusBadge from './EmbeddingStatusBadge';
 
 const filters = [
   <TextInput key="q" source="q" label="Search question" alwaysOn />,
   <ReferenceInput key="knowledgeBaseId" source="knowledgeBaseId" reference="kb-knowledge-bases" alwaysOn>
     <AutocompleteInput optionText="name" label="Knowledge Base" />
-  </ReferenceInput>,
-  <ReferenceInput key="tenantId" source="tenantId" reference="tenants">
-    <AutocompleteInput optionText="name" label="Tenant" />
   </ReferenceInput>,
   <ReferenceInput key="categoryId" source="categoryId" reference="kb-categories">
     <AutocompleteInput optionText="name" label="Category" />
@@ -45,8 +43,15 @@ const filters = [
 ];
 
 export default function EntryList() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+  const isAdminMode = useTenantContext((s) => s.isAdminMode);
+
   return (
-    <List filters={filters} sort={{ field: 'priority', order: 'DESC' }}>
+    <List
+      filters={filters}
+      filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
+      sort={{ field: 'priority', order: 'DESC' }}
+    >
       <Datagrid rowClick="show" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
         <FunctionField
@@ -83,6 +88,7 @@ export default function EntryList() {
         <NumberField source="priority" label="P" />
         <TextField source="language" label="Lang" />
         <BooleanField source="enabled" label="Active" />
+        {isAdminMode && <ReferenceField source="tenantId" reference="tenants" label="Tenant" />}
         <ShowButton />
         <EditButton />
       </Datagrid>

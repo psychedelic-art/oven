@@ -7,10 +7,11 @@ import {
   TextField,
   BooleanField,
   DateField,
+  ReferenceField,
   TextInput,
   SelectInput,
-  ReferenceField,
 } from 'react-admin';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 const channelTypeChoices = [
   { id: 'whatsapp', name: 'WhatsApp' },
@@ -38,13 +39,18 @@ const filters = [
 ];
 
 export default function ChannelList() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+  const isAdminMode = useTenantContext((s) => s.isAdminMode);
+
   return (
-    <List filters={filters} sort={{ field: 'id', order: 'DESC' }}>
+    <List
+      filters={filters}
+      filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
+      sort={{ field: 'id', order: 'DESC' }}
+    >
       <Datagrid rowClick="show" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
-        <ReferenceField source="tenantId" reference="tenants" label="Tenant">
-          <TextField source="name" />
-        </ReferenceField>
+        {isAdminMode && <ReferenceField source="tenantId" reference="tenants" label="Tenant" />}
         <TextField source="channelType" label="Channel" />
         <TextField source="adapterName" label="Adapter" />
         <TextField source="name" label="Name" />

@@ -7,14 +7,15 @@ import {
   TextField,
   DateField,
   FunctionField,
+  ReferenceField,
   TextInput,
   SelectInput,
-  NumberInput,
   useRecordContext,
 } from 'react-admin';
 import { Chip, Button } from '@mui/material';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import { useNavigate } from 'react-router-dom';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 const statusChoices = [
   { id: 'draft', name: 'Draft' },
@@ -25,7 +26,6 @@ const statusChoices = [
 const filters = [
   <TextInput key="q" source="q" label="Search" alwaysOn />,
   <SelectInput key="status" source="status" label="Status" choices={statusChoices} />,
-  <NumberInput key="tenantId" source="tenantId" label="Tenant ID" />,
 ];
 
 function OpenEditorButton() {
@@ -49,9 +49,13 @@ function OpenEditorButton() {
 }
 
 export default function FormList() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+  const isAdminMode = useTenantContext((s) => s.isAdminMode);
+
   return (
     <List
       filters={filters}
+      filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
       sort={{ field: 'id', order: 'DESC' }}
     >
       <Datagrid rowClick="show" bulkActionButtons={false}>
@@ -75,7 +79,7 @@ export default function FormList() {
           )}
         />
         <NumberField source="version" label="Version" />
-        <NumberField source="tenantId" label="Tenant ID" />
+        {isAdminMode && <ReferenceField source="tenantId" reference="tenants" label="Tenant" />}
         <DateField source="updatedAt" label="Updated" showTime />
         <OpenEditorButton />
       </Datagrid>

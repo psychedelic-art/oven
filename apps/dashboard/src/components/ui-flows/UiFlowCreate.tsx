@@ -4,8 +4,8 @@ import {
   Create,
   SimpleForm,
   TextInput,
-  NumberInput,
 } from 'react-admin';
+import { useTenantContext } from '@oven/dashboard-ui';
 import { Typography, Alert, Box } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
@@ -20,8 +20,10 @@ const validateFlowSlug = (value: string) => {
 };
 
 export default function UiFlowCreate() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+
   return (
-    <Create>
+    <Create transform={(data: Record<string, unknown>) => ({ ...data, tenantId: data.tenantId ?? activeTenantId })}>
       <SimpleForm>
         <TextInput source="name" label="Name" isRequired fullWidth />
         <TextInput
@@ -58,7 +60,6 @@ export default function UiFlowCreate() {
           rows={3}
           fullWidth
         />
-        <NumberInput source="tenantId" label="Tenant ID" isRequired />
       </SimpleForm>
     </Create>
   );

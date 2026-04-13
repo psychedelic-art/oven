@@ -5,17 +5,15 @@ import {
   SimpleForm,
   TextInput,
   BooleanInput,
-  ReferenceInput,
-  AutocompleteInput,
 } from 'react-admin';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 export default function KnowledgeBaseCreate() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+
   return (
-    <Create>
+    <Create transform={(data: Record<string, unknown>) => ({ ...data, tenantId: data.tenantId ?? activeTenantId })}>
       <SimpleForm>
-        <ReferenceInput source="tenantId" reference="tenants">
-          <AutocompleteInput optionText="name" label="Tenant" isRequired fullWidth />
-        </ReferenceInput>
         <TextInput source="name" label="Name" isRequired fullWidth />
         <TextInput
           source="slug"

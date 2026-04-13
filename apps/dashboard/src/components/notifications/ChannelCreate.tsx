@@ -1,6 +1,7 @@
 'use client';
 
 import { Create, SimpleForm, TextInput, SelectInput, BooleanInput } from 'react-admin';
+import { useTenantContext } from '@oven/dashboard-ui';
 import AdapterConfigFields from './AdapterConfigFields';
 import { useWatch } from 'react-hook-form';
 
@@ -40,10 +41,11 @@ function DynamicAdapterConfig() {
 }
 
 export default function ChannelCreate() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+
   return (
-    <Create>
+    <Create transform={(data: Record<string, unknown>) => ({ ...data, tenantId: data.tenantId ?? activeTenantId })}>
       <SimpleForm>
-        <TextInput source="tenantId" label="Tenant ID" isRequired fullWidth />
         <TextInput source="name" label="Channel Name" isRequired fullWidth />
         <SelectInput
           source="channelType"

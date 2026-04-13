@@ -17,21 +17,26 @@ import {
   DeleteButton,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 const filters = [
   <TextInput key="q" source="q" label="Search" alwaysOn />,
   <ReferenceInput key="knowledgeBaseId" source="knowledgeBaseId" reference="kb-knowledge-bases" alwaysOn>
     <AutocompleteInput optionText="name" label="Knowledge Base" />
   </ReferenceInput>,
-  <ReferenceInput key="tenantId" source="tenantId" reference="tenants">
-    <AutocompleteInput optionText="name" label="Tenant" />
-  </ReferenceInput>,
   <BooleanInput key="enabled" source="enabled" label="Enabled" />,
 ];
 
 export default function CategoryList() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+  const isAdminMode = useTenantContext((s) => s.isAdminMode);
+
   return (
-    <List filters={filters} sort={{ field: 'order', order: 'ASC' }}>
+    <List
+      filters={filters}
+      filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
+      sort={{ field: 'order', order: 'ASC' }}
+    >
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <NumberField source="id" label="ID" />
         <TextField source="name" label="Name" />
@@ -52,6 +57,7 @@ export default function CategoryList() {
         />
         <NumberField source="order" label="Order" />
         <BooleanField source="enabled" label="Enabled" />
+        {isAdminMode && <ReferenceField source="tenantId" reference="tenants" label="Tenant" />}
         <EditButton />
         <DeleteButton />
       </Datagrid>

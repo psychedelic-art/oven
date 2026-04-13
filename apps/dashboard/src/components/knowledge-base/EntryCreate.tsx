@@ -10,18 +10,18 @@ import {
   ReferenceInput,
   AutocompleteInput,
 } from 'react-admin';
+import { useTenantContext } from '@oven/dashboard-ui';
 import { Box } from '@mui/material';
 
 export default function EntryCreate() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+
   return (
-    <Create>
+    <Create transform={(data: Record<string, unknown>) => ({ ...data, tenantId: data.tenantId ?? activeTenantId })}>
       <SimpleForm>
         <Box sx={{ display: 'flex', gap: 3, width: '100%', flexDirection: { xs: 'column', md: 'row' } }}>
           {/* Left Column — Content */}
           <Box sx={{ flex: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <ReferenceInput source="tenantId" reference="tenants">
-              <AutocompleteInput optionText="name" label="Tenant" isRequired fullWidth />
-            </ReferenceInput>
             <ReferenceInput source="knowledgeBaseId" reference="kb-knowledge-bases">
               <AutocompleteInput optionText="name" label="Knowledge Base" isRequired fullWidth />
             </ReferenceInput>

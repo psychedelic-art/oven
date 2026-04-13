@@ -7,11 +7,12 @@ import {
   NumberField,
   DateField,
   FunctionField,
+  ReferenceField,
   TextInput,
   SelectInput,
-  NumberInput,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 const statusColors: Record<string, 'info' | 'success' | 'default'> = {
   draft: 'info',
@@ -31,12 +32,17 @@ const uiFlowFilters = [
       { id: 'archived', name: 'Archived' },
     ]}
   />,
-  <NumberInput key="tenantId" source="tenantId" label="Tenant ID" />,
 ];
 
 export default function UiFlowList() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+  const isAdminMode = useTenantContext((s) => s.isAdminMode);
+
   return (
-    <List filters={uiFlowFilters}>
+    <List
+      filters={uiFlowFilters}
+      filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
+    >
       <Datagrid rowClick="show">
         <NumberField source="id" />
         <TextField source="name" />
@@ -64,7 +70,7 @@ export default function UiFlowList() {
             )
           }
         />
-        <NumberField source="tenantId" label="Tenant ID" />
+        {isAdminMode && <ReferenceField source="tenantId" reference="tenants" label="Tenant" />}
         <DateField source="updatedAt" label="Updated" showTime />
       </Datagrid>
     </List>

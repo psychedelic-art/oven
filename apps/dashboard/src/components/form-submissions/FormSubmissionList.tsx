@@ -5,18 +5,23 @@ import {
   Datagrid,
   NumberField,
   DateField,
+  ReferenceField,
   NumberInput,
 } from 'react-admin';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 const filters = [
   <NumberInput key="formId" source="formId" label="Form ID" />,
-  <NumberInput key="tenantId" source="tenantId" label="Tenant ID" />,
 ];
 
 export default function FormSubmissionList() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+  const isAdminMode = useTenantContext((s) => s.isAdminMode);
+
   return (
     <List
       filters={filters}
+      filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
       sort={{ field: 'id', order: 'DESC' }}
     >
       <Datagrid rowClick="show" bulkActionButtons={false}>
@@ -25,7 +30,7 @@ export default function FormSubmissionList() {
         <NumberField source="formVersion" label="Form Version" />
         <NumberField source="submittedBy" label="Submitted By" />
         <DateField source="submittedAt" label="Submitted At" showTime />
-        <NumberField source="tenantId" label="Tenant ID" />
+        {isAdminMode && <ReferenceField source="tenantId" reference="tenants" label="Tenant" />}
       </Datagrid>
     </List>
   );
