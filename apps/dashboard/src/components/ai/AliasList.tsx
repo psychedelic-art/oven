@@ -8,13 +8,14 @@ import {
   DateField,
   FunctionField,
   ReferenceField,
-  TextInput,
-  SelectInput,
-  BooleanInput,
   EditButton,
   DeleteButton,
+  useListContext,
 } from 'react-admin';
 import { Chip } from '@mui/material';
+import { FilterToolbar } from '@oven/dashboard-ui';
+import type { FilterDefinition } from '@oven/dashboard-ui';
+import { useTenantContext } from '@oven/dashboard-ui';
 
 const typeChoices = [
   { id: 'text', name: 'Text' },
@@ -30,15 +31,37 @@ const typeColors: Record<string, 'primary' | 'success' | 'secondary' | 'warning'
   object: 'warning',
 };
 
-const filters = [
-  <TextInput key="q" source="q" label="Search" alwaysOn />,
-  <SelectInput key="type" source="type" label="Type" choices={typeChoices} />,
-  <BooleanInput key="enabled" source="enabled" label="Enabled" />,
+const filterDefinitions: FilterDefinition[] = [
+  { source: 'q', label: 'Search', kind: 'quick-search', alwaysOn: true },
+  {
+    source: 'type',
+    label: 'Type',
+    kind: 'combo',
+    choices: typeChoices,
+  },
+  { source: 'enabled', label: 'Enabled', kind: 'boolean' },
 ];
 
-export default function AliasList() {
+function AliasListToolbar() {
+  const { filterValues, setFilters } = useListContext();
   return (
-    <List filters={filters} sort={{ field: 'id', order: 'DESC' }}>
+    <FilterToolbar
+      filters={filterDefinitions}
+      filterValues={filterValues}
+      setFilters={(f) => setFilters(f, undefined, false)}
+    />
+  );
+}
+
+export default function AliasList() {
+  const activeTenantId = useTenantContext((s) => s.activeTenantId);
+
+  return (
+    <List
+      actions={<AliasListToolbar />}
+      filter={activeTenantId ? { tenantId: activeTenantId } : undefined}
+      sort={{ field: 'id', order: 'DESC' }}
+    >
       <Datagrid rowClick="edit" bulkActionButtons={false}>
         <TextField source="alias" label="Alias" />
         <ReferenceField source="providerId" reference="ai-providers" label="Provider">
