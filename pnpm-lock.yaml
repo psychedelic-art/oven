@@ -262,6 +262,9 @@ importers:
 
   packages/agent-ui:
     dependencies:
+      '@ai-sdk/react':
+        specifier: ^1.2.0
+        version: 1.2.12(react@19.2.4)(zod@3.25.76)
       '@oven/oven-ui':
         specifier: workspace:*
         version: link:../oven-ui

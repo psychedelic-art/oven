@@ -20,6 +20,7 @@
     "build:widget": "vite build --config vite.config.widget.ts"
   },
   "dependencies": {
+    "@ai-sdk/react": "^1.2.0",
     "@oven/oven-ui": "workspace:*",
     "react-markdown": "^9.0.0"
   },
