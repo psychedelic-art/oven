@@ -144,6 +144,21 @@ export default function CustomMenu() {
       <Divider sx={{ my: 1 }} />
       <Box sx={{ px: 2, pb: 0.5 }}>
         <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10 }}>
+          Notifications
+        </Typography>
+      </Box>
+      <Menu.ResourceItem name="notification-channels" />
+      <Menu.ResourceItem name="notification-conversations" />
+      <Menu.ResourceItem name="notification-escalations" />
+      <Menu.Item
+        to="/notifications/usage"
+        primaryText="Usage"
+        leftIcon={<BarChartIcon />}
+      />
+
+      <Divider sx={{ my: 1 }} />
+      <Box sx={{ px: 2, pb: 0.5 }}>
+        <Typography variant="overline" color="text.secondary" sx={{ fontSize: 10 }}>
           Files
         </Typography>
       </Box>

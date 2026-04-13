@@ -41,8 +41,13 @@ describe('notificationsModule', () => {
     ]);
   });
 
-  it('has resources=[] (UI ships in sprint-04)', () => {
-    expect(notificationsModule.resources).toEqual([]);
+  it('has 3 dashboard resources (sprint-04 shipped)', () => {
+    const names = (notificationsModule.resources ?? []).map((r: { name: string }) => r.name);
+    expect(names).toEqual([
+      'notification-channels',
+      'notification-conversations',
+      'notification-escalations',
+    ]);
   });
 
   describe('configSchema', () => {

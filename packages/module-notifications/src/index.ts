@@ -74,9 +74,26 @@ export const notificationsModule: ModuleDefinition = {
       GET: usageHandler.GET,
     },
   },
-  // Dashboard resources + menu items ship in sprint-04; keep empty.
-  resources: [],
-  menuItems: [],
+  resources: [
+    {
+      name: 'notification-channels',
+      options: { label: 'Channels' },
+    },
+    {
+      name: 'notification-conversations',
+      options: { label: 'Conversations' },
+    },
+    {
+      name: 'notification-escalations',
+      options: { label: 'Escalations' },
+    },
+  ],
+  menuItems: [
+    { label: 'Channels', to: '/notification-channels' },
+    { label: 'Conversations', to: '/notification-conversations' },
+    { label: 'Escalations', to: '/notification-escalations' },
+    { label: 'Usage', to: '/notifications/usage' },
+  ],
   customRoutes: [],
   // configSchema — see docs/modules/notifications/module-design.md#configschema.
   // DEFAULT_*_LIMIT keys close the Rule 13 drift described in
