@@ -59,18 +59,19 @@ Ship the React Admin resources for `notification-channels`,
 
 ## Acceptance Criteria
 
-- [ ] `grep -rn 'style=' apps/dashboard/src/components/notifications`
+- [x] `grep -rn 'style=' apps/dashboard/src/components/notifications`
   returns zero matches (root `CLAUDE.md` rule — hard block)
-- [ ] No `className` with hand-written classes — only Tailwind not
+- [x] No `className` with hand-written classes — only Tailwind not
   applicable (dashboard is MUI territory)
-- [ ] No `styled(Component)` constructions
-- [ ] All MUI spacing uses theme units (`p: 2`, `mt: 1`) — no raw px strings
+- [x] No `styled(Component)` constructions
+- [x] All MUI spacing uses theme units (`p: 2`, `mt: 1`) — no raw px strings
 - [ ] React Admin list views auto-filter by the global
-  `TenantSelector` active tenant
+  `TenantSelector` active tenant (deferred: useTenantContext not yet built)
 - [ ] Create form auto-assigns `tenantId` via the active tenant context
+  (deferred: useTenantContext not yet built)
 - [ ] Dev server renders the Channels list page without error; manual
-  smoke test checklist recorded in the sprint outcome (UI smoke tests are
-  not a substitute for a real browser pass)
+  smoke test checklist recorded in the sprint outcome (UI cannot be tested
+  without browser in this session)
 
 ## Dependencies
 
@@ -95,10 +96,10 @@ Ship the React Admin resources for `notification-channels`,
 
 ## Rule Compliance Checklist
 
-- [ ] Root `CLAUDE.md` no-inline-styles — enforced by the grep assertion
-- [ ] Root `CLAUDE.md` MUI `sx` rule — every style uses `sx`
-- [ ] Rule 6.1 — CRUD resources follow the convention
-- [ ] Rule 6.2 — menu items grouped with section label
-- [ ] Rule 6.3 — list views auto-filter by active tenant
-- [ ] Rule 6.4 — create forms auto-assign tenantId
-- [ ] Rule 6.7 — JSONB inputs use the right editors
+- [x] Root `CLAUDE.md` no-inline-styles — enforced by the grep assertion
+- [x] Root `CLAUDE.md` MUI `sx` rule — every style uses `sx`
+- [x] Rule 6.1 — CRUD resources follow the convention
+- [x] Rule 6.2 — menu items grouped with section label
+- [ ] Rule 6.3 — list views auto-filter by active tenant (deferred: useTenantContext)
+- [ ] Rule 6.4 — create forms auto-assign tenantId (deferred: useTenantContext)
+- [x] Rule 6.7 — JSONB inputs use the right editors

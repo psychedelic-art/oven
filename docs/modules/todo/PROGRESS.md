@@ -1,19 +1,19 @@
 # Todo Queue Progress
 
-Regenerated fresh on 2026-04-13 after **cycle-25** merge of
-subscriptions sprint-04 dashboard UI onto `origin/dev` as merge
-commit `e74fa08`.
-Session branch: `claude/stoic-hamilton-Nij5c` (cycle-26).
+Regenerated fresh on 2026-04-13 after **cycle-26** merge of
+auth sprint-03 dashboard UI onto `origin/dev` as merge
+commit `3cd86b0`.
+Session branch: `claude/stoic-hamilton-Nij5c`.
 
 ## Phase 0 — Branch discovery (cycle-26)
 
 | Branch | Module | Ahead | Behind | Contents |
 |--------|--------|-------|--------|----------|
-| `claude/qa-test-todo-module-K2tpT` | (stale) | 1 | 157 | tsbuildinfo artifact only — no feature work |
-| `claude/stoic-hamilton-2ylh0` | (tracking) | 2 | 28 | PROGRESS.md + pnpm-lock.yaml update from cycle-19 — superseded |
-| `claude/stoic-hamilton-8IRlF` | (tracking) | 1 | 41 | PROGRESS.md update from cycle-17b — superseded |
-| `claude/stoic-hamilton-JTmbo` | (tracking) | 1 | 10 | PROGRESS.md update from cycle-23 — superseded |
-| `claude/stoic-hamilton-Ucqlg` | (tracking) | 1 | 0 | PROGRESS.md update from cycle-24 — superseded by this regen |
+| `claude/qa-test-todo-module-K2tpT` | (stale) | 1 | 162 | tsbuildinfo artifact only — no feature work |
+| `claude/stoic-hamilton-2ylh0` | (tracking) | 2 | 33 | PROGRESS.md + pnpm-lock.yaml update from cycle-19 — superseded |
+| `claude/stoic-hamilton-8IRlF` | (tracking) | 1 | 46 | PROGRESS.md update from cycle-17b — superseded |
+| `claude/stoic-hamilton-JTmbo` | (tracking) | 1 | 15 | PROGRESS.md update from cycle-23 — superseded |
+| `claude/stoic-hamilton-Ucqlg` | (tracking) | 1 | 5 | PROGRESS.md update from cycle-24 — superseded |
 
 No feature branches with unmerged work exist. All inspiring-clarke-*
 branches are fully merged (ahead=0). The 5 branches above contain
@@ -47,12 +47,13 @@ No shared unmerged ancestors detected across candidates.
 | 23 | subscriptions | sprint-03 public pricing | `ff4e60a` | +3 |
 | 24 | notifications | sprint-03 usage metering | `8f71a06` | +39 |
 | 25 | subscriptions | sprint-04 dashboard UI | `e74fa08` | +5 |
+| 26 | auth | sprint-03 dashboard UI | `3cd86b0` | +15 |
 
-## Active queue (post cycle-25)
+## Active queue (post cycle-26)
 
 | Module / Program | Sprint files | Canonical doc set | Package / tests | Current sprint | Next action |
 |---|---|---|---|---|---|
-| `auth` | 5 (sprint-00..04) | 11/11 | `@oven/module-auth` 30 tests (4 files) | **sprint-02 done (cycle-20)** | Execute sprint-03-dashboard-ui. |
+| `auth` | 5 (sprint-00..04) | 11/11 | `@oven/module-auth` 45 tests (7 files) | **sprint-03 done (cycle-26)** | Execute sprint-04-acceptance. |
 | `files` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-files`, 41 tests (6 files) | **sprint-03 done (cycle-22)** | Execute sprint-04-dashboard-ui (BLOCKED on module-auth/ssr F-05). |
 | `subscriptions` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-subscriptions`, 88 tests (7 files) | **sprint-04 done (cycle-25)** | Execute sprint-05-acceptance. |
 | `tenants` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-tenants`, 78 tests (4 files) | sprint-03 done (cycle-8) | Execute sprint-04-acceptance (BLOCKED on DB-mock harness). |
@@ -65,15 +66,15 @@ No shared unmerged ancestors detected across candidates.
 | `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | 310+ tests (`module-ai` + `module-workflows`) | sprint-01 CLOSED (cycle-14), sprint-03 CLOSED (cycle-18), sprint-05 CLOSED (cycle-9), sprint-06 CLOSED (cycle-11) | No unblocked sprints remain. sprint-02/04 BLOCKED on module-chat/agent-core. |
 | `psychedelic-claude-code-migration` | 12 (sprint-00..11) | N/A (program) | N/A | -- | Owned elsewhere — do not touch. |
 
-## Priority order (post cycle-25)
+## Priority order (post cycle-26)
 
-P0: auth sprint-03 (dashboard UI + API keys + password flows)
-P1: notifications sprint-04 (dashboard UI)
-P2: ui-flows sprint-02 (portal app — large scope, new app)
-P3: agent-ui sprint-02 (session sidebar — needs module-chat endpoints)
-P4: dashboard-ux-system sprint-01 (foundation — docs-only bootstrap)
-P5: config sprint-03 (RLS + migration — needs Neon preview branch)
-P6: knowledge-base sprint-03 (search engine — needs pgvector)
+P0: notifications sprint-04 (dashboard UI)
+P1: ui-flows sprint-02 (portal app — large scope, new app)
+P2: agent-ui sprint-02 (session sidebar — needs module-chat endpoints)
+P3: dashboard-ux-system sprint-01 (foundation — docs-only bootstrap)
+P4: config sprint-03 (RLS + migration — needs Neon preview branch)
+P5: knowledge-base sprint-03 (search engine — needs pgvector)
+SKIP: auth sprint-04 (acceptance — RLS migration, needs Neon)
 SKIP: files sprint-04 (blocked on auth/ssr F-05)
 SKIP: tenants sprint-04 (blocked on DB-mock harness)
 SKIP: subscriptions sprint-05 (acceptance — deferred)
@@ -85,7 +86,7 @@ SKIP: psychedelic-claude-code-migration (external ownership)
 1. **Pre-existing typecheck baseline on `dev` (465+ errors).** All from
    `packages/workflow-editor/` (peer-dep `react` resolution),
    `RouteHandler` / `"json"` field types in modules, and `@oven/module-ai/*`
-   subpath TS2307 errors. Unchanged category across cycles 2-25.
+   subpath TS2307 errors. Unchanged category across cycles 2-26.
 2. **`useTenantContext` not available.** Tenant-aware list filtering (Rule
    6.3) cannot be implemented until the tenant context provider is built
    (dashboard-ux-system program). Config sprint-02 defers this.
@@ -107,6 +108,7 @@ SKIP: psychedelic-claude-code-migration (external ownership)
 
 ## Backup inventory (current)
 
+- `bk/claude-stoic-hamilton-Nij5c-20260413` (cycle-26)
 - `bk/claude-stoic-hamilton-Ucqlg-20260412` (cycle-25)
 - `bk/claude-stoic-hamilton-JTmbo-20260412` (cycle-23)
 - `bk/claude-stoic-hamilton-2ylh0-20260412` (cycle-18)
@@ -126,7 +128,7 @@ SKIP: psychedelic-claude-code-migration (external ownership)
 - `bk/claude-qa-test-todo-module-K2tpT-20260411` (blocked, cycle-2)
 - `bk/claude-dashboard-ux-system-nESUZ-20260411`
 
-## Merge path to `dev` (post cycle-25)
+## Merge path to `dev` (post cycle-26)
 
-`origin/dev` HEAD is now `e74fa08 merge(cycle-25): land subscriptions
-sprint-04 dashboard UI`.
+`origin/dev` HEAD is now `3cd86b0 merge(cycle-26): land auth sprint-03
+dashboard UI`.

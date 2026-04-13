@@ -162,6 +162,18 @@ import ForgotPasswordPage from './auth/ForgotPasswordPage';
 import ResetPasswordPage from './auth/ResetPasswordPage';
 import ProfilePage from './auth/ProfilePage';
 
+// Notifications
+import ChannelList from './notifications/ChannelList';
+import ChannelCreate from './notifications/ChannelCreate';
+import ChannelEdit from './notifications/ChannelEdit';
+import ChannelShow from './notifications/ChannelShow';
+import ConversationList from './notifications/ConversationList';
+import ConversationShow from './notifications/ConversationShow';
+import EscalationList from './notifications/EscalationList';
+import EscalationShow from './notifications/EscalationShow';
+import EscalationEdit from './notifications/EscalationEdit';
+import UsageDashboardPage from './notifications/UsageDashboardPage';
+
 // Forms
 import FormList from './forms/FormList';
 import FormCreate from './forms/FormCreate';
@@ -837,6 +849,29 @@ export default function AdminApp() {
       <Resource name="agent-memory" options={{ label: 'Agent Memory' }} icon={MemoryIcon} list={AgentMemoryList} />
       <Resource name="mcp-server-definitions" options={{ label: 'MCP Servers' }} icon={DnsIcon} list={MCPServerList} />
 
+      {/* Notifications Module Resources */}
+      <Resource
+        name="notification-channels"
+        options={{ label: 'Channels' }}
+        list={ChannelList}
+        create={ChannelCreate}
+        edit={ChannelEdit}
+        show={ChannelShow}
+      />
+      <Resource
+        name="notification-conversations"
+        options={{ label: 'Conversations' }}
+        list={ConversationList}
+        show={ConversationShow}
+      />
+      <Resource
+        name="notification-escalations"
+        options={{ label: 'Escalations' }}
+        list={EscalationList}
+        show={EscalationShow}
+        edit={EscalationEdit}
+      />
+
       {/* Files Module Resources */}
       <Resource
         name="files"
@@ -857,6 +892,7 @@ export default function AdminApp() {
         <Route path="/api-permissions" element={<ApiPermissionList />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/sessions" element={<ProfilePage />} />
+        <Route path="/notifications/usage" element={<UsageDashboardPage />} />
         <Route path="/ai/playground" element={<AIPlayground />} />
         <Route path="/ai/usage-dashboard" element={<AIUsageDashboard />} />
         <Route path="/ai/tool-catalog" element={<AIToolCatalog />} />
