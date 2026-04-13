@@ -12,6 +12,12 @@ export interface ChatHeaderProps {
   status?: 'idle' | 'streaming' | 'error';
   /** Small badge slot, rendered next to the title. Use for mode indicators. */
   badge?: ReactNode;
+  /** Theme selector slot — rendered between title area and right controls. */
+  themeSlot?: ReactNode;
+  /** Connection status slot — rendered before the right controls. */
+  connectionSlot?: ReactNode;
+  /** Layout mode toggle slot — rendered in the right controls area. */
+  layoutSlot?: ReactNode;
   /** Free slot on the right side (e.g. Inspector toggle, menu). */
   rightSlot?: ReactNode;
   className?: string;
@@ -23,12 +29,21 @@ export interface ChatHeaderProps {
  * Tailwind chat header. Ported from newsan's `chat-header.tsx` to give the
  * playground a dedicated session header (instead of an ad-hoc inline top bar).
  * Intentionally pure presentational — no routing, no MUI, no data fetches.
+ *
+ * Slot layout (left → right):
+ *   [title + badge + subtitle] | [themeSlot] | [status + connectionSlot + layoutSlot + rightSlot]
+ *
+ * Future: adopt the AI SDK `useChat` status pattern ('ready' | 'submitted' |
+ * 'streaming' | 'error') once we migrate to @ai-sdk/react.
  */
 export function ChatHeader({
   title,
   subtitle,
   status = 'idle',
   badge,
+  themeSlot,
+  connectionSlot,
+  layoutSlot,
   rightSlot,
   className,
 }: ChatHeaderProps) {
@@ -50,6 +65,12 @@ export function ChatHeader({
         )}
       </div>
 
+      {themeSlot && (
+        <div className={cn('shrink-0')}>
+          {themeSlot}
+        </div>
+      )}
+
       <div className={cn('flex items-center gap-2 shrink-0')}>
         {status === 'streaming' && (
           <span
@@ -64,6 +85,8 @@ export function ChatHeader({
             ● Error
           </span>
         )}
+        {connectionSlot}
+        {layoutSlot}
         {rightSlot}
       </div>
     </div>

@@ -4,7 +4,7 @@
 // router-free so it can be embedded in any host (dashboard, docs, embed script).
 // Do NOT import from `@mui/*`, `react-router-dom`, or `apps/dashboard/*`.
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '@oven/oven-ui';
 import { useChat } from '../hooks/useChat';
 import { usePlaygroundCommands, type PlaygroundRuntimeConfig } from '../hooks/usePlaygroundCommands';
@@ -20,8 +20,12 @@ import { filterMessagesForDisplay } from '../shared/filterMessagesForDisplay';
 import { TargetSelector } from './TargetSelector';
 import { RuntimeConfigPanel } from './panels/RuntimeConfigPanel';
 import { ExecutionInspector } from './panels/ExecutionInspector';
+import type { WorkflowExecutionDetail } from './panels/ExecutionInspector';
 import { EvalReportPanel } from './panels/EvalReportPanel';
 import { TracePanel } from './panels/TracePanel';
+import { applyTheme, clearTheme } from '../themes/applyTheme';
+import { themePresets } from '../themes/presets';
+import type { ThemePresetName } from '../themes/presets';
 import type { PlaygroundTarget, PlaygroundMode } from './TargetSelector';
 import type { UIMessage } from '../types';
 
@@ -55,6 +59,24 @@ export interface UnifiedAIPlaygroundProps {
   sessionConfig?: SessionConfig;
   /** Called when the user switches to a different session. */
   onSessionChange?: (sessionId: number) => void;
+
+  // ── Theme (sprint 05b) ────────────────────────────────────
+  /** Show theme preset dropdown in the header. */
+  showThemeToggle?: boolean;
+  /** Initial theme preset. Defaults to 'light'. */
+  initialTheme?: ThemePresetName;
+
+  // ── Layout (sprint 05b) ───────────────────────────────────
+  /** Show inline/fullscreen toggle in the header. */
+  showLayoutToggle?: boolean;
+
+  // ── Connection status (sprint 05b) ────────────────────────
+  /** Show green/red online/offline dot in the header. */
+  showConnectionStatus?: boolean;
+
+  // ── Execution history (sprint 05b) ────────────────────────
+  /** Accumulate workflow execution history across multiple runs. */
+  showExecutionHistory?: boolean;
 }
 
 interface WorkflowExecutionState {
@@ -82,11 +104,51 @@ export function UnifiedAIPlayground({
   showSessionSidebar = false,
   sessionConfig,
   onSessionChange,
+  showThemeToggle = false,
+  initialTheme = 'light',
+  showLayoutToggle = false,
+  showConnectionStatus = false,
+  showExecutionHistory = false,
 }: UnifiedAIPlaygroundProps) {
   const canCreate = sessionConfig?.canCreate ?? true;
   const canDelete = sessionConfig?.canDelete ?? true;
   const canPin = sessionConfig?.canPin ?? true;
   const canStop = sessionConfig?.canStop ?? true;
+
+  // ─── Theme state ──────────────────────────────────────────
+  const [activeTheme, setActiveTheme] = useState<ThemePresetName>(initialTheme);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (showThemeToggle && containerRef.current) {
+      applyTheme(activeTheme, containerRef.current);
+    }
+    return () => {
+      if (containerRef.current) clearTheme(containerRef.current);
+    };
+  }, [activeTheme, showThemeToggle]);
+
+  // ─── Connection status ────────────────────────────────────
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== 'undefined' ? navigator.onLine : true,
+  );
+  useEffect(() => {
+    if (!showConnectionStatus) return;
+    const onOnline = () => setIsOnline(true);
+    const onOffline = () => setIsOnline(false);
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    return () => {
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+    };
+  }, [showConnectionStatus]);
+
+  // ─── Layout mode ──────────────────────────────────────────
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // ─── Execution history ────────────────────────────────────
+  const [executionHistory, setExecutionHistory] = useState<WorkflowExecutionDetail[]>([]);
   const [resolvedTenantId, setResolvedTenantId] = useState<number | null>(tenantIdProp ?? null);
 
   // If the host didn't pass a numeric tenantId, try to resolve one from the
@@ -234,12 +296,21 @@ export function UnifiedAIPlayground({
             stepsExecuted: number;
             nodeExecutions?: WorkflowExecutionState['nodes'];
           };
-          setWorkflowExecution({
+          const execState: WorkflowExecutionState = {
             executionId: execData.id,
             status: execData.status,
             stepsExecuted: execData.stepsExecuted,
             nodes: execData.nodeExecutions ?? [],
-          });
+          };
+          setWorkflowExecution(execState);
+
+          // Push into execution history for multi-run view
+          if (showExecutionHistory) {
+            setExecutionHistory(prev => [{
+              ...execState,
+              timestamp: new Date(),
+            }, ...prev]);
+          }
         }
       } catch {
         // Best-effort; the assistant message below still posts.
@@ -347,7 +418,14 @@ export function UnifiedAIPlayground({
     chat.isStreaming ? 'streaming' : chat.error ? 'error' : 'idle';
 
   return (
-    <div className={cn('flex h-full w-full bg-white text-gray-900', className)}>
+    <div
+      ref={containerRef}
+      className={cn(
+        'flex h-full w-full bg-white text-gray-900',
+        isFullscreen && 'fixed inset-0 z-50',
+        className,
+      )}
+    >
       {/* ─── Left Panel: Selector / Config / Sessions ────── */}
       <div className={cn('w-64 shrink-0 border-r border-gray-200 flex flex-col bg-gray-50')}>
         <div className={cn('flex border-b border-gray-200 bg-white')}>
@@ -432,6 +510,37 @@ export function UnifiedAIPlayground({
           subtitle={target ? `${target.mode} · ${target.slug}` : 'Select a target to start'}
           status={headerStatus}
           badge={target ? <ModeBadge mode={target.mode} /> : null}
+          themeSlot={showThemeToggle ? (
+            <ThemeDropdown
+              activeTheme={activeTheme}
+              onChange={(t) => setActiveTheme(t)}
+            />
+          ) : undefined}
+          connectionSlot={showConnectionStatus ? (
+            <span
+              className={cn(
+                'w-2 h-2 rounded-full shrink-0',
+                isOnline ? 'bg-green-400' : 'bg-red-400',
+              )}
+              title={isOnline ? 'Online' : 'Offline'}
+              aria-label={isOnline ? 'Connection: online' : 'Connection: offline'}
+            />
+          ) : undefined}
+          layoutSlot={showLayoutToggle ? (
+            <button
+              type="button"
+              onClick={() => setIsFullscreen(f => !f)}
+              className={cn(
+                'text-xs px-2 py-1 rounded border transition-colors',
+                isFullscreen
+                  ? 'bg-gray-700 border-gray-600 text-white'
+                  : 'border-gray-200 text-gray-500 hover:bg-gray-100',
+              )}
+              aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+            >
+              {isFullscreen ? 'Exit FS' : 'Fullscreen'}
+            </button>
+          ) : undefined}
           rightSlot={
             <>
               {/* Stop button — visible when streaming or executing workflow */}
@@ -569,6 +678,7 @@ export function UnifiedAIPlayground({
                 mode={target?.mode ?? defaultMode}
                 messages={chat.messages}
                 workflowExecution={workflowExecution}
+                executionHistory={showExecutionHistory ? executionHistory : undefined}
               />
             )}
             {rightTab === 'eval' && (
@@ -590,6 +700,69 @@ export function UnifiedAIPlayground({
 }
 
 // ─── Subcomponents / helpers ────────────────────────────────
+
+const THEME_PRESET_NAMES = Object.keys(themePresets) as ThemePresetName[];
+
+/**
+ * Theme preset dropdown. Cycles through the 10 built-in presets.
+ * Future: adopt AI SDK pattern for persisting user preference.
+ */
+function ThemeDropdown({
+  activeTheme,
+  onChange,
+}: {
+  activeTheme: ThemePresetName;
+  onChange: (theme: ThemePresetName) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className={cn('relative')}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className={cn(
+          'text-xs px-2 py-1 rounded border border-gray-200 bg-white',
+          'hover:bg-gray-50 transition-colors flex items-center gap-1',
+        )}
+        aria-label="Select theme"
+        aria-expanded={open}
+      >
+        <span
+          className={cn('w-3 h-3 rounded-full border border-gray-300')}
+          // Dynamic CSS custom property — only exception allowed per CLAUDE.md
+          style={{ '--theme-dot': themePresets[activeTheme]['--oven-widget-primary'] } as React.CSSProperties}
+        />
+        <span className={cn('capitalize')}>{activeTheme}</span>
+      </button>
+
+      {open && (
+        <div className={cn(
+          'absolute top-full left-0 mt-1 z-50 bg-white border border-gray-200',
+          'rounded-lg shadow-lg py-1 min-w-[140px] max-h-[240px] overflow-y-auto',
+        )}>
+          {THEME_PRESET_NAMES.map(name => (
+            <button
+              key={name}
+              type="button"
+              onClick={() => { onChange(name); setOpen(false); }}
+              className={cn(
+                'w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2',
+                name === activeTheme && 'bg-blue-50 text-blue-700 font-medium',
+              )}
+            >
+              <span
+                className={cn('w-3 h-3 rounded-full border border-gray-300 shrink-0')}
+                style={{ backgroundColor: themePresets[name]['--oven-widget-primary'] } as React.CSSProperties}
+              />
+              <span className={cn('capitalize')}>{name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function ModeBadge({ mode }: { mode: PlaygroundMode }) {
   return (
