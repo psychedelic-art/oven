@@ -1,12 +1,13 @@
 # Todo Queue Progress
 
-Regenerated fresh on 2026-04-13 after **cycle-34** merge of
-subscriptions module graduation (sprint-05 acceptance) onto
-`origin/dev` as merge commit `84d0455`.
-Session branch: `claude/subscriptions-sprint-05-acceptance`.
+Regenerated fresh on 2026-04-13 after **cycle-35** merge of agent-ui
+sprint-02 session sidebar completion onto `origin/dev` as merge commit
+`9739231`.
+Session branch: `claude/agent-ui-sprint-02`.
 
-Prior: cycle-33 (`43f5f14`) landed dashboard-ux-system graduation +
-post-graduation work + @ai-sdk/react migration + module-chat Sprint 4A.4.
+Prior cycles:
+- cycle-34 (`84d0455`) — subscriptions graduation
+- cycle-33 (`43f5f14`) — dashboard-ux-system graduation + @ai-sdk/react + module-chat Sprint 4A.4
 
 ## Phase 0 -- Branch discovery (cycle-33)
 
@@ -50,6 +51,7 @@ plus post-graduation work.
 | 32 | dashboard-ux-system | sprint-03 tenant context | `136a1e5` | +3 |
 | **33** | **dashboard-ux-system + module-chat + agent-ui** | **graduation + post-grad + AI SDK migration + Sprint 4A.4** | **`43f5f14`** | **+82** |
 | **34** | **subscriptions** | **sprint-05 acceptance + graduation** | **`84d0455`** | **0** |
+| **35** | **agent-ui + module-chat** | **sprint-02 session sidebar (pin/rename/delete/export)** | **`9739231`** | **+33** |
 
 ### Cycle-33 contents (19 commits)
 
@@ -77,7 +79,7 @@ plus post-graduation work.
 | `notifications` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-notifications` 87+21 tests; REGISTERED | **sprint-04 done (cycle-27)** | **sprint-05-acceptance UNBLOCKED** (module-chat streaming now live via cycle-33). |
 | `module-knowledge-base` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-knowledge-base`, 21 tests | **sprint-02 done (cycle-16)** | sprint-03-search (BLOCKED: pgvector). |
 | `ui-flows` | 5 (sprint-00..03, 99) | 11/11 | LIVE 89+39+26 tests | **sprint-03 done (cycle-30)** | sprint-99-acceptance (automated pass, manual portal pending). |
-| `agent-ui` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/agent-ui`, 81 tests (+10 from cycle-33) | **sprint-01 done (cycle-21)** | **sprint-02 UNBLOCKED** (module-chat streaming + @ai-sdk/react both live via cycle-33). |
+| `agent-ui` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/agent-ui`, 110 tests | **sprint-02 done (cycle-35)** | sprint-03 widget bundle guardrails (size budget, cross-browser matrix). |
 | `dashboard-ux-system` | 8 (sprint-00..07) + post-grad | N/A (program) | LIVE `@oven/dashboard-ui` 92 tests + `@oven/agent-ui` 81 tests | **GRADUATED (cycle-33)** | All sprints closed. All deferred items closed. |
 | `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | 310+ tests | all unblocked sprints CLOSED | **sprint-02/04 UNBLOCKED** (module-chat streaming + agent-core ready via cycle-33). |
 | `psychedelic-claude-code-migration` | 12 | N/A | N/A | -- | Owned elsewhere. |
@@ -86,8 +88,9 @@ plus post-graduation work.
 
 P0: `ui-flows` sprint-99-acceptance (fully automated pass, manual portal pending)
 P1: ~~`subscriptions` sprint-05-acceptance~~ GRADUATED in cycle-34
-P2: `agent-ui` sprint-02 (NEWLY UNBLOCKED -- chat integration via @ai-sdk/react + backend streaming)
-P3: `notifications` sprint-05-acceptance (NEWLY UNBLOCKED -- streaming dependencies resolved)
+P2: ~~`agent-ui` sprint-02~~ DONE in cycle-35
+P3: `agent-ui` sprint-03 (widget bundle guardrails) -- next agent-ui sprint
+P4: `notifications` sprint-05-acceptance (unblocked by cycle-33 streaming)
 P4: `oven-bug-sprint` sprint-02 / sprint-04 (NEWLY UNBLOCKED -- module-chat streaming live)
 SKIP: `config` sprint-03 (BLOCKED: Neon preview)
 SKIP: `knowledge-base` sprint-03 (BLOCKED: pgvector)
@@ -115,4 +118,4 @@ SKIP: `psychedelic-claude-code-migration` (external)
 
 ## Merge path to `dev` (post cycle-33)
 
-`origin/dev` HEAD is now `84d0455 merge(cycle-34): graduate subscriptions module (sprint-05 acceptance)`.
+`origin/dev` HEAD is now `9739231 merge(cycle-35): land agent-ui sprint-02 session sidebar completion`.
