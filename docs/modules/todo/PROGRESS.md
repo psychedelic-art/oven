@@ -68,7 +68,7 @@ plus post-graduation work.
 |---|---|---|---|---|---|
 | `auth` | 5 (sprint-00..04) | 11/11 | `@oven/module-auth` 45 tests | **sprint-03 done (cycle-26)** | sprint-04-acceptance (BLOCKED: needs Neon). |
 | `files` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-files`, 41 tests | **sprint-03 done (cycle-22)** | sprint-04-dashboard-ui (BLOCKED on auth/ssr). |
-| `subscriptions` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-subscriptions`, 88 tests | **sprint-04 done (cycle-25)** | sprint-05-acceptance (automated pass, manual UI pending). |
+| `subscriptions` | **GRADUATED cycle-34** | 11/11 | LIVE `@oven/module-subscriptions`, 88 tests | **all sprints closed** | Graduated out of queue. See IMPLEMENTATION-STATUS.md. |
 | `tenants` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-tenants`, 78 tests | sprint-03 done (cycle-8) | sprint-04-acceptance (BLOCKED on DB-mock). |
 | `config` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-config`, 24 tests | **sprint-02 done (cycle-15)** | sprint-03-rls (BLOCKED: Neon preview). |
 | `notifications` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-notifications` 87+21 tests; REGISTERED | **sprint-04 done (cycle-27)** | **sprint-05-acceptance UNBLOCKED** (module-chat streaming now live via cycle-33). |
@@ -82,7 +82,7 @@ plus post-graduation work.
 ## Priority order (post cycle-33)
 
 P0: `ui-flows` sprint-99-acceptance (fully automated pass, manual portal pending)
-P1: `subscriptions` sprint-05-acceptance (automated pass, manual UI pending)
+P1: ~~`subscriptions` sprint-05-acceptance~~ GRADUATED in cycle-34
 P2: `agent-ui` sprint-02 (NEWLY UNBLOCKED -- chat integration via @ai-sdk/react + backend streaming)
 P3: `notifications` sprint-05-acceptance (NEWLY UNBLOCKED -- streaming dependencies resolved)
 P4: `oven-bug-sprint` sprint-02 / sprint-04 (NEWLY UNBLOCKED -- module-chat streaming live)
