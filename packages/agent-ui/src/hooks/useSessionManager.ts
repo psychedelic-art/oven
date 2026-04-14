@@ -21,16 +21,24 @@ export interface UseSessionManagerOpts {
   enabled?: boolean;
 }
 
+export type ExportFormat = 'json' | 'markdown' | 'plaintext';
+
 export interface UseSessionManagerReturn {
   sessions: SessionSummary[];
   activeSessionId: number | null;
   isLoading: boolean;
   error: Error | null;
+  /** Per-row error messages keyed by session id (cleared on next successful mutation). */
+  rowErrors: Record<number, string>;
   createSession: () => Promise<number>;
   deleteSession: (id: number) => Promise<void>;
   pinSession: (id: number, pinned: boolean) => Promise<void>;
+  renameSession: (id: number, title: string) => Promise<void>;
+  exportSession: (id: number, format: ExportFormat) => Promise<void>;
   selectSession: (id: number) => void;
   refresh: () => Promise<void>;
+  /** Clear the rowError for a specific session id (e.g. on retry). */
+  clearRowError: (id: number) => void;
 }
 
 // ─── Hook ───────────────────────────────────────────────────
@@ -45,6 +53,25 @@ export function useSessionManager({
   const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
+
+  const setRowError = useCallback((id: number, message: string | null) => {
+    setRowErrors((prev) => {
+      const next = { ...prev };
+      if (message === null) delete next[id];
+      else next[id] = message;
+      return next;
+    });
+  }, []);
+
+  const clearRowError = useCallback((id: number) => {
+    setRowErrors((prev) => {
+      if (!(id in prev)) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }, []);
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -125,38 +152,124 @@ export function useSessionManager({
     return newId;
   }, [apiBaseUrl, tenantId, fetchSessions]);
 
-  // ─── Delete session ───────────────────────────────────────
+  // ─── Delete session (optimistic + rollback) ───────────────
 
   const deleteSession = useCallback(async (id: number) => {
-    const res = await fetch(`${apiBaseUrl}/api/chat-sessions/${id}`, {
-      method: 'DELETE',
-    });
-
-    if (!res.ok) throw new Error(`Failed to delete session: ${res.status}`);
+    // Snapshot + optimistic remove
+    const snapshot = sessions;
+    const priorActive = activeSessionId;
 
     if (mountedRef.current) {
       if (activeSessionId === id) setActiveSessionId(null);
-      setSessions(prev => prev.filter(s => s.id !== id));
+      setSessions((prev) => prev.filter((s) => s.id !== id));
+      clearRowError(id);
     }
-  }, [apiBaseUrl, activeSessionId]);
 
-  // ─── Pin / unpin session ──────────────────────────────────
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/chat-sessions/${id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error(`Failed to delete session: ${res.status}`);
+    } catch (err) {
+      // Rollback
+      if (mountedRef.current) {
+        setSessions(snapshot);
+        setActiveSessionId(priorActive);
+        setRowError(id, err instanceof Error ? err.message : 'Delete failed');
+      }
+      throw err;
+    }
+  }, [apiBaseUrl, activeSessionId, sessions, clearRowError, setRowError]);
+
+  // ─── Pin / unpin session (optimistic + rollback) ──────────
 
   const pinSession = useCallback(async (id: number, pinned: boolean) => {
-    const res = await fetch(`${apiBaseUrl}/api/chat-sessions/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isPinned: pinned }),
-    });
-
-    if (!res.ok) throw new Error(`Failed to update session: ${res.status}`);
+    // Snapshot + optimistic update
+    const snapshot = sessions;
 
     if (mountedRef.current) {
-      setSessions(prev =>
-        prev.map(s => (s.id === id ? { ...s, isPinned: pinned } : s)),
+      setSessions((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, isPinned: pinned } : s)),
       );
+      clearRowError(id);
     }
-  }, [apiBaseUrl]);
+
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/chat-sessions/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isPinned: pinned }),
+      });
+      if (!res.ok) throw new Error(`Failed to update session: ${res.status}`);
+    } catch (err) {
+      if (mountedRef.current) {
+        setSessions(snapshot);
+        setRowError(id, err instanceof Error ? err.message : 'Pin failed');
+      }
+      throw err;
+    }
+  }, [apiBaseUrl, sessions, clearRowError, setRowError]);
+
+  // ─── Rename session (optimistic + rollback) ───────────────
+
+  const renameSession = useCallback(async (id: number, title: string) => {
+    const snapshot = sessions;
+
+    if (mountedRef.current) {
+      setSessions((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, title } : s)),
+      );
+      clearRowError(id);
+    }
+
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/chat-sessions/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      });
+      if (!res.ok) throw new Error(`Failed to rename session: ${res.status}`);
+    } catch (err) {
+      if (mountedRef.current) {
+        setSessions(snapshot);
+        setRowError(id, err instanceof Error ? err.message : 'Rename failed');
+      }
+      throw err;
+    }
+  }, [apiBaseUrl, sessions, clearRowError, setRowError]);
+
+  // ─── Export session (triggers browser download) ───────────
+
+  const exportSession = useCallback(async (id: number, format: ExportFormat) => {
+    if (mountedRef.current) clearRowError(id);
+
+    try {
+      const res = await fetch(
+        `${apiBaseUrl}/api/chat-sessions/${id}/export?format=${format}`,
+      );
+      if (!res.ok) throw new Error(`Failed to export session: ${res.status}`);
+
+      const blob = await res.blob();
+
+      // Only trigger download in browser environments
+      if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+      const ext = format === 'markdown' ? 'md' : format === 'plaintext' ? 'txt' : 'json';
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `session-${id}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      if (mountedRef.current) {
+        setRowError(id, err instanceof Error ? err.message : 'Export failed');
+      }
+      throw err;
+    }
+  }, [apiBaseUrl, clearRowError, setRowError]);
 
   // ─── Select session ───────────────────────────────────────
 
@@ -171,10 +284,14 @@ export function useSessionManager({
     activeSessionId,
     isLoading,
     error,
+    rowErrors,
     createSession,
     deleteSession,
     pinSession,
+    renameSession,
+    exportSession,
     selectSession,
     refresh: fetchSessions,
+    clearRowError,
   };
 }

@@ -194,13 +194,25 @@ export interface MessageFeedbackProps {
   className?: string;
 }
 
+export type SessionExportFormat = 'json' | 'markdown' | 'plaintext';
+
 export interface SessionSidebarProps {
   sessions: Array<{ id: number; title: string | null; isPinned: boolean; updatedAt: Date; messageCount?: number }>;
   activeSessionId?: number;
   onSelectSession: (id: number) => void;
   onNewSession: () => void;
-  onPinSession?: (id: number) => void;
+  /** Toggle pin/unpin. Called with the new desired state. */
+  onPinSession?: (id: number, pinned: boolean) => void;
+  /** Inline rename commit handler. */
+  onRenameSession?: (id: number, title: string) => void;
+  /** Called after user confirms delete via ConfirmDialog. */
   onDeleteSession?: (id: number) => void;
+  /** Export session messages in the given format. */
+  onExportSession?: (id: number, format: SessionExportFormat) => void;
+  /** Per-row error keyed by session id. Shown inline via ChatErrorCard. */
+  rowErrors?: Record<number, string>;
+  /** Clear a specific row's error (for the retry affordance). */
+  onClearRowError?: (id: number) => void;
   className?: string;
 }
 

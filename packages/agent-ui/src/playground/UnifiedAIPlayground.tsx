@@ -487,17 +487,22 @@ export function UnifiedAIPlayground({
                   // createSession sets its own error state
                 }
               } : () => {}}
-              onPinSession={canPin ? (id) => {
-                const session = sessionMgr.sessions.find(s => s.id === id);
-                if (session) sessionMgr.pinSession(id, !session.isPinned);
+              onPinSession={canPin ? (id, pinned) => {
+                sessionMgr.pinSession(id, pinned).catch(() => {
+                  // rowError is set by the hook; sidebar shows inline ChatErrorCard
+                });
               } : undefined}
-              onDeleteSession={canDelete ? async (id) => {
-                try {
-                  await sessionMgr.deleteSession(id);
-                } catch {
-                  // deleteSession sets its own error state
-                }
+              onRenameSession={(id, title) => {
+                sessionMgr.renameSession(id, title).catch(() => {});
+              }}
+              onDeleteSession={canDelete ? (id) => {
+                sessionMgr.deleteSession(id).catch(() => {});
               } : undefined}
+              onExportSession={(id, format) => {
+                sessionMgr.exportSession(id, format).catch(() => {});
+              }}
+              rowErrors={sessionMgr.rowErrors}
+              onClearRowError={sessionMgr.clearRowError}
             />
           )}
         </div>
