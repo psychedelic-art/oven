@@ -1,10 +1,12 @@
 # Todo Queue Progress
 
-Regenerated fresh on 2026-04-13 after **cycle-33** merge of
-dashboard-ux-system graduation + post-graduation work + @ai-sdk/react
-migration + module-chat Sprint 4A.4 closure onto `origin/dev` as merge
-commit `43f5f14`.
-Session branch: `claude/dashboard-ux-system-nESUZ`.
+Regenerated fresh on 2026-04-13 after **cycle-34** merge of
+subscriptions module graduation (sprint-05 acceptance) onto
+`origin/dev` as merge commit `84d0455`.
+Session branch: `claude/subscriptions-sprint-05-acceptance`.
+
+Prior: cycle-33 (`43f5f14`) landed dashboard-ux-system graduation +
+post-graduation work + @ai-sdk/react migration + module-chat Sprint 4A.4.
 
 ## Phase 0 -- Branch discovery (cycle-33)
 
@@ -47,6 +49,7 @@ plus post-graduation work.
 | 31 | dashboard-ux-system | sprint-02 UX audit | `02fc5f9` | -- |
 | 32 | dashboard-ux-system | sprint-03 tenant context | `136a1e5` | +3 |
 | **33** | **dashboard-ux-system + module-chat + agent-ui** | **graduation + post-grad + AI SDK migration + Sprint 4A.4** | **`43f5f14`** | **+82** |
+| **34** | **subscriptions** | **sprint-05 acceptance + graduation** | **`84d0455`** | **0** |
 
 ### Cycle-33 contents (19 commits)
 
@@ -112,4 +115,4 @@ SKIP: `psychedelic-claude-code-migration` (external)
 
 ## Merge path to `dev` (post cycle-33)
 
-`origin/dev` HEAD is now `43f5f14 merge(cycle-33): land dashboard-ux-system graduation + @ai-sdk/react migration + module-chat Sprint 4A.4`.
+`origin/dev` HEAD is now `84d0455 merge(cycle-34): graduate subscriptions module (sprint-05 acceptance)`.
