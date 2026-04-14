@@ -4,6 +4,7 @@ import { seedChat } from './seed';
 import * as chatSessionsHandler from './api/chat-sessions.handler';
 import * as chatSessionsByIdHandler from './api/chat-sessions-by-id.handler';
 import * as chatSessionsMessagesHandler from './api/chat-sessions-messages.handler';
+import * as chatSessionsExportHandler from './api/chat-sessions-export.handler';
 import * as chatActionsHandler from './api/chat-actions.handler';
 import * as chatFeedbackHandler from './api/chat-feedback.handler';
 import * as chatCommandsHandler from './api/chat-commands.handler';
@@ -70,6 +71,7 @@ export const chatModule: ModuleDefinition = {
     'chat-sessions': { GET: chatSessionsHandler.GET, POST: chatSessionsHandler.POST },
     'chat-sessions/[id]': { GET: chatSessionsByIdHandler.GET, PUT: chatSessionsByIdHandler.PUT, DELETE: chatSessionsByIdHandler.DELETE },
     'chat-sessions/[id]/messages': { GET: chatSessionsMessagesHandler.GET, POST: chatSessionsMessagesHandler.POST },
+    'chat-sessions/[id]/export': { GET: chatSessionsExportHandler.GET },
     'chat-actions': { GET: chatActionsHandler.GET },
     'chat-feedback': { GET: chatFeedbackHandler.GET, POST: chatFeedbackHandler.POST },
     'chat-commands': { GET: chatCommandsHandler.GET, POST: chatCommandsHandler.POST },
