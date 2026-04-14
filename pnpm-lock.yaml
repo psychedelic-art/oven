@@ -278,6 +278,9 @@ importers:
         specifier: ^9.0.0
         version: 9.1.0(@types/react@19.2.13)(react@19.2.4)
     devDependencies:
+      '@oven/module-chat':
+        specifier: workspace:*
+        version: link:../module-chat
       '@testing-library/jest-dom':
         specifier: ^6.0.0
         version: 6.9.1

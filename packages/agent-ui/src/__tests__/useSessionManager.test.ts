@@ -349,10 +349,8 @@ describe('useSessionManager', () => {
     });
     const createObjectUrl = vi.fn(() => 'blob:fake');
     const revokeObjectUrl = vi.fn();
-    // @ts-expect-error jsdom may not provide these by default
-    globalThis.URL.createObjectURL = createObjectUrl;
-    // @ts-expect-error jsdom may not provide these by default
-    globalThis.URL.revokeObjectURL = revokeObjectUrl;
+    globalThis.URL.createObjectURL = createObjectUrl as typeof URL.createObjectURL;
+    globalThis.URL.revokeObjectURL = revokeObjectUrl as typeof URL.revokeObjectURL;
 
     await act(async () => {
       await result.current.exportSession(42, 'markdown');

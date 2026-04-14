@@ -1,11 +1,12 @@
 # Todo Queue Progress
 
-Regenerated fresh on 2026-04-13 after **cycle-35** merge of agent-ui
-sprint-02 session sidebar completion onto `origin/dev` as merge commit
-`9739231`.
-Session branch: `claude/agent-ui-sprint-02`.
+Regenerated fresh on 2026-04-13 after **cycle-36** merge of ui-flows
+graduation + agent-ui integration polish + typecheck cleanup onto
+`origin/dev`.
+Session branch: `claude/cycle-36-integration-and-graduation`.
 
 Prior cycles:
+- cycle-35 (`9739231`) — agent-ui sprint-02 session sidebar completion
 - cycle-34 (`84d0455`) — subscriptions graduation
 - cycle-33 (`43f5f14`) — dashboard-ux-system graduation + @ai-sdk/react + module-chat Sprint 4A.4
 
@@ -52,6 +53,7 @@ plus post-graduation work.
 | **33** | **dashboard-ux-system + module-chat + agent-ui** | **graduation + post-grad + AI SDK migration + Sprint 4A.4** | **`43f5f14`** | **+82** |
 | **34** | **subscriptions** | **sprint-05 acceptance + graduation** | **`84d0455`** | **0** |
 | **35** | **agent-ui + module-chat** | **sprint-02 session sidebar (pin/rename/delete/export)** | **`9739231`** | **+33** |
+| **36** | **ui-flows graduation + agent-ui integration polish** | **ui-flows LIVE + useChatAI/OvenChatTransport typecheck fix + barrel exports** | **TBD** | **0** |
 
 ### Cycle-33 contents (19 commits)
 
@@ -78,7 +80,7 @@ plus post-graduation work.
 | `config` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-config`, 24 tests | **sprint-02 done (cycle-15)** | sprint-03-rls (BLOCKED: Neon preview). |
 | `notifications` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-notifications` 87+21 tests; REGISTERED | **sprint-04 done (cycle-27)** | **sprint-05-acceptance UNBLOCKED** (module-chat streaming now live via cycle-33). |
 | `module-knowledge-base` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-knowledge-base`, 21 tests | **sprint-02 done (cycle-16)** | sprint-03-search (BLOCKED: pgvector). |
-| `ui-flows` | 5 (sprint-00..03, 99) | 11/11 | LIVE 89+39+26 tests | **sprint-03 done (cycle-30)** | sprint-99-acceptance (automated pass, manual portal pending). |
+| `ui-flows` | **GRADUATED cycle-36** | 11/11 | LIVE 89+39+26 tests | all sprints closed | Graduated out of queue. See IMPLEMENTATION-STATUS.md. |
 | `agent-ui` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/agent-ui`, 110 tests | **sprint-02 done (cycle-35)** | sprint-03 widget bundle guardrails (size budget, cross-browser matrix). |
 | `dashboard-ux-system` | 8 (sprint-00..07) + post-grad | N/A (program) | LIVE `@oven/dashboard-ui` 92 tests + `@oven/agent-ui` 81 tests | **GRADUATED (cycle-33)** | All sprints closed. All deferred items closed. |
 | `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | 310+ tests | all unblocked sprints CLOSED | **sprint-02/04 UNBLOCKED** (module-chat streaming + agent-core ready via cycle-33). |
@@ -86,11 +88,12 @@ plus post-graduation work.
 
 ## Priority order (post cycle-33)
 
-P0: `ui-flows` sprint-99-acceptance (fully automated pass, manual portal pending)
+P0: ~~`ui-flows` sprint-99-acceptance~~ GRADUATED in cycle-36
 P1: ~~`subscriptions` sprint-05-acceptance~~ GRADUATED in cycle-34
 P2: ~~`agent-ui` sprint-02~~ DONE in cycle-35
 P3: `agent-ui` sprint-03 (widget bundle guardrails) -- next agent-ui sprint
 P4: `notifications` sprint-05-acceptance (unblocked by cycle-33 streaming)
+P5: `oven-bug-sprint` sprints 02/04 (unblocked by cycle-33 streaming)
 P4: `oven-bug-sprint` sprint-02 / sprint-04 (NEWLY UNBLOCKED -- module-chat streaming live)
 SKIP: `config` sprint-03 (BLOCKED: Neon preview)
 SKIP: `knowledge-base` sprint-03 (BLOCKED: pgvector)

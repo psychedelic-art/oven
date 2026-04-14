@@ -1,6 +1,9 @@
 // ─── Hooks ──────────────────────────────────────────────────
 export {
   useChat,
+  useChatAI,
+  useChatLegacy,
+  OvenChatTransport,
   useTenantConfig,
   useBusinessHours,
   useAnonymousSession,
@@ -10,11 +13,17 @@ export {
   useDualStateMessages,
   usePlaygroundCommands,
   WORKFLOW_BLOCKED_COMMANDS,
+  useSessionManager,
 } from './hooks';
 export type {
+  UseChatOpts,
+  UseChatAIOpts,
   UsePlaygroundCommandsOptions,
   UsePlaygroundCommandsReturn,
   PlaygroundRuntimeConfig,
+  UseSessionManagerOpts,
+  UseSessionManagerReturn,
+  SessionSummary,
 } from './hooks';
 
 // ─── Shared Components ──────────────────────────────────────
@@ -31,9 +40,10 @@ export {
   SessionSidebar,
   ConversationView,
   ChatHeader,
+  ConfirmDialog,
   filterMessagesForDisplay,
 } from './shared';
-export type { ChatHeaderProps } from './shared';
+export type { ChatHeaderProps, ConfirmDialogProps } from './shared';
 
 // ─── Widget Components ──────────────────────────────────────
 export {

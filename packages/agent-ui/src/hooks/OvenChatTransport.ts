@@ -42,12 +42,19 @@ export class OvenChatTransport {
     this.opts = opts;
   }
 
-  async sendMessages({ messages, abortSignal, onUpdate, onFinish, onError }: TransportSendOpts): Promise<void> {
+  async sendMessages({ messages: rawMessages, abortSignal, onUpdate, onFinish, onError }: TransportSendOpts): Promise<void> {
     const sessionId = this.opts.getSessionId();
     if (!sessionId) {
       onError(new Error('No session ID available'));
       return;
     }
+
+    // Normalize: ensure every prior message has a stable id
+    const messages = rawMessages.map((m, i) => ({
+      role: m.role,
+      content: m.content,
+      id: m.id ?? `prev_${i}`,
+    }));
 
     const lastMessage = messages[messages.length - 1];
     if (!lastMessage || lastMessage.role !== 'user') {
@@ -96,7 +103,7 @@ export class OvenChatTransport {
 
   private async parseSSEStream(
     body: ReadableStream<Uint8Array>,
-    previousMessages: Array<{ role: string; content: string; id?: string }>,
+    previousMessages: Array<{ role: string; content: string; id: string }>,
     handlers: Pick<TransportSendOpts, 'onUpdate' | 'onFinish' | 'onError'>,
   ): Promise<void> {
     const reader = body.getReader();
