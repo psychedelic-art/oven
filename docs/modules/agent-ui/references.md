@@ -113,12 +113,26 @@ LLM boundary.
 
 ## Tooling
 
-- **Vite** — library + standalone widget build.
+- **Vite** — library + standalone widget build (`vite.config.widget.ts`).
+  Terser minified. Produces `dist/oven-chat-widget.iife.js`.
 - **Vitest** — test runner, colocated `__tests__/` folder.
 - **pnpm workspace** — this package is a workspace dep under
   `@oven/agent-ui`.
 - **TypeScript 5.x** — `import type` enforced on type-only
   imports.
+- **`pnpm --filter @oven/agent-ui check:size`** — bundle guardrail
+  (sprint-03). Runs `scripts/check-widget-size.ts` and enforces
+  four gates:
+  1. gzipped size &lt; 80 kB (baseline 74 kB + 5% headroom)
+  2. no `dangerouslySetInnerHTML` in our source (secure.md T2)
+  3. `window.OvenChat` global present in bundle
+  4. `init()` mount entry point present
+  Must run after `build:widget` (checks dist/).
+- **Cross-browser smoke matrix** — manual checklist at
+  `docs/modules/todo/agent-ui/BROWSER-MATRIX.md`. Covers
+  Chromium 120+, Firefox 115 ESR, Safari 17. Triggers listed in
+  that file (size delta &gt; 5 kB, entry/ changes, peer-dep bumps,
+  critical widget components changed).
 
 ---
 
