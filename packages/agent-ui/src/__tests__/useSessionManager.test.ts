@@ -217,4 +217,198 @@ describe('useSessionManager', () => {
 
     expect(result.current.sessions).toHaveLength(4);
   });
+
+  // ─── renameSession ──────────────────────────────────────
+
+  it('renameSession PUTs with title and updates local state optimistically', async () => {
+    fetchMock.mockReturnValueOnce(mockFetchOk(mockSessions));
+
+    const { result } = renderHook(() =>
+      useSessionManager({ tenantSlug: 'test', enabled: true }),
+    );
+
+    await waitFor(() => expect(result.current.sessions).toHaveLength(3));
+
+    fetchMock.mockReturnValueOnce(mockFetchOk(null));
+
+    await act(async () => {
+      await result.current.renameSession(2, 'Renamed Title');
+    });
+
+    expect(result.current.sessions.find(s => s.id === 2)?.title).toBe('Renamed Title');
+
+    const putCall = fetchMock.mock.calls.find(
+      (c: unknown[]) => (c[1] as RequestInit)?.method === 'PUT',
+    );
+    expect(putCall).toBeDefined();
+    expect(JSON.parse((putCall![1] as RequestInit).body as string)).toEqual({
+      title: 'Renamed Title',
+    });
+  });
+
+  it('renameSession rolls back + sets rowError on 500', async () => {
+    fetchMock.mockReturnValueOnce(mockFetchOk(mockSessions));
+
+    const { result } = renderHook(() =>
+      useSessionManager({ tenantSlug: 'test', enabled: true }),
+    );
+
+    await waitFor(() => expect(result.current.sessions).toHaveLength(3));
+    const originalTitle = result.current.sessions.find(s => s.id === 2)?.title;
+
+    fetchMock.mockReturnValueOnce(
+      Promise.resolve({ ok: false, status: 500 } as Response),
+    );
+
+    await act(async () => {
+      await result.current.renameSession(2, 'Should Revert').catch(() => {});
+    });
+
+    // Rolled back
+    await waitFor(() =>
+      expect(result.current.sessions.find(s => s.id === 2)?.title).toBe(originalTitle),
+    );
+    // Row error set
+    await waitFor(() => expect(result.current.rowErrors[2]).toContain('500'));
+  });
+
+  it('pinSession rolls back + sets rowError on 500', async () => {
+    fetchMock.mockReturnValueOnce(mockFetchOk(mockSessions));
+
+    const { result } = renderHook(() =>
+      useSessionManager({ tenantSlug: 'test', enabled: true }),
+    );
+
+    await waitFor(() => expect(result.current.sessions).toHaveLength(3));
+    const originalPinned = result.current.sessions.find(s => s.id === 2)?.isPinned;
+
+    fetchMock.mockReturnValueOnce(
+      Promise.resolve({ ok: false, status: 500 } as Response),
+    );
+
+    await act(async () => {
+      await result.current.pinSession(2, true).catch(() => {});
+    });
+
+    await waitFor(() =>
+      expect(result.current.sessions.find(s => s.id === 2)?.isPinned).toBe(originalPinned),
+    );
+    await waitFor(() => expect(result.current.rowErrors[2]).toBeTruthy());
+  });
+
+  it('deleteSession rolls back + sets rowError on 500', async () => {
+    fetchMock.mockReturnValueOnce(mockFetchOk(mockSessions));
+
+    const { result } = renderHook(() =>
+      useSessionManager({ tenantSlug: 'test', enabled: true }),
+    );
+
+    await waitFor(() => expect(result.current.sessions).toHaveLength(3));
+
+    fetchMock.mockReturnValueOnce(
+      Promise.resolve({ ok: false, status: 500 } as Response),
+    );
+
+    await act(async () => {
+      await result.current.deleteSession(2).catch(() => {});
+    });
+
+    await waitFor(() => expect(result.current.sessions).toHaveLength(3));
+    await waitFor(() => expect(result.current.rowErrors[2]).toBeTruthy());
+  });
+
+  // ─── exportSession ──────────────────────────────────────
+
+  it('exportSession fetches with format query param and triggers download', async () => {
+    fetchMock.mockReturnValueOnce(mockFetchOk(mockSessions));
+
+    const { result } = renderHook(() =>
+      useSessionManager({ tenantSlug: 'test', enabled: true }),
+    );
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // Mock the blob response
+    const fakeBlob = new Blob(['{"a":1}'], { type: 'application/json' });
+    fetchMock.mockReturnValueOnce(
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        blob: () => Promise.resolve(fakeBlob),
+      } as unknown as Response),
+    );
+
+    // Stub document/URL download plumbing
+    const clickSpy = vi.fn();
+    const appendSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(((el: unknown) => el) as typeof document.body.appendChild);
+    const removeSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(((el: unknown) => el) as typeof document.body.removeChild);
+    const createElemSpy = vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      if (tag === 'a') {
+        return { click: clickSpy, href: '', download: '' } as unknown as HTMLAnchorElement;
+      }
+      return document.createElement(tag);
+    });
+    const createObjectUrl = vi.fn(() => 'blob:fake');
+    const revokeObjectUrl = vi.fn();
+    // @ts-expect-error jsdom may not provide these by default
+    globalThis.URL.createObjectURL = createObjectUrl;
+    // @ts-expect-error jsdom may not provide these by default
+    globalThis.URL.revokeObjectURL = revokeObjectUrl;
+
+    await act(async () => {
+      await result.current.exportSession(42, 'markdown');
+    });
+
+    const lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1];
+    const url = lastCall[0] as string;
+    expect(url).toContain('/api/chat-sessions/42/export');
+    expect(url).toContain('format=markdown');
+    expect(clickSpy).toHaveBeenCalled();
+    expect(createObjectUrl).toHaveBeenCalledWith(fakeBlob);
+    expect(revokeObjectUrl).toHaveBeenCalled();
+
+    createElemSpy.mockRestore();
+    appendSpy.mockRestore();
+    removeSpy.mockRestore();
+  });
+
+  it('exportSession sets rowError on fetch failure', async () => {
+    fetchMock.mockReturnValueOnce(mockFetchOk(mockSessions));
+
+    const { result } = renderHook(() =>
+      useSessionManager({ tenantSlug: 'test', enabled: true }),
+    );
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    fetchMock.mockReturnValueOnce(
+      Promise.resolve({ ok: false, status: 500 } as Response),
+    );
+
+    await act(async () => {
+      await result.current.exportSession(42, 'json').catch(() => {});
+    });
+
+    await waitFor(() => expect(result.current.rowErrors[42]).toContain('500'));
+  });
+
+  it('clearRowError removes the entry', async () => {
+    fetchMock.mockReturnValueOnce(mockFetchOk(mockSessions));
+
+    const { result } = renderHook(() =>
+      useSessionManager({ tenantSlug: 'test', enabled: true }),
+    );
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // Trigger an error via pinSession
+    fetchMock.mockReturnValueOnce(
+      Promise.resolve({ ok: false, status: 500 } as Response),
+    );
+    await act(async () => {
+      await result.current.pinSession(2, true).catch(() => {});
+    });
+
+    await waitFor(() => expect(result.current.rowErrors[2]).toBeTruthy());
+
+    act(() => result.current.clearRowError(2));
+    expect(result.current.rowErrors[2]).toBeUndefined();
+  });
 });
