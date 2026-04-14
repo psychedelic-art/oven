@@ -295,8 +295,10 @@ Incorporates patterns from two reference codebases:
 | ui-flows-editor | 0 | 39 | 0 | editor | LIVE (cycle-30) |
 | portal (apps/portal) | 0 | 26 | 0 | portal | LIVE (cycle-28) |
 | dashboard-ui | 0 | 92 | 0 | cross-cutting | LIVE (cycle-33) |
-| agent-ui | 0 | 110 | 0 | cross-cutting | LIVE (sprint-02 cycle-35) |
-| **Total** | **47** | **~1015** | **~149** | | |
+| agent-ui | 0 | 115 | 0 | cross-cutting | LIVE (sprint-03 widget bundle, cycle-37) |
+| module-notifications | 5 | 87 | 11 | cross-cutting | **LIVE (cycle-27/graduated cycle-38)** |
+| notifications-meta | 0 | 21 | 0 | adapter | LIVE (cycle-12) |
+| **Total** | **52** | **~1228** | **~160** | | |
 
 ---
 
