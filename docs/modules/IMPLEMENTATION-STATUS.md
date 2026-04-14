@@ -291,8 +291,12 @@ Incorporates patterns from two reference codebases:
 | agent-ui | 0 | 81 | 0 | 4B | DONE |
 | module-workflow-agents | 9 | 75 | 21 | 5 | PRODUCTION READY |
 | module-subscriptions | 6 | 88 | 18 | infra | **LIVE (cycle-25/graduated cycle-34)** |
+| module-ui-flows | 5 | 89 | 11 | portal | **LIVE (cycle-30/graduated cycle-36)** |
+| ui-flows-editor | 0 | 39 | 0 | editor | LIVE (cycle-30) |
+| portal (apps/portal) | 0 | 26 | 0 | portal | LIVE (cycle-28) |
 | dashboard-ui | 0 | 92 | 0 | cross-cutting | LIVE (cycle-33) |
-| **Total** | **42** | **~751** | **~138** | | |
+| agent-ui | 0 | 110 | 0 | cross-cutting | LIVE (sprint-02 cycle-35) |
+| **Total** | **47** | **~1015** | **~149** | | |
 
 ---
 
