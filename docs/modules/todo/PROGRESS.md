@@ -53,7 +53,7 @@ plus post-graduation work.
 | **33** | **dashboard-ux-system + module-chat + agent-ui** | **graduation + post-grad + AI SDK migration + Sprint 4A.4** | **`43f5f14`** | **+82** |
 | **34** | **subscriptions** | **sprint-05 acceptance + graduation** | **`84d0455`** | **0** |
 | **35** | **agent-ui + module-chat** | **sprint-02 session sidebar (pin/rename/delete/export)** | **`9739231`** | **+33** |
-| **36** | **ui-flows graduation + agent-ui integration polish** | **ui-flows LIVE + useChatAI/OvenChatTransport typecheck fix + barrel exports** | **TBD** | **0** |
+| **36** | **ui-flows graduation + agent-ui integration polish** | **ui-flows LIVE + useChatAI/OvenChatTransport typecheck fix + barrel exports** | **`61fc954`** | **0** |
 
 ### Cycle-33 contents (19 commits)
 
