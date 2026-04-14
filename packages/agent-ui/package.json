@@ -29,6 +29,7 @@
     "react-dom": ">=18.0.0"
   },
   "devDependencies": {
+    "@oven/module-chat": "workspace:*",
     "@testing-library/react": "^16.0.0",
     "@testing-library/jest-dom": "^6.0.0",
     "@testing-library/user-event": "^14.0.0",

@@ -88,7 +88,8 @@ function init(config: OvenChatConfig): void {
     tenantSlug: config.tenantSlug,
     apiBaseUrl: config.apiBaseUrl,
     agentSlug: config.agentSlug,
-    theme: config.theme,
+    // ChatWidget accepts 'auto'|'light'|'dark'; map our richer ThemePresetName down.
+    theme: config.theme === 'light' || config.theme === 'dark' ? config.theme : 'auto',
     position: config.position ?? 'bottom-right',
     welcomeMessage: config.welcomeMessage,
     placeholder: config.placeholder,

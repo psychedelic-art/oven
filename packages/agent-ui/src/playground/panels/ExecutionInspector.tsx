@@ -87,7 +87,7 @@ function NodeTrace({
             <p className={cn('text-xs text-red-500 mt-0.5')}>{node.error}</p>
           )}
 
-          {expandedId === node.nodeId && node.output && (
+          {expandedId === node.nodeId && node.output !== undefined && node.output !== null && (
             <pre className={cn('mt-2 text-[10px] text-gray-500 bg-gray-100 rounded p-1.5 overflow-x-auto max-h-32')}>
               {JSON.stringify(node.output, null, 2)}
             </pre>

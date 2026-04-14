@@ -11,4 +11,7 @@ export { SessionSidebar } from './SessionSidebar';
 export { ConversationView } from './ConversationView';
 export { ChatHeader } from './ChatHeader';
 export type { ChatHeaderProps } from './ChatHeader';
+export { ConfirmDialog } from './ConfirmDialog';
+export type { ConfirmDialogProps } from './ConfirmDialog';
+export { PinIcon, EditIcon, DownloadIcon, TrashIcon, SearchIcon } from './icons';
 export { filterMessagesForDisplay } from './filterMessagesForDisplay';
