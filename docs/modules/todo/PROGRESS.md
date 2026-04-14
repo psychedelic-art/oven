@@ -56,7 +56,7 @@ plus post-graduation work.
 | **35** | **agent-ui + module-chat** | **sprint-02 session sidebar (pin/rename/delete/export)** | **`9739231`** | **+33** |
 | **36** | **ui-flows graduation + agent-ui integration polish** | **ui-flows LIVE + useChatAI/OvenChatTransport typecheck fix + barrel exports** | **`61fc954`** | **0** |
 | **37** | **agent-ui** | **sprint-03 widget bundle guardrails (size budget + check:size + BROWSER-MATRIX + content hash)** | **`00df65b`** | **+5** |
-| **38** | **notifications + oven-bug-sprint** | **P5 graduation + P6 sprints 02/04 close (9 findings, F-02-01 deferred)** | **TBD** | **+12** |
+| **38** | **notifications + oven-bug-sprint** | **P5 graduation + P6 sprints 02/04 close (9 findings, F-02-01 deferred)** | **`5b82e5b`** | **+12** |
 
 ### Cycle-33 contents (19 commits)
 
@@ -126,4 +126,4 @@ SKIP: `psychedelic-claude-code-migration` (external)
 
 ## Merge path to `dev` (post cycle-33)
 
-`origin/dev` HEAD is now `00df65b merge(cycle-37): land agent-ui sprint-03 widget bundle guardrails`.
+`origin/dev` HEAD is now `5b82e5b merge(cycle-38): P5 notifications graduation + P6 bug sprints 02/04`.
