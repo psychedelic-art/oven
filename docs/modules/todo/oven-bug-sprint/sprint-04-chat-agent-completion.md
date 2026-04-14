@@ -16,11 +16,11 @@ in tool execution.
 
 Findings to resolve (one commit each):
 
-- [ ] **F-04-01** — `packages/module-agent-core/src/api/agent-sessions-messages.handler.ts:26-29` Replace `require('drizzle-orm').sql` with a typed drizzle `select()`. Add the matching import at the top of the file. No dynamic `require`s.
-- [ ] **F-04-02** — `packages/module-agent-core/src/engine/tool-wrapper.ts` Thread the calling user's permission set through `executeTool` and reject when the tool declares `requiredPermissions` the caller does not hold. Reuse `checkPermission` from `module-auth` / `module-roles` (BO IP-6) — do not invent a parallel primitive.
-- [ ] **F-04-03** — `packages/module-agent-core/src/engine/tool-wrapper.ts:44` Replace the regex-based tool-name generator with a `route.split('/')` parser that handles `[param]` segments correctly.
-- [ ] **F-04-04** — `packages/module-agent-core/src/engine/agent-invoker.ts:48,83` Convert value imports used only as types into `import type { ... }`. Remove `as string[]` casts in favor of a typed row shape.
-- [ ] **F-04-05** — `packages/module-chat/src/api/chat-sessions-messages.handler.ts` Return a structured ack `{ messageId, status: 'queued' }` so the client can surface an in-flight state (partial overlap with F-02-04; if Sprint 02 already landed, this commit is a no-op confirmation).
+- [x] **F-04-01** — `packages/module-agent-core/src/api/agent-sessions-messages.handler.ts:26-29` Replace `require('drizzle-orm').sql` with a typed drizzle `select()`. **CLOSED cycle-38** — typed `db.select({ slug: agents.slug }).from(agents).where(eq(agents.id, ...)).limit(1)`. No dynamic requires remain in `packages/module-agent-core/src/api/**`.
+- [x] **F-04-02** — `packages/module-agent-core/src/engine/tool-wrapper.ts` Thread permissions through executeTool. **CLOSED cycle-38** — `executeTool(tool, input, baseUrl, { permissions })` does a set check against `tool.requiredPermissions` and throws `ToolPermissionError` on miss. NOTE: we did NOT import `checkPermission` from module-auth/module-roles because neither package exports such a primitive today (risk R1 verified by grep). Callers pass a `Set<string>` — when the BO adds `checkPermission`, swap the set check for that helper.
+- [x] **F-04-03** — `packages/module-agent-core/src/engine/tool-wrapper.ts:44` Replace regex tool-name generator. **CLOSED cycle-38** — `routeToToolName(moduleSlug, route)` splits on `/`, drops `api`, drops `[param]` segments, drops empty segments. 5 unit tests cover the cases in the finding description.
+- [x] **F-04-04** — `packages/module-agent-core/src/engine/agent-invoker.ts:48,83` Convert value imports + remove `as string[]` casts. **CLOSED cycle-38** — new `AgentRow` interface in `types.ts`; invoker uses a single `typedAgent` cast and typed local variables (`llmConfig: LLMConfig`, `exposedParams: string[]`, `toolBindings: string[]`).
+- [x] **F-04-05** — `packages/module-chat/src/api/chat-sessions-messages.handler.ts` Structured ack. **CLOSED cycle-38** — non-streaming path returns `{ messageId, status: 'queued', sessionId, role }`. Overlaps with F-02-04; counted once.
 
 ## Out of scope
 

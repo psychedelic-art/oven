@@ -66,6 +66,26 @@ export interface NodeParam {
   required?: boolean;
 }
 
+// ─── Agent Row (F-04-04) ────────────────────────────────────
+// Typed shape for a `agents` table row. Replaces `(agent.exposedParams
+// as string[])` and `(agent.toolBindings as string[])` casts scattered
+// through the invoker.
+
+export interface AgentRow {
+  id: number;
+  tenantId: number | null;
+  slug: string;
+  name: string;
+  description: string | null;
+  systemPrompt: string | null;
+  llmConfig: LLMConfig | null;
+  exposedParams: string[] | null;
+  toolBindings: string[] | null;
+  enabled: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // ─── Session Types ──────────────────────────────────────────
 
 export type SessionStatus = 'active' | 'archived';

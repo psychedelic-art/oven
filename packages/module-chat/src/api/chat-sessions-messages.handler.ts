@@ -58,11 +58,17 @@ export async function POST(req: NextRequest, ctx?: { params: Promise<{ id: strin
     return createSSEResponse(events);
   }
 
-  // Non-streaming mode — record user message and return
+  // Non-streaming mode — record user message and return an in-flight ack
+  // (F-02-04 / F-04-05): structured { messageId, status: 'queued' } so the
+  // client can surface the in-flight state before the assistant response
+  // is produced by the streaming path.
   const messageId = await recordUserMessage({
     sessionId: Number(id),
     content,
     metadata: body.metadata,
   });
-  return NextResponse.json({ id: messageId, sessionId: Number(id), role: 'user' }, { status: 201 });
+  return NextResponse.json(
+    { messageId, status: 'queued' as const, sessionId: Number(id), role: 'user' },
+    { status: 201 },
+  );
 }

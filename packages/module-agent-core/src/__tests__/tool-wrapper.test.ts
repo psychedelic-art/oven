@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('@oven/module-registry', () => ({
   registry: {
@@ -39,7 +39,15 @@ vi.mock('@oven/module-registry', () => ({
   },
 }));
 
-import { discoverTools, getToolsForAgent, clearToolCache } from '../engine/tool-wrapper';
+import {
+  discoverTools,
+  getToolsForAgent,
+  clearToolCache,
+  routeToToolName,
+  executeTool,
+  ToolPermissionError,
+} from '../engine/tool-wrapper';
+import type { ToolSpec } from '../types';
 
 describe('ToolWrapper', () => {
   beforeEach(() => {
@@ -102,6 +110,90 @@ describe('ToolWrapper', () => {
       const tools = getToolsForAgent(['knowledge-base.*']);
       expect(tools.length).toBeGreaterThanOrEqual(1);
       expect(tools.every((t) => t.moduleSlug === 'knowledge-base' || t.name.startsWith('knowledge-base'))).toBe(true);
+    });
+  });
+
+  // ─── F-04-03: routeToToolName ──────────────────────────────
+  describe('routeToToolName()', () => {
+    it('handles simple routes', () => {
+      expect(routeToToolName('kb', 'search')).toBe('kb.search');
+    });
+
+    it('drops [param] segments', () => {
+      expect(routeToToolName('kb', 'entries/[id]/publish')).toBe('kb.entries.publish');
+    });
+
+    it('handles tenant-slug pattern from the sprint example', () => {
+      expect(routeToToolName('foo', '/api/[tenantSlug]/foo/[id]/bar')).toBe('foo.foo.bar');
+    });
+
+    it('collapses repeated slashes', () => {
+      expect(routeToToolName('kb', '//entries//list//')).toBe('kb.entries.list');
+    });
+
+    it('returns just the module slug for empty routes', () => {
+      expect(routeToToolName('kb', '')).toBe('kb');
+      expect(routeToToolName('kb', '/api/[id]')).toBe('kb');
+    });
+  });
+
+  // ─── F-04-02: executeTool permission gating ────────────────
+  describe('executeTool() permission gating', () => {
+    const originalFetch = globalThis.fetch;
+
+    beforeEach(() => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ result: 'ok' }),
+      } as Response);
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+    });
+
+    const protectedTool: ToolSpec = {
+      name: 'admin.delete',
+      description: 'Delete something sensitive',
+      parameters: {},
+      method: 'DELETE',
+      route: 'admin/delete',
+      moduleSlug: 'admin',
+      requiredPermissions: ['admin.delete'],
+    };
+
+    it('rejects when required permission is missing', async () => {
+      await expect(
+        executeTool(protectedTool, {}, '', { permissions: new Set(['admin.read']) }),
+      ).rejects.toThrow(ToolPermissionError);
+    });
+
+    it('allows when all required permissions are held', async () => {
+      await expect(
+        executeTool(protectedTool, {}, '', { permissions: new Set(['admin.delete']) }),
+      ).resolves.toEqual({ result: 'ok' });
+    });
+
+    it('skips the check when no permissions set is supplied (backward-compat)', async () => {
+      await expect(executeTool(protectedTool, {}, '')).resolves.toEqual({ result: 'ok' });
+    });
+
+    it('skips the check for tools without requiredPermissions', async () => {
+      const openTool: ToolSpec = { ...protectedTool, name: 'public.ping', requiredPermissions: [] };
+      await expect(
+        executeTool(openTool, {}, '', { permissions: new Set() }),
+      ).resolves.toEqual({ result: 'ok' });
+    });
+
+    it('ToolPermissionError reports the missing permissions', async () => {
+      try {
+        await executeTool(protectedTool, {}, '', { permissions: new Set() });
+        expect.fail('should have thrown');
+      } catch (err) {
+        expect(err).toBeInstanceOf(ToolPermissionError);
+        expect((err as ToolPermissionError).missing).toEqual(['admin.delete']);
+        expect((err as ToolPermissionError).toolName).toBe('admin.delete');
+      }
     });
   });
 });

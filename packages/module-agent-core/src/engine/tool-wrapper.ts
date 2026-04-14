@@ -7,6 +7,19 @@ let toolCache: ToolSpec[] = [];
 let cacheTimestamp = 0;
 const CACHE_TTL_MS = 60_000; // 1 minute
 
+// ─── Route → tool name (F-04-03) ────────────────────────────
+// Convert a route like `/api/[tenantSlug]/knowledge-base/[id]/search`
+// into a tool name `knowledge-base.search`. Path params ([foo]) are
+// dropped. Leading `api` is dropped. Empty segments are dropped.
+export function routeToToolName(moduleSlug: string, route: string): string {
+  const segments = route
+    .split('/')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0 && s !== 'api' && !(s.startsWith('[') && s.endsWith(']')));
+  const tail = segments.join('.');
+  return tail ? `${moduleSlug}.${tail}` : moduleSlug;
+}
+
 /**
  * Discover all available tools from registered modules.
  * Reads each module's chat.actionSchemas and apiHandlers
@@ -41,7 +54,8 @@ export function discoverTools(): ToolSpec[] {
     if (mod.apiHandlers) {
       for (const [route, handlers] of Object.entries(mod.apiHandlers)) {
         for (const method of Object.keys(handlers)) {
-          const toolName = `${mod.name}.${route.replace(/\//g, '.').replace(/\[.*?\]/g, '')}`.replace(/\.\./g, '.').replace(/\.$/, '');
+          // F-04-03: split-based parser handles [param] segments
+          const toolName = routeToToolName(mod.name, route);
           // Skip if already covered by an actionSchema
           if (tools.some((t) => t.route === route && t.method === method)) continue;
 
@@ -84,14 +98,46 @@ export function getToolsForAgent(toolBindings: string[] | null): ToolSpec[] {
   );
 }
 
+// ─── Permission error (F-04-02) ─────────────────────────────
+// Thrown by executeTool when the caller lacks a permission declared in
+// tool.requiredPermissions. Exposed so chat/workflow hosts can map it
+// to a 403 or a user-facing "permission denied" message.
+
+export class ToolPermissionError extends Error {
+  constructor(
+    public readonly toolName: string,
+    public readonly missing: string[],
+  ) {
+    super(`Tool ${toolName} requires permissions: ${missing.join(', ')}`);
+    this.name = 'ToolPermissionError';
+  }
+}
+
 /**
  * Execute a tool by making an HTTP request to the module's API endpoint.
+ *
+ * F-04-02: the optional `context.permissions` set is checked against the
+ * tool's declared `requiredPermissions`. Missing permissions short-circuit
+ * with ToolPermissionError; callers without a `permissions` set skip the
+ * check (agent/workflow hosts that have not yet integrated auth).
  */
 export async function executeTool(
   tool: ToolSpec,
   input: Record<string, unknown>,
-  baseUrl: string = ''
+  baseUrl: string = '',
+  context?: {
+    /** Set of permission slugs held by the caller (e.g. 'kb-entries.read'). */
+    permissions?: ReadonlySet<string>;
+  },
 ): Promise<unknown> {
+  // Permission gating (F-04-02)
+  if (tool.requiredPermissions && tool.requiredPermissions.length > 0 && context?.permissions) {
+    const missing = tool.requiredPermissions.filter((p) => !context.permissions!.has(p));
+    if (missing.length > 0) {
+      throw new ToolPermissionError(tool.name, missing);
+    }
+  }
+
   // Resolve route params from input
   let resolvedRoute = tool.route;
   for (const [key, value] of Object.entries(input)) {

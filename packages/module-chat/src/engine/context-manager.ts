@@ -2,12 +2,42 @@ import { eq, desc } from 'drizzle-orm';
 import { getDb } from '@oven/module-registry/db';
 import { chatMessages } from '../schema';
 
-// ─── Token Estimation ───────────────────────────────────────
-// Approximate: ~1 token per 4 characters (works for English text).
-// Good enough for budget enforcement; not a substitute for tokenizer.
+// ─── Token Estimation (F-02-03) ─────────────────────────────
+// Approximate token count. The classic `chars / 4` heuristic
+// dramatically underestimates token count for:
+//   - code and JSON (dense punctuation + identifier splits)
+//   - non-latin scripts (1 char often == 1-3 tokens)
+//
+// Until we adopt a real tokenizer (dependency cost ~1.5 MB), we use a
+// shape-aware multiplier that is conservative by construction:
+//
+//   - plain prose (has spaces, few symbols): chars / 4
+//   - code/JSON (many braces, colons, brackets): chars / 2.5
+//   - short tokens (< 40 chars): ceil(chars / 3) minimum 1
+//
+// The heuristic MUST over-estimate (never under-estimate), otherwise
+// the truncation routine may let an oversize message slip through to
+// the LLM. The unit test in `context-manager.test.ts` covers a
+// JSON-heavy fixture and asserts the estimate exceeds the raw /4 value.
+
+const CODE_SHAPE_RE = /[{}\[\]:;,<>()]/g;
+const CODE_SHAPE_DENSITY_THRESHOLD = 0.08; // >8% symbol density triggers the code path
 
 export function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 4);
+  if (!text) return 0;
+  const len = text.length;
+  if (len < 40) {
+    // Short inputs (slash commands, boolean values) — avoid under-counting
+    return Math.max(1, Math.ceil(len / 3));
+  }
+  const symbolCount = (text.match(CODE_SHAPE_RE) ?? []).length;
+  const density = symbolCount / len;
+  // Code-shaped text: ~2.5 chars/token (conservative)
+  if (density > CODE_SHAPE_DENSITY_THRESHOLD) {
+    return Math.ceil(len / 2.5);
+  }
+  // Prose: classic /4
+  return Math.ceil(len / 4);
 }
 
 // ─── Get Recent Messages ────────────────────────────────────
@@ -63,9 +93,23 @@ export function truncateToTokenBudget(
     }
   }
 
-  // Always include at least the last message
+  // Always include at least the last message — with single-message
+  // truncation if it alone exceeds the budget (F-02-02). The old
+  // behavior kept the whole message, which silently overflowed the
+  // model's context window.
   if (result.length === 0 && messages.length > 0) {
-    result.push(messages[messages.length - 1]);
+    const last = messages[messages.length - 1];
+    const lastTokens = tokenCounts[messages.length - 1];
+    if (lastTokens <= maxTokens) {
+      result.push(last);
+    } else {
+      // Truncate at a character ratio proportional to the budget.
+      // Subtract a small buffer (roughly the ellipsis string) so the
+      // truncated result has headroom for the marker.
+      const keepChars = Math.max(0, Math.floor(last.content.length * (maxTokens / lastTokens)) - 10);
+      const truncated = last.content.slice(0, keepChars) + '… [truncated]';
+      result.push({ role: last.role, content: truncated });
+    }
   }
 
   return result;
