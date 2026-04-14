@@ -1,11 +1,11 @@
 # Todo Queue Progress
 
-Regenerated fresh on 2026-04-14 after **cycle-37** merge of agent-ui
-sprint-03 widget bundle guardrails onto `origin/dev` as merge commit
-`00df65b`.
-Session branch: `claude/agent-ui-sprint-03-widget-bundle`.
+Regenerated fresh on 2026-04-14 after **cycle-38** merge of notifications
+graduation (P5) + oven-bug-sprint sprints 02 & 04 (P6) onto `origin/dev`.
+Session branch: `claude/cycle-38-p5-p6-notifications-bugsprint`.
 
 Prior cycles:
+- cycle-37 (`00df65b`) — agent-ui sprint-03 widget bundle guardrails
 - cycle-36 (`61fc954`) — ui-flows graduation + agent-ui integration polish
 - cycle-35 (`9739231`) — agent-ui sprint-02 session sidebar completion
 - cycle-34 (`84d0455`) — subscriptions graduation
@@ -56,6 +56,7 @@ plus post-graduation work.
 | **35** | **agent-ui + module-chat** | **sprint-02 session sidebar (pin/rename/delete/export)** | **`9739231`** | **+33** |
 | **36** | **ui-flows graduation + agent-ui integration polish** | **ui-flows LIVE + useChatAI/OvenChatTransport typecheck fix + barrel exports** | **`61fc954`** | **0** |
 | **37** | **agent-ui** | **sprint-03 widget bundle guardrails (size budget + check:size + BROWSER-MATRIX + content hash)** | **`00df65b`** | **+5** |
+| **38** | **notifications + oven-bug-sprint** | **P5 graduation + P6 sprints 02/04 close (9 findings, F-02-01 deferred)** | **TBD** | **+12** |
 
 ### Cycle-33 contents (19 commits)
 
@@ -80,12 +81,12 @@ plus post-graduation work.
 | `subscriptions` | **GRADUATED cycle-34** | 11/11 | LIVE `@oven/module-subscriptions`, 88 tests | **all sprints closed** | Graduated out of queue. See IMPLEMENTATION-STATUS.md. |
 | `tenants` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-tenants`, 78 tests | sprint-03 done (cycle-8) | sprint-04-acceptance (BLOCKED on DB-mock). |
 | `config` | 5 (sprint-00..04) | 11/11 | LIVE `@oven/module-config`, 24 tests | **sprint-02 done (cycle-15)** | sprint-03-rls (BLOCKED: Neon preview). |
-| `notifications` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-notifications` 87+21 tests; REGISTERED | **sprint-04 done (cycle-27)** | **sprint-05-acceptance UNBLOCKED** (module-chat streaming now live via cycle-33). |
+| `notifications` | **GRADUATED cycle-38** | 11/11 | LIVE `@oven/module-notifications` 87 tests + `@oven/notifications-meta` 21 tests; REGISTERED | all sprints closed | Graduated out of queue. See IMPLEMENTATION-STATUS.md. |
 | `module-knowledge-base` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/module-knowledge-base`, 21 tests | **sprint-02 done (cycle-16)** | sprint-03-search (BLOCKED: pgvector). |
 | `ui-flows` | **GRADUATED cycle-36** | 11/11 | LIVE 89+39+26 tests | all sprints closed | Graduated out of queue. See IMPLEMENTATION-STATUS.md. |
 | `agent-ui` | 6 (sprint-00..05) | 11/11 | LIVE `@oven/agent-ui`, 115 tests + widget bundle 74 kB gzipped | **sprint-03 done (cycle-37)** | sprint-04 accessibility hardening (R11.1..R11.4 + axe). |
 | `dashboard-ux-system` | 8 (sprint-00..07) + post-grad | N/A (program) | LIVE `@oven/dashboard-ui` 92 tests + `@oven/agent-ui` 81 tests | **GRADUATED (cycle-33)** | All sprints closed. All deferred items closed. |
-| `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | 310+ tests | all unblocked sprints CLOSED | **sprint-02/04 UNBLOCKED** (module-chat streaming + agent-core ready via cycle-33). |
+| `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | 310+ tests | **sprint-02/04 closed (cycle-38) except F-02-01 (schema-adjacent, deferred to BO)** | Only F-02-01 remains (BO IP-2 pending). All other findings (F-02-02..04, F-04-01..05) landed. |
 | `psychedelic-claude-code-migration` | 12 | N/A | N/A | -- | Owned elsewhere. |
 
 ## Priority order (post cycle-33)
@@ -94,10 +95,11 @@ P0: ~~`ui-flows` sprint-99-acceptance~~ GRADUATED in cycle-36
 P1: ~~`subscriptions` sprint-05-acceptance~~ GRADUATED in cycle-34
 P2: ~~`agent-ui` sprint-02~~ DONE in cycle-35
 P3: ~~`agent-ui` sprint-03~~ DONE in cycle-37
-P4: `agent-ui` sprint-04 (accessibility hardening: R11.1..R11.4 + vitest-axe)
-P5: `notifications` sprint-05-acceptance (unblocked by cycle-33 streaming)
-P6: `oven-bug-sprint` sprints 02/04 (unblocked by cycle-33 streaming)
-P4: `oven-bug-sprint` sprint-02 / sprint-04 (NEWLY UNBLOCKED -- module-chat streaming live)
+P4: ~~`notifications` sprint-05-acceptance~~ GRADUATED in cycle-38
+P5: ~~`oven-bug-sprint` sprints 02/04~~ 9/10 findings CLOSED in cycle-38 (F-02-01 deferred to BO)
+P6: `agent-ui` sprint-04 (accessibility hardening: R11.1..R11.4 + vitest-axe)
+P7: `agent-ui` sprint-05 (graduation)
+SKIP: F-02-01 (BO IP-2: archived-session TTL schema proposal pending approval)
 SKIP: `config` sprint-03 (BLOCKED: Neon preview)
 SKIP: `knowledge-base` sprint-03 (BLOCKED: pgvector)
 SKIP: `auth` sprint-04 (BLOCKED: Neon)

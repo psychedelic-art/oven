@@ -18,10 +18,10 @@ chat POSTs actually reach the agent pipeline.
 
 Findings to resolve (one commit each):
 
-- [ ] **F-02-01** — `packages/module-chat/src/engine/session-manager.ts` Add a TTL / cleanup mechanism for archived sessions. Propose a deletion policy (default 30 d) and a scheduled cleanup helper. If this requires a schema change, STOP and file a BO question (BO IP-2).
-- [ ] **F-02-02** — `packages/module-chat/src/engine/context-manager.ts:72` Guard against a single-message budget overflow: if the last message alone exceeds `maxTokens`, apply message-level truncation instead of keeping it whole.
-- [ ] **F-02-03** — `packages/module-chat/src/engine/context-manager.ts:35-72` Replace the `chars/4` estimator with a tokenizer-backed function, OR (if a dep-free tokenizer is not viable) document a higher-bound multiplier for code / JSON and add a unit test that proves the new estimator does not underestimate a known fixture.
-- [ ] **F-02-04** — `packages/module-chat/src/api/chat-sessions-messages.handler.ts:53` Implement the agent-invocation pipeline referenced by the stale `TODO`. Reuse the existing invoker in `packages/module-agent-core/src/engine/agent-invoker.ts` — do NOT duplicate logic. Return a structured ack `{ messageId, status: 'queued' }` to the client.
+- [ ] **F-02-01** — `packages/module-chat/src/engine/session-manager.ts` Add a TTL / cleanup mechanism for archived sessions. **DEFERRED cycle-38** — escalated to BO IP-2 (schema cascade risk per R3). Proposal: `purgedAt` timestamp column + scheduled soft-delete job (30-day default). Pending BO approval before schema-touching work.
+- [x] **F-02-02** — `packages/module-chat/src/engine/context-manager.ts:72` Guard against a single-message budget overflow. **CLOSED cycle-38** — `truncateToTokenBudget` now slices the oversize last message with a `[truncated]` marker. Test in `context-manager.test.ts`.
+- [x] **F-02-03** — `packages/module-chat/src/engine/context-manager.ts:35-72` Replace the `chars/4` estimator. **CLOSED cycle-38** — shape-aware estimator (prose /4, code/JSON /2.5, short inputs /3). JSON fixture test asserts estimate > `chars/4`.
+- [x] **F-02-04** — `packages/module-chat/src/api/chat-sessions-messages.handler.ts:53` Implement the agent-invocation pipeline. **CLOSED** — pipeline wired via `processMessageStreaming` + SSE in cycle-33 (module-chat Sprint 4A.4); non-streaming fallback returns `{ messageId, status: 'queued' }` per cycle-38.
 
 ## Out of scope
 

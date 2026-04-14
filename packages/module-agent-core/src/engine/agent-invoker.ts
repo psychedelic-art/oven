@@ -5,7 +5,7 @@ import { agents, agentExecutions } from '../schema';
 import { getToolsForAgent, executeTool } from './tool-wrapper';
 import { getOrCreateSession, appendMessage, getSessionMessages } from './session-manager';
 import { eq } from 'drizzle-orm';
-import type { InvokeParams, InvokeResult, LLMConfig } from '../types';
+import type { InvokeParams, InvokeResult, LLMConfig, AgentRow } from '../types';
 
 // ─── Agent Invocation ───────────────────────────────────────
 
@@ -43,9 +43,10 @@ export async function invokeAgent(
     throw new Error(`Agent "${slug}" is disabled`);
   }
 
-  // 2. Merge allowed parameter overrides
-  const llmConfig = { ...(agent.llmConfig as LLMConfig ?? {}) };
-  const exposedParams = (agent.exposedParams as string[]) ?? [];
+  // 2. Merge allowed parameter overrides (F-04-04: typed AgentRow)
+  const typedAgent = agent as unknown as AgentRow;
+  const llmConfig: LLMConfig = { ...(typedAgent.llmConfig ?? {}) };
+  const exposedParams: string[] = typedAgent.exposedParams ?? [];
 
   if (params.params) {
     for (const [key, value] of Object.entries(params.params)) {
@@ -79,8 +80,8 @@ export async function invokeAgent(
   // 6. Build system prompt
   const systemPrompt = agent.systemPrompt ?? 'You are a helpful assistant.';
 
-  // 7. Resolve tools
-  const toolBindings = (agent.toolBindings as string[]) ?? [];
+  // 7. Resolve tools (F-04-04: typed AgentRow)
+  const toolBindings: string[] = typedAgent.toolBindings ?? [];
   const availableTools = getToolsForAgent(toolBindings);
   const toolsUsed: string[] = [];
 
