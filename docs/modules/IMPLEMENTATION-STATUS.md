@@ -284,13 +284,15 @@ Incorporates patterns from two reference codebases:
 
 | Module | Tables | Tests | API Routes | Phase | Status |
 |--------|--------|-------|------------|-------|--------|
-| module-ai | 9 | 102 | 32+ | 1 | DONE |
+| module-ai | 9 | 291 | 32+ | 1 | DONE |
 | module-knowledge-base | 4 | 19 | 15+ | 2 | DONE |
 | module-agent-core | 6 | 15 | 22 | 3 | BACKEND DONE |
 | module-chat | 8 | 90 | 30 | 4A | DONE |
-| agent-ui | 0 | 28 | 0 | 4B | DONE |
+| agent-ui | 0 | 81 | 0 | 4B | DONE |
 | module-workflow-agents | 9 | 75 | 21 | 5 | PRODUCTION READY |
-| **Total** | **39** | **~273** | **~107** | | |
+| module-subscriptions | 6 | 88 | 18 | infra | **LIVE (cycle-25/graduated cycle-34)** |
+| dashboard-ui | 0 | 92 | 0 | cross-cutting | LIVE (cycle-33) |
+| **Total** | **42** | **~751** | **~138** | | |
 
 ---
 
