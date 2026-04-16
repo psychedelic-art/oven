@@ -15,6 +15,7 @@
     "@oven/module-registry": "workspace:*",
     "@oven/module-knowledge-base": "workspace:*",
     "@oven/module-agent-core": "workspace:*",
+    "@oven/module-workflow-agents": "workspace:*",
     "drizzle-orm": "^0.38.0"
   },
   "devDependencies": {

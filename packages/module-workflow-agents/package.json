@@ -6,7 +6,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./schema": "./src/schema.ts",
-    "./api/*": "./src/api/*"
+    "./api/*": "./src/api/*",
+    "./engine/*": "./src/engine/*",
+    "./types": "./src/types.ts"
   },
   "scripts": {
     "test": "vitest run",

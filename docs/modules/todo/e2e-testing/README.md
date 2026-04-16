@@ -52,23 +52,28 @@ e2e test surfaces the regression immediately.
 4. `tool-permissions.e2e.test.ts` — `executeTool` gated by
    `ToolPermissionError`; verifies no `fetch()` is called when a required
    permission is missing.
+5. `workflow-linear.e2e.test.ts` — 3-transform linear workflow; asserts
+   `stepsExecuted===3`, lifecycle event order, and
+   `agent_workflow_node_executions` row persistence.
+6. `workflow-branching.e2e.test.ts` — `condition` node + guarded
+   `always[]` transitions; asserts both the true and false branches
+   execute only their intended state.
+7. `workflow-error-recovery.e2e.test.ts` — node returns `{ error }` →
+   `onError` target takes over; no-handler path fails the execution
+   with `status='failed'`.
+8. `workflow-human-in-loop.e2e.test.ts` — `human-review` node pauses
+   execution (checkpoint persisted, `human_review.pending` event
+   emitted); resuming with a pre-filled decision completes the run.
 
-## Deferred e2e paths (sprint-00 follow-up)
+## Deferred e2e paths (follow-up)
 
-Captured in `sprint-00-harness.md` under "Follow-up work". These require
-additional harness schema sets (chat, agent-core, workflow-agents) and
-larger drizzle DDL extensions:
+Require additional schema sets (chat, agent-core) and broader drizzle
+DDL:
 
 - `chat-streaming` — POST `/chat-sessions/:id/messages` w/ SSE → assert
   token stream + persisted assistant message.
 - `agent-invocation` — `invokeAgent()` → mocked LLM tool call → tool
   executes → final text + recorded `agent_executions` row.
-- `workflow-linear` — 3-node workflow, assert `stepsExecuted===3` and
-  lifecycle events in order.
-- `workflow-branching` — condition node picks the correct edge.
-- `workflow-error-recovery` — node throws → `onError` transition fires.
-- `workflow-human-in-loop` — human-review node pauses → `resumeWorkflow`
-  completes.
 
 ## Running
 

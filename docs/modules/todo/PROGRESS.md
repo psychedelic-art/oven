@@ -59,7 +59,7 @@ plus post-graduation work.
 | **36** | **ui-flows graduation + agent-ui integration polish** | **ui-flows LIVE + useChatAI/OvenChatTransport typecheck fix + barrel exports** | **`61fc954`** | **0** |
 | **37** | **agent-ui** | **sprint-03 widget bundle guardrails (size budget + check:size + BROWSER-MATRIX + content hash)** | **`00df65b`** | **+5** |
 | **38** | **notifications + oven-bug-sprint** | **P5 graduation + P6 sprints 02/04 close (9 findings, F-02-01 deferred)** | **`5b82e5b`** | **+12** |
-| **39** | **knowledge-base + e2e-testing** | **pgvector seed CREATE EXTENSION + Tier-1 E2E harness scaffold (`packages/test-harness`)** | *pending merge* | **+2 seed + e2e** |
+| **39** | **knowledge-base + e2e-testing** | **pgvector seed CREATE EXTENSION + Tier-1 E2E harness scaffold (`packages/test-harness`) + 4 workflow specs (linear/branching/error-recovery/human-in-loop)** | *pending merge* | **+2 seed + 23 e2e** |
 
 ### Cycle-33 contents (19 commits)
 

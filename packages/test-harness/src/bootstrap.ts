@@ -18,7 +18,7 @@ export interface HarnessHandle {
  *
  * Extend this enum as new e2e specs need new tables.
  */
-export type SchemaSet = 'knowledge-base';
+export type SchemaSet = 'knowledge-base' | 'workflow-agents';
 
 export interface BootstrapOptions {
   /** Which table groups to create. Defaults to all. */
@@ -54,6 +54,10 @@ export async function bootstrapHarness(opts: BootstrapOptions = {}): Promise<Har
 
   if (schemas.includes('knowledge-base')) {
     await createKnowledgeBaseSchema(db);
+  }
+
+  if (schemas.includes('workflow-agents')) {
+    await createWorkflowAgentsSchema(db);
   }
 
   const cleanup = async () => {
@@ -173,6 +177,77 @@ async function createKnowledgeBaseSchema(db: any): Promise<void> {
       metadata jsonb,
       created_at timestamp NOT NULL DEFAULT now(),
       updated_at timestamp NOT NULL DEFAULT now()
+    );
+  `));
+}
+
+/**
+ * Raw DDL mirroring `@oven/module-workflow-agents/schema`. Covers the
+ * tables needed by the workflow engine's real code paths:
+ *  - agent_workflows (definition source)
+ *  - agent_workflow_executions (status + context + checkpoint)
+ *  - agent_workflow_node_executions (per-node audit trail)
+ *
+ * Other tables (versions, memory, mcp_server_definitions, guardrail
+ * bindings, eval_*) are intentionally omitted — no e2e spec writes to
+ * them and pglite doesn't benefit from speculative schema creation.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function createWorkflowAgentsSchema(db: any): Promise<void> {
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS agent_workflows (
+      id serial PRIMARY KEY,
+      tenant_id integer,
+      name varchar(255) NOT NULL,
+      slug varchar(128) NOT NULL,
+      description text,
+      agent_id integer,
+      definition jsonb NOT NULL,
+      agent_config jsonb,
+      memory_config jsonb,
+      status varchar(32) NOT NULL DEFAULT 'draft',
+      version integer NOT NULL DEFAULT 1,
+      category varchar(64),
+      tags jsonb,
+      is_template boolean NOT NULL DEFAULT false,
+      cloned_from integer,
+      template_slug varchar(128),
+      created_at timestamp NOT NULL DEFAULT now(),
+      updated_at timestamp NOT NULL DEFAULT now()
+    );
+  `));
+
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS agent_workflow_executions (
+      id serial PRIMARY KEY,
+      workflow_id integer NOT NULL,
+      tenant_id integer,
+      status varchar(32) NOT NULL DEFAULT 'pending',
+      trigger_source varchar(128),
+      trigger_payload jsonb,
+      context jsonb NOT NULL DEFAULT '{}'::jsonb,
+      current_state varchar(128),
+      checkpoint jsonb,
+      steps_executed integer NOT NULL DEFAULT 0,
+      started_at timestamp NOT NULL DEFAULT now(),
+      completed_at timestamp,
+      error text
+    );
+  `));
+
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS agent_workflow_node_executions (
+      id serial PRIMARY KEY,
+      execution_id integer NOT NULL,
+      node_id varchar(128) NOT NULL,
+      node_type varchar(64) NOT NULL,
+      status varchar(32) NOT NULL DEFAULT 'pending',
+      input jsonb,
+      output jsonb,
+      error text,
+      started_at timestamp NOT NULL DEFAULT now(),
+      completed_at timestamp,
+      duration_ms integer
     );
   `));
 }

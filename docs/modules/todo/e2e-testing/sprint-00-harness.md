@@ -38,42 +38,60 @@ end-to-end.
    `package.json` exposes `pnpm test:e2e` (scoped to
    `@oven/test-harness`).
 
-6. **E2E specs** (14 tests across 4 files):
+6. **E2E specs** (23 tests across 8 files):
    - `e2e/kb-semantic-search.e2e.test.ts` (2 tests) — Part A smoke.
    - `e2e/sse-consumer.e2e.test.ts` (4 tests) — SSE parsing helpers.
    - `e2e/event-recorder.e2e.test.ts` (4 tests) — event-bus recorder.
    - `e2e/tool-permissions.e2e.test.ts` (4 tests) — `executeTool`
      permission gating.
+   - `e2e/workflow-linear.e2e.test.ts` (3 tests) — 3-transform linear
+     workflow; asserts stepsExecuted, lifecycle event order, DB row
+     persistence.
+   - `e2e/workflow-branching.e2e.test.ts` (2 tests) — condition node
+     with guarded `always[]` transitions; both branches exercised.
+   - `e2e/workflow-error-recovery.e2e.test.ts` (2 tests) — `onError`
+     routing on node failure; fail-fast when no onError is defined.
+   - `e2e/workflow-human-in-loop.e2e.test.ts` (2 tests) —
+     `human-review` pauses with checkpoint persisted; resume with
+     decision completes.
 
 ## Deliverables — DONE
 
 - [x] Scaffolded package skeleton.
 - [x] pglite + pgvector wired and proven to work in Node (no Docker).
 - [x] `bootstrapHarness` creates drizzle-parity DDL for tenants +
-      permissions + api_endpoint_permissions + kb_* tables.
-- [x] Event recorder + SSE consumer + fake module-ai.
-- [x] Fixture helpers (tenant, KB, category, entry + one-hot embedding).
-- [x] 4 e2e specs green.
+      permissions + api_endpoint_permissions + kb_* tables +
+      `agent_workflows` + `agent_workflow_executions` +
+      `agent_workflow_node_executions`.
+- [x] Event recorder + SSE consumer + fake module-ai with
+      `aiEmbed` / `aiGenerateText` / `aiStreamText` /
+      `evaluateGuardrails` queues.
+- [x] Fixture helpers (tenant, KB, category, entry, agent-workflow,
+      workflow-execution + one-hot embedding).
+- [x] 8 e2e specs green (23 tests).
 - [x] `pnpm test:e2e` wired into turbo.
 - [x] README + this sprint doc.
 
 ## Acceptance — DONE
 
-- [x] `pnpm --filter @oven/test-harness test` returns exit 0 with 14
-      tests across 4 files green.
+- [x] `pnpm --filter @oven/test-harness test` returns exit 0 with 23
+      tests across 8 files green in ~13s.
 - [x] `kb-semantic-search` successfully exercises the new
       `CREATE EXTENSION IF NOT EXISTS vector;` path in `seed.ts` and
       verifies cosine-similarity ordering against real pgvector. This
       is the Part A cycle-39 regression guard.
+- [x] `workflow-linear` / `workflow-branching` /
+      `workflow-error-recovery` / `workflow-human-in-loop` exercise the
+      real `runAgentWorkflow` state-machine engine, lifecycle events,
+      `onError` routing, and `saveCheckpoint` / `loadCheckpoint`.
 - [x] `pnpm --filter @oven/module-knowledge-base test` returns exit 0
       with the new seed tests green (23 total, +2 from cycle-38).
 - [x] No changes to existing unit-test baselines elsewhere.
 
 ## Follow-up work (next sprint or cycle)
 
-The original plan proposed 8 e2e specs; 4 shipped in cycle-39. The
-remaining 4 require additional harness schema sets and module-graph
-plumbing; defer to a dedicated cycle:
+The original plan proposed 8 e2e specs; all 8 now ship in cycle-39.
+Additional deferred specs for a later cycle:
 
 1. `chat-streaming.e2e.test.ts` — needs `chat_sessions` + `chat_messages`
    DDL in `bootstrap.ts` (`SchemaSet = 'chat'`), plus mocked
@@ -84,12 +102,7 @@ plumbing; defer to a dedicated cycle:
    `agent_executions` DDL plus `tools` discovery fixtures. Exercises
    `invokeAgent()` with a queued tool-call turn.
 
-3. `workflow-*.e2e.test.ts` (linear / branching / error-recovery /
-   human-in-loop) — needs `agent_workflows`, `agent_workflow_executions`,
-   `agent_workflow_node_executions` DDL. Exercises `runAgentWorkflow`
-   with EventRecorder asserting lifecycle-event ordering.
-
-Each follow-up spec is ~60 lines plus ~30 lines of DDL.
+Each additional spec is ~60 lines plus ~30 lines of DDL.
 
 ## Risks / known limits
 

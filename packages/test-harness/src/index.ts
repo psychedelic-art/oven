@@ -18,7 +18,11 @@ export {
   seedKnowledgeBaseRow,
   seedKbCategory,
   seedKbEntry,
+  seedAgentWorkflow,
+  seedWorkflowExecution,
   oneHotEmbedding,
   type SeedTenantOpts,
   type SeedKbEntryOpts,
+  type SeedAgentWorkflowOpts,
+  type SeedWorkflowExecutionOpts,
 } from './fixtures';
