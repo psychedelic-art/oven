@@ -1,10 +1,12 @@
 # Todo Queue Progress
 
-Regenerated fresh on 2026-04-14 after **cycle-38** merge of notifications
-graduation (P5) + oven-bug-sprint sprints 02 & 04 (P6) onto `origin/dev`.
-Session branch: `claude/cycle-38-p5-p6-notifications-bugsprint`.
+Regenerated fresh on 2026-04-14 after **cycle-39** — pgvector seed
+hardening (KB sprint-03 substrate unblock) + Tier-1 workflow E2E test
+harness (`packages/test-harness`) — onto `origin/dev`. Session branch:
+`claude/dashboard-ux-system-nESUZ`.
 
 Prior cycles:
+- cycle-38 (`5b82e5b`) — notifications graduation + bug sprint 02/04 closures
 - cycle-37 (`00df65b`) — agent-ui sprint-03 widget bundle guardrails
 - cycle-36 (`61fc954`) — ui-flows graduation + agent-ui integration polish
 - cycle-35 (`9739231`) — agent-ui sprint-02 session sidebar completion
@@ -57,6 +59,7 @@ plus post-graduation work.
 | **36** | **ui-flows graduation + agent-ui integration polish** | **ui-flows LIVE + useChatAI/OvenChatTransport typecheck fix + barrel exports** | **`61fc954`** | **0** |
 | **37** | **agent-ui** | **sprint-03 widget bundle guardrails (size budget + check:size + BROWSER-MATRIX + content hash)** | **`00df65b`** | **+5** |
 | **38** | **notifications + oven-bug-sprint** | **P5 graduation + P6 sprints 02/04 close (9 findings, F-02-01 deferred)** | **`5b82e5b`** | **+12** |
+| **39** | **knowledge-base + e2e-testing** | **pgvector seed CREATE EXTENSION + Tier-1 E2E harness scaffold (`packages/test-harness`)** | *pending merge* | **+2 seed + e2e** |
 
 ### Cycle-33 contents (19 commits)
 
@@ -88,6 +91,7 @@ plus post-graduation work.
 | `dashboard-ux-system` | 8 (sprint-00..07) + post-grad | N/A (program) | LIVE `@oven/dashboard-ui` 92 tests + `@oven/agent-ui` 81 tests | **GRADUATED (cycle-33)** | All sprints closed. All deferred items closed. |
 | `oven-bug-sprint` | 7 (sprint-00..06) | N/A (program) | 310+ tests | **sprint-02/04 closed (cycle-38) except F-02-01 (schema-adjacent, deferred to BO)** | Only F-02-01 remains (BO IP-2 pending). All other findings (F-02-02..04, F-04-01..05) landed. |
 | `psychedelic-claude-code-migration` | 12 | N/A | N/A | -- | Owned elsewhere. |
+| `e2e-testing` | 3 (sprint-00 done, 01/02 pending) | N/A (program) | `@oven/test-harness` (pglite + mocked AI providers) | **sprint-00 done (cycle-39)** | sprint-01 Playwright browser E2E (deferred). |
 
 ## Priority order (post cycle-33)
 
@@ -99,9 +103,10 @@ P4: ~~`notifications` sprint-05-acceptance~~ GRADUATED in cycle-38
 P5: ~~`oven-bug-sprint` sprints 02/04~~ 9/10 findings CLOSED in cycle-38 (F-02-01 deferred to BO)
 P6: `agent-ui` sprint-04 (accessibility hardening: R11.1..R11.4 + vitest-axe)
 P7: `agent-ui` sprint-05 (graduation)
+P8: `knowledge-base` sprint-03 remaining scope (handlers + rate limiter + bulk processor) — pgvector substrate unblocked in cycle-39
+P9: `e2e-testing` sprint-01 (Playwright browser E2E — deferred to dedicated cycle)
 SKIP: F-02-01 (BO IP-2: archived-session TTL schema proposal pending approval)
 SKIP: `config` sprint-03 (BLOCKED: Neon preview)
-SKIP: `knowledge-base` sprint-03 (BLOCKED: pgvector)
 SKIP: `auth` sprint-04 (BLOCKED: Neon)
 SKIP: `files` sprint-04 (BLOCKED: auth/ssr)
 SKIP: `tenants` sprint-04 (BLOCKED: DB-mock)
@@ -117,6 +122,8 @@ SKIP: `psychedelic-claude-code-migration` (external)
 6. **KBPlayground legacy features** -- confidence scores, embedding badges, re-embed triggers preserved in KBPlayground.legacy.tsx for future port if needed.
 7. **AgentPlaygroundPanel legacy** -- original hand-rolled inline chat preserved in AgentPlaygroundPanel.legacy.tsx for reference.
 8. **useChatLegacy** -- hand-rolled SSE parser preserved as fallback; can be removed after @ai-sdk/react verified in production.
+9. **KB sprint-03 — partially unblocked in cycle-39.** `seed.ts` now enables `pgvector` idempotently; remaining sprint-03 scope (API handlers + rate limiter + bulk processor + tests) still pending.
+10. **E2E harness Tier-1 landed in cycle-39.** `packages/test-harness` with pglite-backed bootstrap, mocked AI providers, event recorder, SSE consumer, fixtures. Tier-2 (Playwright) and Tier-3 (production smoke) captured as sprint docs.
 
 ## Backup inventory (current)
 

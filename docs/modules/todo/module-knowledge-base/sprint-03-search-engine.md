@@ -126,6 +126,29 @@ rate-limited endpoint and an auth-protected ingest endpoint.
 - Sprint 02 complete.
 - `pgvector` embedding column populated by sprint 02 pipeline.
 
+## Status
+
+- **pgvector substrate** — **DONE (cycle-39)**. `seed.ts` now issues
+  `CREATE EXTENSION IF NOT EXISTS vector;` idempotently before the
+  `ALTER TABLE` / `CREATE INDEX`. See
+  `packages/module-knowledge-base/src/__tests__/seed.test.ts` for the
+  call-order guard and the KB semantic-search e2e test in
+  `packages/test-harness/e2e/kb-semantic-search.e2e.test.ts` for the
+  end-to-end smoke.
+- **Engine (semantic + keyword + hybrid)** — already exists in
+  `src/engine/search-engine.ts` (pre-dates cycle-39).
+- **Embedding pipeline** — already exists in
+  `src/engine/embedding-pipeline.ts` (pre-dates cycle-39). Note the
+  known cross-module import of `aiEmbed` from `@oven/module-ai`
+  (deferred cleanup).
+- **API handlers (search / ingest / stats)** — **PENDING**.
+- **Rate limiter** — **PENDING**.
+- **Bulk processor** — **PENDING**.
+- **Public endpoint registration** — **DONE** in `seed.ts` step 4.
+
+Cycle-39 only unblocks the pgvector substrate. Remaining scope (handlers
++ rate limiter + bulk processor + tests) ships in a subsequent cycle.
+
 ## Risks
 
 - **Risk**: hybrid score weights are tenant-sensitive. **Mitigation**:

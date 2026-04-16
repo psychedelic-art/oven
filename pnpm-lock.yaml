@@ -139,7 +139,7 @@ importers:
         version: 2.2.0
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       grapesjs:
         specifier: ^0.22.0
         version: 0.22.14
@@ -362,7 +362,7 @@ importers:
         version: link:../module-registry
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       hash-wasm:
         specifier: ^4.11.0
         version: 4.12.0
@@ -390,7 +390,7 @@ importers:
         version: link:../module-registry
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       firebase:
         specifier: ^12.8.0
         version: 12.10.0
@@ -518,7 +518,7 @@ importers:
         version: link:../module-roles
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       next:
         specifier: '>=15.0.0'
         version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -564,7 +564,7 @@ importers:
         version: 4.3.19(react@19.2.4)(zod@3.25.76)
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       next:
         specifier: '>=15.0.0'
         version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -592,7 +592,7 @@ importers:
         version: link:../module-roles
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       next:
         specifier: '>=15.0.0'
         version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -623,7 +623,7 @@ importers:
         version: link:../module-registry
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       next:
         specifier: '>=15.0.0'
         version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -651,7 +651,7 @@ importers:
         version: link:../module-roles
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       next:
         specifier: '>=15.0.0'
         version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -679,7 +679,7 @@ importers:
         version: 2.2.0
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       next:
         specifier: '>=15.0.0'
         version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -704,7 +704,7 @@ importers:
         version: link:../module-roles
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       next:
         specifier: '>=15.0.0'
         version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -725,7 +725,7 @@ importers:
         version: link:../module-roles
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       next:
         specifier: '>=15.0.0'
         version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -755,7 +755,7 @@ importers:
         version: link:../module-tenants
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       next:
         specifier: '>=15.0.0'
         version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -783,7 +783,7 @@ importers:
         version: 2.2.0
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       next:
         specifier: '>=15.0.0'
         version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -804,7 +804,7 @@ importers:
         version: link:../module-registry
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       next:
         specifier: '>=15.0.0'
         version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -826,7 +826,7 @@ importers:
         version: link:../module-registry
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       next:
         specifier: '>=15.0.0'
         version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -847,7 +847,7 @@ importers:
         version: link:../module-registry
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       next:
         specifier: '>=15.0.0'
         version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -859,7 +859,7 @@ importers:
     dependencies:
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
 
   packages/module-roles:
     dependencies:
@@ -871,7 +871,7 @@ importers:
         version: link:../module-registry
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       next:
         specifier: '>=15.0.0'
         version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -889,7 +889,7 @@ importers:
         version: link:../module-registry
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       next:
         specifier: '>=15.0.0'
         version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -919,7 +919,7 @@ importers:
         version: link:../module-tenants
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       next:
         specifier: '>=15.0.0'
         version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -950,7 +950,7 @@ importers:
         version: link:../module-roles
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       next:
         specifier: '>=15.0.0'
         version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -978,7 +978,7 @@ importers:
         version: link:../module-tenants
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       next:
         specifier: '>=15.0.0'
         version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -1015,7 +1015,7 @@ importers:
         version: link:../module-workflows
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       langsmith:
         specifier: ^0.5.16
         version: 0.5.16(@opentelemetry/api@1.9.0)(ws@8.20.0)
@@ -1058,7 +1058,7 @@ importers:
         version: link:../module-registry
       drizzle-orm:
         specifier: ^0.38.0
-        version: 0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
       next:
         specifier: '>=15.0.0'
         version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -1131,6 +1131,40 @@ importers:
       react-dom:
         specifier: '>=19.0.0'
         version: 19.2.4(react@19.2.4)
+
+  packages/test-harness:
+    dependencies:
+      '@oven/module-agent-core':
+        specifier: workspace:*
+        version: link:../module-agent-core
+      '@oven/module-knowledge-base':
+        specifier: workspace:*
+        version: link:../module-knowledge-base
+      '@oven/module-registry':
+        specifier: workspace:*
+        version: link:../module-registry
+      drizzle-orm:
+        specifier: ^0.38.0
+        version: 0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4)
+    devDependencies:
+      '@electric-sql/pglite':
+        specifier: ^0.4.0
+        version: 0.4.4
+      next:
+        specifier: ^15.0.0
+        version: 15.5.12(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.4
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.4(react@19.2.4)
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@22.19.10)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.31.1)(terser@5.46.1)(tsx@4.21.0)
 
   packages/ui-flows-editor:
     dependencies:
@@ -1420,6 +1454,9 @@ packages:
 
   '@drizzle-team/brocli@0.10.2':
     resolution: {integrity: sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w==}
+
+  '@electric-sql/pglite@0.4.4':
+    resolution: {integrity: sha512-g/6CWAJ4XOkObWCWAQ2IReZD8VvsDy3poRHSKvpRR2F96F8WJ3HVbjpso3gN7l0q6QPPgvxSSpl/qo5k8a7mkQ==}
 
   '@emnapi/core@1.8.1':
     resolution: {integrity: sha512-AvT9QFpxK0Zd8J0jopedNm+w/2fIzvtPKPjqyw9jwvBaReTTqPBk9Hixaz7KbjimP+QNz605/XnjFcDAL2pqBg==}
@@ -3705,9 +3742,6 @@ packages:
     engines: {node: '>=22.0.0', npm: '>=10.5.1'}
     peerDependencies:
       three: '>=0.126.1'
-
-  caniuse-lite@1.0.30001769:
-    resolution: {integrity: sha512-BCfFL1sHijQlBGWBMuJyhZUhzo7wer5sVj9hqekB/7xn0Ypy+pER/edCYQm4exbXj4WiySGp40P8UuTh6w1srg==}
 
   caniuse-lite@1.0.30001787:
     resolution: {integrity: sha512-mNcrMN9KeI68u7muanUpEejSLghOKlVhRqS/Za2IeyGllJ9I9otGpR9g3nsw7n4W378TE/LyIteA0+/FOZm4Kg==}
@@ -6911,6 +6945,8 @@ snapshots:
 
   '@drizzle-team/brocli@0.10.2': {}
 
+  '@electric-sql/pglite@0.4.4': {}
+
   '@emnapi/core@1.8.1':
     dependencies:
       '@emnapi/wasi-threads': 1.1.0
@@ -9139,8 +9175,6 @@ snapshots:
     dependencies:
       three: 0.175.0
 
-  caniuse-lite@1.0.30001769: {}
-
   caniuse-lite@1.0.30001787: {}
 
   ccount@2.0.1: {}
@@ -9397,8 +9431,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.38.4(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4):
+  drizzle-orm@0.38.4(@electric-sql/pglite@0.4.4)(@neondatabase/serverless@0.10.4)(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@19.2.13)(react@19.2.4):
     optionalDependencies:
+      '@electric-sql/pglite': 0.4.4
       '@neondatabase/serverless': 0.10.4
       '@opentelemetry/api': 1.9.0
       '@types/pg': 8.11.6
@@ -11097,7 +11132,7 @@ snapshots:
     dependencies:
       '@next/env': 15.5.12
       '@swc/helpers': 0.5.15
-      caniuse-lite: 1.0.30001769
+      caniuse-lite: 1.0.30001787
       postcss: 8.4.31
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)

@@ -29,26 +29,45 @@ export async function seedKnowledgeBase(db: ReturnType<typeof getDb>) {
     await db.insert(permissions).values(perm).onConflictDoNothing();
   }
 
-  // ─── 2. Vector column + HNSW index (idempotent) ───────────
+  // ─── 2. pgvector extension (idempotent) ───────────────────
+  // Must run BEFORE any ALTER TABLE / CREATE INDEX referencing `vector(...)`
+  // types or `vector_cosine_ops` opclass. Without this the ALTER below fails
+  // with "type vector does not exist" on fresh databases. Neon supports
+  // pgvector natively (no elevated permissions required).
+  let vectorExtensionReady = false;
   try {
-    await db.execute(sql`
-      DO $$
-      BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM information_schema.columns
-          WHERE table_name = 'kb_entries' AND column_name = 'embedding'
-        ) THEN
-          ALTER TABLE kb_entries ADD COLUMN embedding vector(1536);
-        END IF;
-      END $$;
-    `);
-    await db.execute(sql`
-      CREATE INDEX IF NOT EXISTS kbe_embedding_hnsw_idx
-      ON kb_entries USING hnsw (embedding vector_cosine_ops)
-      WITH (m = 16, ef_construction = 64);
-    `);
+    await db.execute(sql`CREATE EXTENSION IF NOT EXISTS vector;`);
+    vectorExtensionReady = true;
+    console.log('[module-knowledge-base] pgvector extension enabled');
   } catch (err) {
-    console.warn('[KB Seed] Could not create vector column/index:', (err as Error).message);
+    console.warn(
+      '[KB Seed] Could not enable pgvector extension — semantic search will be disabled:',
+      (err as Error).message,
+    );
+  }
+
+  // ─── 3. Vector column + HNSW index (idempotent) ───────────
+  if (vectorExtensionReady) {
+    try {
+      await db.execute(sql`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'kb_entries' AND column_name = 'embedding'
+          ) THEN
+            ALTER TABLE kb_entries ADD COLUMN embedding vector(1536);
+          END IF;
+        END $$;
+      `);
+      await db.execute(sql`
+        CREATE INDEX IF NOT EXISTS kbe_embedding_hnsw_idx
+        ON kb_entries USING hnsw (embedding vector_cosine_ops)
+        WITH (m = 16, ef_construction = 64);
+      `);
+    } catch (err) {
+      console.error('[KB Seed] Failed to create vector column/index:', (err as Error).message);
+    }
   }
 
   // ─── 3. Public endpoint registration ──────────────────────

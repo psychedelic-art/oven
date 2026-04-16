@@ -244,6 +244,14 @@ Neon PostgreSQL includes pgvector by default. Enable it once per database:
 CREATE EXTENSION IF NOT EXISTS vector;
 ```
 
+> **As of cycle-39, `packages/module-knowledge-base/src/seed.ts` issues this
+> `CREATE EXTENSION` statement automatically and idempotently before the
+> `ALTER TABLE` / `CREATE INDEX` that depend on the `vector` type.** No
+> manual `psql` step is required on fresh Neon branches. If the extension
+> cannot be created (e.g. restricted role), the seed logs a warning and
+> skips the embedding column + HNSW index; the module continues to work in
+> keyword-only search mode.
+
 ### Vector Column Type
 
 The `vector(N)` type stores a fixed-length array of floating-point numbers. The dimension `N` must match the embedding model's output:

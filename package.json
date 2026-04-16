@@ -5,6 +5,8 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
+    "test": "turbo test",
+    "test:e2e": "turbo test:e2e --filter=@oven/test-harness",
     "db:push": "turbo db:push",
     "db:seed": "turbo db:seed"
   },

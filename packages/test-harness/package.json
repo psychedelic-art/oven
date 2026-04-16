@@ -1,0 +1,28 @@
+{
+  "name": "@oven/test-harness",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "vitest run"
+  },
+  "dependencies": {
+    "@oven/module-registry": "workspace:*",
+    "@oven/module-knowledge-base": "workspace:*",
+    "@oven/module-agent-core": "workspace:*",
+    "drizzle-orm": "^0.38.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.4.0",
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "vitest": "^3.0.0",
+    "typescript": "^5.0.0"
+  }
+}
