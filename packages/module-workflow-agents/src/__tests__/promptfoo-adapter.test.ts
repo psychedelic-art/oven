@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 // ─── Promptfoo Adapter Tests ────────────────────────────────
 
@@ -66,27 +66,5 @@ describe('PromptfooAdapter', () => {
       const result = mapChecksToAssertions([{ operator: 'is_json' }]);
       expect(result[0]).toEqual({ type: 'is-json' });
     });
-  });
-});
-
-// ─── LangSmith Tracer Tests ────────────────────────────────
-
-vi.mock('@oven/module-registry', () => ({
-  eventBus: {
-    on: vi.fn().mockReturnValue(() => {}),
-    emit: vi.fn().mockResolvedValue(undefined),
-  },
-}));
-
-import { getTraceUrl, isTracingEnabled } from '../services/langsmith-tracer';
-
-describe('LangSmithTracer', () => {
-  it('getTraceUrl returns null when no active traces', () => {
-    expect(getTraceUrl(999)).toBeNull();
-  });
-
-  it('isTracingEnabled returns false when no API key set', () => {
-    // API key not set in test environment
-    expect(isTracingEnabled()).toBe(false);
   });
 });

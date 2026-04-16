@@ -23,7 +23,7 @@
     "@oven/module-registry": "workspace:*",
     "@oven/module-workflows": "workspace:*",
     "drizzle-orm": "^0.38.0",
-    "langsmith": "^0.5.16"
+    "langsmith": "^0.5.20"
   },
   "peerDependencies": {
     "next": ">=15.0.0",

@@ -8,33 +8,33 @@ interface RunContext {
   childRuns: Map<string, string>; // nodeId → childRunId
 }
 
+// ─── Configuration ─────────────────────────────────────────
+
+const projectName = process.env.LANGSMITH_PROJECT ?? 'oven-workflows';
+const langsmithEndpoint = process.env.LANGSMITH_ENDPOINT ?? 'https://smith.langchain.com';
+
 // ─── State ──────────────────────────────────────────────────
 
-let client: LangSmithClient | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let client: any = null;
 const activeRuns = new Map<number, RunContext>(); // executionId → RunContext
 const unsubscribers: Array<() => void> = [];
 
-// ─── Minimal LangSmith Client Interface ─────────────────────
-// We define this interface so the tracer works without requiring
-// the langsmith package at import time. The real SDK is loaded lazily.
-
-interface LangSmithClient {
-  createRun(params: Record<string, unknown>): Promise<{ id: string }>;
-  updateRun(runId: string, params: Record<string, unknown>): Promise<void>;
-}
-
 // ─── Initialize ─────────────────────────────────────────────
+// Called once from index.ts. When LANGSMITH_API_KEY is set, lazy-loads
+// the langsmith SDK and subscribes to event-bus lifecycle events.
 
 export function initLangSmithTracer(): void {
   const apiKey = process.env.LANGSMITH_API_KEY;
-  if (!apiKey) return; // Silently disabled
+  if (!apiKey) return; // Silently disabled — no API key means no tracing
 
   try {
     // Lazy import — only loads SDK when API key is present
-    const { Client } = require('langsmith') as { Client: new (opts: Record<string, unknown>) => LangSmithClient };
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { Client } = require('langsmith') as { Client: new (opts: Record<string, unknown>) => unknown };
     client = new Client({ apiKey });
-  } catch {
-    // SDK not installed or import failed — stay silent
+  } catch (err) {
+    console.warn('[langsmith] Failed to load SDK:', (err as Error).message);
     return;
   }
 
@@ -67,21 +67,46 @@ export function isTracingEnabled(): boolean {
   return client !== null;
 }
 
-// ─── Event Handlers ─────────────────────────────────────────
+// ─── Test helpers ──────────────────────────────────────────
+
+/** Teardown: unsubscribes events and clears state. */
+export function teardownLangSmithTracer(): void {
+  for (const off of unsubscribers) off();
+  unsubscribers.length = 0;
+  activeRuns.clear();
+  client = null;
+}
+
+/**
+ * Inject a mock client for testing. Bypasses the `require('langsmith')`
+ * path so tests don't need to mock the CommonJS require.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function _injectClientForTesting(mockClient: any): void {
+  client = mockClient;
+}
+
+// ─── Event Handlers: Workflow Execution ─────────────────────
 
 async function handleExecutionStarted(payload: Record<string, unknown>): Promise<void> {
   if (!client) return;
+  const executionId = payload.executionId as number;
+  const runId = crypto.randomUUID();
   try {
-    const executionId = payload.executionId as number;
-    const result = await client.createRun({
+    await client.createRun({
+      id: runId,
       name: `workflow-execution-${executionId}`,
       run_type: 'chain',
-      inputs: { workflowId: payload.workflowId },
+      inputs: { workflowId: payload.workflowId ?? null },
       extra: { metadata: { executionId, source: 'oven-workflow-agents' } },
+      project_name: projectName,
+      trace_id: runId, // root run is its own trace
     });
-    const traceUrl = `https://smith.langchain.com/runs/${result.id}`;
-    activeRuns.set(executionId, { runId: result.id, traceUrl, childRuns: new Map() });
-  } catch { /* Silent */ }
+    const traceUrl = `${langsmithEndpoint}/runs/${runId}`;
+    activeRuns.set(executionId, { runId, traceUrl, childRuns: new Map() });
+  } catch (err) {
+    console.warn('[langsmith] Failed to create workflow run:', (err as Error).message);
+  }
 }
 
 async function handleExecutionCompleted(payload: Record<string, unknown>): Promise<void> {
@@ -93,7 +118,11 @@ async function handleExecutionCompleted(payload: Record<string, unknown>): Promi
       outputs: { context: payload.context, stepsExecuted: payload.stepsExecuted },
       end_time: new Date().toISOString(),
     });
-  } catch { /* Silent */ }
+    // Flush the SDK's batch queue so traces are sent promptly
+    if (typeof client.flush === 'function') await client.flush();
+  } catch (err) {
+    console.warn('[langsmith] Failed to update completed run:', (err as Error).message);
+  }
   // Keep in map for trace URL retrieval (cleaned up after 30 min)
   setTimeout(() => activeRuns.delete(payload.executionId as number), 30 * 60 * 1000);
 }
@@ -107,24 +136,37 @@ async function handleExecutionFailed(payload: Record<string, unknown>): Promise<
       error: payload.error as string,
       end_time: new Date().toISOString(),
     });
-  } catch { /* Silent */ }
+    if (typeof client.flush === 'function') await client.flush();
+  } catch (err) {
+    console.warn('[langsmith] Failed to update failed run:', (err as Error).message);
+  }
   setTimeout(() => activeRuns.delete(payload.executionId as number), 30 * 60 * 1000);
 }
+
+// ─── Event Handlers: Workflow Nodes ─────────────────────────
 
 async function handleNodeStarted(payload: Record<string, unknown>): Promise<void> {
   if (!client) return;
   const ctx = activeRuns.get(payload.executionId as number);
   if (!ctx) return;
+  const childRunId = crypto.randomUUID();
   try {
-    const runType = payload.nodeType === 'llm' ? 'llm' : payload.nodeType === 'tool-executor' ? 'tool' : 'chain';
-    const result = await client.createRun({
+    const runType = payload.nodeType === 'llm' ? 'llm'
+      : payload.nodeType === 'tool-executor' ? 'tool'
+      : 'chain';
+    await client.createRun({
+      id: childRunId,
       name: `node-${payload.nodeId}`,
       run_type: runType,
       parent_run_id: ctx.runId,
+      trace_id: ctx.runId, // share parent's trace for grouping
       inputs: { nodeId: payload.nodeId, nodeType: payload.nodeType },
+      project_name: projectName,
     });
-    ctx.childRuns.set(payload.nodeId as string, result.id);
-  } catch { /* Silent */ }
+    ctx.childRuns.set(payload.nodeId as string, childRunId);
+  } catch (err) {
+    console.warn('[langsmith] Failed to create node run:', (err as Error).message);
+  }
 }
 
 async function handleNodeCompleted(payload: Record<string, unknown>): Promise<void> {
@@ -135,11 +177,13 @@ async function handleNodeCompleted(payload: Record<string, unknown>): Promise<vo
   if (!childRunId) return;
   try {
     await client.updateRun(childRunId, {
-      outputs: payload.output,
+      outputs: payload.output as Record<string, unknown>,
       end_time: new Date().toISOString(),
       extra: { metadata: { durationMs: payload.durationMs } },
     });
-  } catch { /* Silent */ }
+  } catch (err) {
+    console.warn('[langsmith] Failed to update node completed:', (err as Error).message);
+  }
 }
 
 async function handleNodeFailed(payload: Record<string, unknown>): Promise<void> {
@@ -153,39 +197,58 @@ async function handleNodeFailed(payload: Record<string, unknown>): Promise<void>
       error: payload.error as string,
       end_time: new Date().toISOString(),
     });
-  } catch { /* Silent */ }
+  } catch (err) {
+    console.warn('[langsmith] Failed to update node failed:', (err as Error).message);
+  }
 }
 
 async function handleGuardTriggered(payload: Record<string, unknown>): Promise<void> {
   if (!client) return;
   const ctx = activeRuns.get(payload.executionId as number);
   if (!ctx) return;
+  const guardRunId = crypto.randomUUID();
   try {
-    const result = await client.createRun({
+    await client.createRun({
+      id: guardRunId,
       name: `guardrail-${payload.nodeId}`,
       run_type: 'tool',
       parent_run_id: ctx.runId,
+      trace_id: ctx.runId,
       inputs: { scope: payload.scope, ruleId: payload.ruleId },
       outputs: { message: payload.message },
       end_time: new Date().toISOString(),
+      project_name: projectName,
     });
-  } catch { /* Silent */ }
+  } catch (err) {
+    console.warn('[langsmith] Failed to trace guardrail:', (err as Error).message);
+  }
 }
 
-// Agent-core event handlers (simpler — single invocation, no nodes)
+// ─── Event Handlers: Agent-Core ─────────────────────────────
+// Agent-core executions are simpler (single invocation, no sub-nodes).
 
 async function handleAgentExecutionStarted(payload: Record<string, unknown>): Promise<void> {
   if (!client) return;
+  const executionId = payload.id as number;
+  const runId = crypto.randomUUID();
   try {
-    const executionId = payload.id as number;
-    const result = await client.createRun({
+    await client.createRun({
+      id: runId,
       name: `agent-execution-${executionId}`,
       run_type: 'chain',
-      inputs: { agentId: payload.agentId },
+      inputs: { agentId: payload.agentId ?? null },
       extra: { metadata: { executionId, source: 'oven-agent-core' } },
+      project_name: projectName,
+      trace_id: runId,
     });
-    activeRuns.set(executionId, { runId: result.id, traceUrl: `https://smith.langchain.com/runs/${result.id}`, childRuns: new Map() });
-  } catch { /* Silent */ }
+    activeRuns.set(executionId, {
+      runId,
+      traceUrl: `${langsmithEndpoint}/runs/${runId}`,
+      childRuns: new Map(),
+    });
+  } catch (err) {
+    console.warn('[langsmith] Failed to create agent run:', (err as Error).message);
+  }
 }
 
 async function handleAgentExecutionCompleted(payload: Record<string, unknown>): Promise<void> {
@@ -197,7 +260,10 @@ async function handleAgentExecutionCompleted(payload: Record<string, unknown>): 
       outputs: { tokenUsage: payload.tokenUsage, status: payload.status },
       end_time: new Date().toISOString(),
     });
-  } catch { /* Silent */ }
+    if (typeof client.flush === 'function') await client.flush();
+  } catch (err) {
+    console.warn('[langsmith] Failed to update agent completed:', (err as Error).message);
+  }
   setTimeout(() => activeRuns.delete(payload.id as number), 30 * 60 * 1000);
 }
 
@@ -206,7 +272,13 @@ async function handleAgentExecutionFailed(payload: Record<string, unknown>): Pro
   const ctx = activeRuns.get(payload.id as number);
   if (!ctx) return;
   try {
-    await client.updateRun(ctx.runId, { error: payload.error as string, end_time: new Date().toISOString() });
-  } catch { /* Silent */ }
+    await client.updateRun(ctx.runId, {
+      error: payload.error as string,
+      end_time: new Date().toISOString(),
+    });
+    if (typeof client.flush === 'function') await client.flush();
+  } catch (err) {
+    console.warn('[langsmith] Failed to update agent failed:', (err as Error).message);
+  }
   setTimeout(() => activeRuns.delete(payload.id as number), 30 * 60 * 1000);
 }
